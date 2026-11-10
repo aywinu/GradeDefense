@@ -13,4 +13,3 @@ Notes
 - Colima VM is **not started** yet. Start only for Moodle: `colima start --cpu 2 --memory 4`. Use `docker-compose` (standalone binary) — the `docker compose` plugin form needs `~/.docker/config.json` with `"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]` (optional).
 - All Docker resources for this project will be prefixed `dd-` (containers, network, volumes) and use non-default ports.
 - Nothing under `~/Developer/Projects/agent-hub*` is touched.
-- `~/.zshrc` currently has the PATH line twice (harmless; remove one manually if desired).
