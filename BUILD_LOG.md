@@ -29,3 +29,6 @@ The hackathon requires Kiro, and Kiro did a large part of the work (see `KIRO_US
 | 2026-11-26 | Atmosphere (simplex fog, candles, motes, vignette), procedural textures, DOM UI stage, title screen | Claude Code |
 | 2026-11-26 | Tasks 3.6–3.8 pure simulation step + battle loop, victory/defeat | Kiro |
 | 2026-11-26 | Task 6.1 readiness core | Kiro |
+| 2026-11-26 | Task 3.10 sim purity (game clock), SimConfig, pending spawns | Kiro |
+| 2026-11-26 | Task 2.3 question topics | Kiro |
+| 2026-11-26 | War Room scene, TrialPanel, study model glue, versioned save + tests, WebAudio synth | Claude Code |
