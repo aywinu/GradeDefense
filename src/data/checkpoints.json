@@ -1,0 +1,734 @@
+{
+  "CV101": [
+    {
+      "id": "CV101-q01",
+      "question": "What is the primary purpose of a Sobel filter?",
+      "choices": [
+        "Edge detection",
+        "Noise reduction",
+        "Color space conversion",
+        "Image compression"
+      ],
+      "correctIndex": 0,
+      "explain": "Sobel filters detect edges by computing intensity gradients in horizontal and vertical directions."
+    },
+    {
+      "id": "CV101-q02",
+      "question": "Which color space separates luminance from chrominance?",
+      "choices": [
+        "Grayscale",
+        "YCbCr",
+        "CMYK",
+        "RGB"
+      ],
+      "correctIndex": 1,
+      "explain": "YCbCr separates luminance (Y) from blue and red chrominance components (Cb, Cr)."
+    },
+    {
+      "id": "CV101-q03",
+      "question": "SIFT features are invariant to which transformations?",
+      "choices": [
+        "Compression artifacts",
+        "Perspective distortion",
+        "Scale and rotation",
+        "Color changes only"
+      ],
+      "correctIndex": 2,
+      "explain": "SIFT (Scale-Invariant Feature Transform) detects keypoints robust to scale and rotation changes."
+    },
+    {
+      "id": "CV101-q04",
+      "question": "What does a 3x3 convolution kernel with stride 2 do?",
+      "choices": [
+        "Converts to grayscale",
+        "Removes all edges",
+        "Increases image resolution",
+        "Reduces spatial dimensions by half"
+      ],
+      "correctIndex": 3,
+      "explain": "Stride 2 means the kernel moves 2 pixels at a time, downsampling the output by half."
+    },
+    {
+      "id": "CV101-q05",
+      "question": "YOLO stands for what in object detection?",
+      "choices": [
+        "You Only Look Once",
+        "Yellow Object Location Operator",
+        "Yielding Optimized Linear Output",
+        "Yaw-based Optical Localization"
+      ],
+      "correctIndex": 0,
+      "explain": "YOLO (You Only Look Once) performs object detection in a single forward pass through the network."
+    },
+    {
+      "id": "CV101-q06",
+      "question": "What is the main advantage of R-CNN over sliding window methods?",
+      "choices": [
+        "Faster training time",
+        "Selective region proposals used",
+        "No need for labeled data",
+        "Works only on grayscale images"
+      ],
+      "correctIndex": 1,
+      "explain": "R-CNN uses selective search to propose regions, avoiding exhaustive sliding window scanning."
+    },
+    {
+      "id": "CV101-q07",
+      "question": "What does camera calibration estimate?",
+      "choices": [
+        "Optimal exposure time",
+        "Color temperature",
+        "Intrinsic and extrinsic parameters",
+        "Image compression ratio"
+      ],
+      "correctIndex": 2,
+      "explain": "Calibration estimates intrinsic parameters (focal length, center) and extrinsic parameters (rotation, translation)."
+    },
+    {
+      "id": "CV101-q08",
+      "question": "Which technique reconstructs 3D structure from multiple 2D images?",
+      "choices": [
+        "Gaussian blur",
+        "Median filtering",
+        "Histogram equalization",
+        "Stereo vision"
+      ],
+      "correctIndex": 3,
+      "explain": "Stereo vision uses disparity between images from different viewpoints to estimate depth and 3D structure."
+    },
+    {
+      "id": "CV101-q09",
+      "question": "What is the kernel size in a typical max pooling layer?",
+      "choices": [
+        "2x2 or 3x3",
+        "10x10",
+        "Same as input image",
+        "1x1"
+      ],
+      "correctIndex": 0,
+      "explain": "Max pooling typically uses small kernels like 2x2 or 3x3 to downsample while preserving important features."
+    },
+    {
+      "id": "CV101-q10",
+      "question": "ORB features combine FAST keypoint detection with what descriptor?",
+      "choices": [
+        "HOG descriptor",
+        "BRIEF descriptor with rotation",
+        "SIFT descriptor",
+        "Color histogram"
+      ],
+      "correctIndex": 1,
+      "explain": "ORB uses FAST for keypoint detection and an oriented version of BRIEF for efficient binary descriptors."
+    }
+  ],
+  "PHO101": [
+    {
+      "id": "PHO101-q01",
+      "question": "What determines the wavelength of photons emitted by a laser?",
+      "choices": [
+        "Intensity of the pump source",
+        "Size of the laser cavity",
+        "Energy difference between atomic levels",
+        "Ambient temperature"
+      ],
+      "correctIndex": 2,
+      "explain": "Photon wavelength is determined by the energy gap between the excited and ground states in the gain medium."
+    },
+    {
+      "id": "PHO101-q02",
+      "question": "In Young's double-slit experiment, what creates the interference pattern?",
+      "choices": [
+        "Reflection from a mirror",
+        "Diffraction at a single slit",
+        "Particle collisions",
+        "Superposition of waves from both slits"
+      ],
+      "correctIndex": 3,
+      "explain": "Waves from both slits overlap, interfering constructively and destructively to form bright and dark fringes."
+    },
+    {
+      "id": "PHO101-q03",
+      "question": "What is the refractive index of a vacuum?",
+      "choices": [
+        "1",
+        "0",
+        "1.5",
+        "Infinity"
+      ],
+      "correctIndex": 0,
+      "explain": "By definition, the refractive index of a vacuum is exactly 1, as light travels at maximum speed there."
+    },
+    {
+      "id": "PHO101-q04",
+      "question": "Single-mode fiber supports how many propagation modes?",
+      "choices": [
+        "Multiple modes",
+        "One",
+        "Infinite modes",
+        "Zero"
+      ],
+      "correctIndex": 1,
+      "explain": "Single-mode fiber is designed to support only the fundamental mode, minimizing dispersion."
+    },
+    {
+      "id": "PHO101-q05",
+      "question": "What causes chromatic dispersion in optical fibers?",
+      "choices": [
+        "Fiber bending losses",
+        "Temperature variations",
+        "Wavelengths travel at different speeds",
+        "Core diameter changes"
+      ],
+      "correctIndex": 2,
+      "explain": "Chromatic dispersion occurs because the refractive index varies with wavelength, affecting propagation speed."
+    },
+    {
+      "id": "PHO101-q06",
+      "question": "A diffraction grating with 500 lines/mm has what grating constant?",
+      "choices": [
+        "500 nm",
+        "0.5 mm",
+        "20 μm",
+        "2 μm"
+      ],
+      "correctIndex": 3,
+      "explain": "Grating constant d = 1/(500 lines/mm) = 1/500 mm = 2 μm."
+    },
+    {
+      "id": "PHO101-q07",
+      "question": "What is the energy of a photon with wavelength 500 nm?",
+      "choices": [
+        "2.48 eV",
+        "5.00 eV",
+        "0.50 eV",
+        "1.24 eV"
+      ],
+      "correctIndex": 0,
+      "explain": "Using E = hc/λ, where h = 4.14×10⁻¹⁵ eV·s and c = 3×10⁸ m/s, E ≈ 2.48 eV."
+    },
+    {
+      "id": "PHO101-q08",
+      "question": "What is the main loss mechanism in optical fiber over long distances?",
+      "choices": [
+        "Raman scattering",
+        "Rayleigh scattering",
+        "Fresnel reflection",
+        "Kerr effect"
+      ],
+      "correctIndex": 1,
+      "explain": "Rayleigh scattering from microscopic density fluctuations is the dominant loss in modern low-loss fibers."
+    },
+    {
+      "id": "PHO101-q09",
+      "question": "Total internal reflection occurs when light travels from what medium?",
+      "choices": [
+        "Any medium to vacuum",
+        "Same refractive index",
+        "High to low refractive index",
+        "Low to high refractive index"
+      ],
+      "correctIndex": 2,
+      "explain": "Total internal reflection requires light traveling from a denser to a less dense medium beyond the critical angle."
+    },
+    {
+      "id": "PHO101-q10",
+      "question": "What is the coherence length of a typical white light source?",
+      "choices": [
+        "One wavelength",
+        "Infinite",
+        "Several kilometers",
+        "A few micrometers"
+      ],
+      "correctIndex": 3,
+      "explain": "White light has a broad spectrum, resulting in very short coherence length (a few micrometers)."
+    }
+  ],
+  "MGT101": [
+    {
+      "id": "MGT101-q01",
+      "question": "In Tuckman's model, which stage follows 'storming'?",
+      "choices": [
+        "Norming",
+        "Performing",
+        "Adjourning",
+        "Forming"
+      ],
+      "correctIndex": 0,
+      "explain": "Tuckman's stages: forming, storming, norming, performing (and later adjourning)."
+    },
+    {
+      "id": "MGT101-q02",
+      "question": "Which leadership style involves delegating decisions to team members?",
+      "choices": [
+        "Transactional",
+        "Laissez-faire",
+        "Democratic",
+        "Autocratic"
+      ],
+      "correctIndex": 1,
+      "explain": "Laissez-faire leadership gives team members freedom to make decisions with minimal leader intervention."
+    },
+    {
+      "id": "MGT101-q03",
+      "question": "What is the primary goal of stakeholder analysis?",
+      "choices": [
+        "Create financial projections",
+        "Minimize project costs",
+        "Identify & assess stakeholder influence",
+        "Design marketing campaigns"
+      ],
+      "correctIndex": 2,
+      "explain": "Stakeholder analysis identifies who has interest or influence in a project and assesses their needs and impact."
+    },
+    {
+      "id": "MGT101-q04",
+      "question": "Which conflict resolution strategy seeks a mutually beneficial solution?",
+      "choices": [
+        "Accommodating",
+        "Avoiding",
+        "Competing",
+        "Collaborating"
+      ],
+      "correctIndex": 3,
+      "explain": "Collaborating (or integrating) seeks win-win solutions that satisfy all parties' important concerns."
+    },
+    {
+      "id": "MGT101-q05",
+      "question": "What is organizational culture primarily based on?",
+      "choices": [
+        "Shared values, beliefs, and norms",
+        "Office location and layout",
+        "Company revenue",
+        "Number of employees"
+      ],
+      "correctIndex": 0,
+      "explain": "Organizational culture consists of shared values, beliefs, assumptions, and norms that guide behavior."
+    },
+    {
+      "id": "MGT101-q06",
+      "question": "A project charter typically includes which key element?",
+      "choices": [
+        "Detailed technical specifications",
+        "Project objectives and scope",
+        "Complete budget breakdown",
+        "Daily task schedules"
+      ],
+      "correctIndex": 1,
+      "explain": "A project charter formally authorizes a project and includes high-level objectives, scope, and stakeholders."
+    },
+    {
+      "id": "MGT101-q07",
+      "question": "In SMART goals, what does the 'R' usually stand for?",
+      "choices": [
+        "Reviewed",
+        "Rapid",
+        "Relevant",
+        "Resourced"
+      ],
+      "correctIndex": 2,
+      "explain": "SMART: Specific, Measurable, Achievable, Relevant, Time-bound."
+    },
+    {
+      "id": "MGT101-q08",
+      "question": "Which change management model has stages: unfreeze, change, refreeze?",
+      "choices": [
+        "Kotter's 8-step",
+        "ADKAR",
+        "McKinsey 7S",
+        "Lewin's model"
+      ],
+      "correctIndex": 3,
+      "explain": "Kurt Lewin's three-stage model describes change as unfreezing the status quo, changing, and refreezing the new state."
+    },
+    {
+      "id": "MGT101-q09",
+      "question": "What is a key characteristic of transformational leadership?",
+      "choices": [
+        "Inspiring followers to exceed goals",
+        "Strict rule enforcement",
+        "Minimal communication",
+        "Focus on task completion rewards"
+      ],
+      "correctIndex": 0,
+      "explain": "Transformational leaders inspire and motivate followers to achieve extraordinary outcomes and develop leadership capacity."
+    },
+    {
+      "id": "MGT101-q10",
+      "question": "What is span of control in organizational structure?",
+      "choices": [
+        "Project timeline duration",
+        "Number of direct reports to a manager",
+        "Geographic area managed",
+        "Budget authority level"
+      ],
+      "correctIndex": 1,
+      "explain": "Span of control refers to the number of subordinates directly reporting to a manager or supervisor."
+    }
+  ],
+  "DSA101": [
+    {
+      "id": "DSA101-q01",
+      "question": "What is the time complexity of binary search on a sorted array?",
+      "choices": [
+        "O(n log n)",
+        "O(1)",
+        "O(log n)",
+        "O(n)"
+      ],
+      "correctIndex": 2,
+      "explain": "Binary search halves the search space each step, resulting in logarithmic time complexity."
+    },
+    {
+      "id": "DSA101-q02",
+      "question": "Which data structure uses LIFO (Last In, First Out)?",
+      "choices": [
+        "Queue",
+        "Hash table",
+        "Linked list",
+        "Stack"
+      ],
+      "correctIndex": 3,
+      "explain": "A stack follows LIFO order, where the most recently added element is removed first."
+    },
+    {
+      "id": "DSA101-q03",
+      "question": "What is the worst-case time complexity of quicksort?",
+      "choices": [
+        "O(n²)",
+        "O(n)",
+        "O(log n)",
+        "O(n log n)"
+      ],
+      "correctIndex": 0,
+      "explain": "Quicksort's worst case occurs with poor pivot selection, leading to unbalanced partitions and O(n²) time."
+    },
+    {
+      "id": "DSA101-q04",
+      "question": "In a binary search tree, what property must hold for all nodes?",
+      "choices": [
+        "All leaves are at the same level",
+        "Left child < parent < right child",
+        "Height is balanced",
+        "All nodes have exactly two children"
+      ],
+      "correctIndex": 1,
+      "explain": "BST property: for each node, all left descendants are smaller and all right descendants are larger."
+    },
+    {
+      "id": "DSA101-q05",
+      "question": "Which collision resolution technique chains entries at the same hash index?",
+      "choices": [
+        "Double hashing",
+        "Linear probing",
+        "Separate chaining",
+        "Quadratic probing"
+      ],
+      "correctIndex": 2,
+      "explain": "Separate chaining stores colliding elements in a linked list or similar structure at each hash table slot."
+    },
+    {
+      "id": "DSA101-q06",
+      "question": "What graph traversal uses a queue?",
+      "choices": [
+        "Depth-first search (DFS)",
+        "Dijkstra's algorithm",
+        "Topological sort",
+        "Breadth-first search (BFS)"
+      ],
+      "correctIndex": 3,
+      "explain": "BFS uses a queue to explore nodes level by level, visiting all neighbors before moving deeper."
+    },
+    {
+      "id": "DSA101-q07",
+      "question": "Which sorting algorithm is stable and has O(n²) worst case?",
+      "choices": [
+        "Bubble sort",
+        "Heapsort",
+        "Quicksort",
+        "Merge sort"
+      ],
+      "correctIndex": 0,
+      "explain": "Bubble sort is stable (preserves relative order of equal elements) and has O(n²) time complexity."
+    },
+    {
+      "id": "DSA101-q08",
+      "question": "What characterizes dynamic programming?",
+      "choices": [
+        "Random pivot selection",
+        "Overlapping subproblems & optimality",
+        "Greedy local decisions",
+        "Iterative deepening"
+      ],
+      "correctIndex": 1,
+      "explain": "Dynamic programming solves problems by breaking them into overlapping subproblems and storing solutions."
+    },
+    {
+      "id": "DSA101-q09",
+      "question": "What is the space complexity of merge sort?",
+      "choices": [
+        "O(log n)",
+        "O(1)",
+        "O(n)",
+        "O(n²)"
+      ],
+      "correctIndex": 2,
+      "explain": "Merge sort requires O(n) auxiliary space to store temporary arrays during the merge process."
+    },
+    {
+      "id": "DSA101-q10",
+      "question": "In an adjacency list representation, what does each vertex store?",
+      "choices": [
+        "The shortest path tree",
+        "Its distance to all other vertices",
+        "A matrix of all edges",
+        "A list of its neighbors"
+      ],
+      "correctIndex": 3,
+      "explain": "In adjacency list representation, each vertex maintains a list of vertices it is directly connected to."
+    }
+  ],
+  "MKT101": [
+    {
+      "id": "MKT101-q01",
+      "question": "What are the typical stages of a marketing funnel?",
+      "choices": [
+        "Awareness, interest, desire, action",
+        "Plan, execute, measure, optimize",
+        "Target, segment, position, promote",
+        "Create, distribute, engage, convert"
+      ],
+      "correctIndex": 0,
+      "explain": "AIDA: awareness, interest, desire, action."
+    },
+    {
+      "id": "MKT101-q02",
+      "question": "What does SEO stand for?",
+      "choices": [
+        "Social Engagement Outreach",
+        "Search Engine Optimization",
+        "Sales Enhancement Optimization",
+        "Systematic Email Operations"
+      ],
+      "correctIndex": 1,
+      "explain": "SEO (Search Engine Optimization) improves website visibility in organic search engine results."
+    },
+    {
+      "id": "MKT101-q03",
+      "question": "What is the main difference between SEO and SEM?",
+      "choices": [
+        "SEO is for social, SEM is for email",
+        "They are the same thing",
+        "SEO is organic, SEM includes paid ads",
+        "SEM is only for mobile devices"
+      ],
+      "correctIndex": 2,
+      "explain": "SEO focuses on organic search results, while SEM (Search Engine Marketing) includes paid search advertising."
+    },
+    {
+      "id": "MKT101-q04",
+      "question": "What is a buyer persona?",
+      "choices": [
+        "A pricing strategy",
+        "A distribution channel",
+        "A sales contract template",
+        "A fictional ideal customer profile"
+      ],
+      "correctIndex": 3,
+      "explain": "A buyer persona is a semi-fictional profile of your ideal customer based on research and real data."
+    },
+    {
+      "id": "MKT101-q05",
+      "question": "What does CTR measure in digital marketing?",
+      "choices": [
+        "Click-through rate",
+        "Cost per transaction",
+        "Conversion target ratio",
+        "Customer total revenue"
+      ],
+      "correctIndex": 0,
+      "explain": "CTR (Click-Through Rate) is the percentage of people who click on a link out of those who view it."
+    },
+    {
+      "id": "MKT101-q06",
+      "question": "In A/B testing, what should you change between variants?",
+      "choices": [
+        "Everything simultaneously",
+        "One variable at a time",
+        "Nothing, just wait",
+        "Only the color scheme"
+      ],
+      "correctIndex": 1,
+      "explain": "A/B testing isolates one variable between variants to clearly attribute performance differences to that change."
+    },
+    {
+      "id": "MKT101-q07",
+      "question": "How is marketing ROI typically calculated?",
+      "choices": [
+        "Total sales / Marketing budget",
+        "Profit margin × Conversion rate",
+        "(Revenue - Cost) / Cost",
+        "Revenue / Number of customers"
+      ],
+      "correctIndex": 2,
+      "explain": "Marketing ROI is calculated as (Revenue generated - Marketing cost) / Marketing cost, often expressed as a percentage."
+    },
+    {
+      "id": "MKT101-q08",
+      "question": "What type of content marketing builds long-term audience relationships?",
+      "choices": [
+        "Only promotional offers",
+        "Hard-sell advertisements",
+        "Pop-up ads",
+        "Valuable, educational content"
+      ],
+      "correctIndex": 3,
+      "explain": "Content marketing focuses on providing valuable, relevant content that educates and builds trust with the audience."
+    },
+    {
+      "id": "MKT101-q09",
+      "question": "What is email segmentation?",
+      "choices": [
+        "Grouping subscribers by characteristics",
+        "Using different email providers",
+        "Sending emails at different times",
+        "Dividing subject lines into parts"
+      ],
+      "correctIndex": 0,
+      "explain": "Email segmentation divides your subscriber list into groups based on characteristics, behavior, or preferences for targeted messaging."
+    },
+    {
+      "id": "MKT101-q10",
+      "question": "What metric indicates how often content is shared or commented on?",
+      "choices": [
+        "Impressions",
+        "Engagement rate",
+        "Bounce rate",
+        "Reach"
+      ],
+      "correctIndex": 1,
+      "explain": "Engagement rate measures interactions (likes, shares, comments) relative to the audience size or impressions."
+    }
+  ],
+  "MATH101": [
+    {
+      "id": "MATH101-q01",
+      "question": "What is the result of multiplying a matrix by the identity matrix?",
+      "choices": [
+        "The transpose matrix",
+        "The inverse matrix",
+        "The original matrix",
+        "Zero matrix"
+      ],
+      "correctIndex": 2,
+      "explain": "Multiplying any matrix by the identity matrix returns the original matrix unchanged."
+    },
+    {
+      "id": "MATH101-q02",
+      "question": "What is an eigenvector?",
+      "choices": [
+        "A zero vector",
+        "Perpendicular to all others",
+        "Changes direction when transformed",
+        "Only scales under transformation"
+      ],
+      "correctIndex": 3,
+      "explain": "An eigenvector of a matrix A satisfies Av = λv, meaning it only scales (doesn't change direction) when transformed."
+    },
+    {
+      "id": "MATH101-q03",
+      "question": "What is the determinant of a 2x2 identity matrix?",
+      "choices": [
+        "1",
+        "0",
+        "2",
+        "-1"
+      ],
+      "correctIndex": 0,
+      "explain": "The determinant of any identity matrix is 1, regardless of its size."
+    },
+    {
+      "id": "MATH101-q04",
+      "question": "What does it mean for vectors to be linearly independent?",
+      "choices": [
+        "They are all perpendicular",
+        "No vector is a combination of others",
+        "They have the same length",
+        "They point in the same direction"
+      ],
+      "correctIndex": 1,
+      "explain": "Vectors are linearly independent if none can be expressed as a linear combination of the others."
+    },
+    {
+      "id": "MATH101-q05",
+      "question": "What is a basis of a vector space?",
+      "choices": [
+        "The largest set of vectors",
+        "All vectors of length 1",
+        "A linearly independent spanning set",
+        "The zero vector"
+      ],
+      "correctIndex": 2,
+      "explain": "A basis is a set of linearly independent vectors that spans the entire vector space."
+    },
+    {
+      "id": "MATH101-q06",
+      "question": "What does it mean for two vectors to be orthogonal?",
+      "choices": [
+        "Their cross product is zero",
+        "They are parallel",
+        "They have equal length",
+        "Their dot product is zero"
+      ],
+      "correctIndex": 3,
+      "explain": "Vectors are orthogonal (perpendicular) when their dot product equals zero."
+    },
+    {
+      "id": "MATH101-q07",
+      "question": "What is the rank of a matrix?",
+      "choices": [
+        "Max linearly independent rows/columns",
+        "Determinant value",
+        "Number of columns",
+        "Number of rows"
+      ],
+      "correctIndex": 0,
+      "explain": "Matrix rank is the dimension of the vector space spanned by its rows or columns (the maximum number of linearly independent rows or columns)."
+    },
+    {
+      "id": "MATH101-q08",
+      "question": "When does a square matrix have an inverse?",
+      "choices": [
+        "When it is symmetric",
+        "When its determinant is non-zero",
+        "Never",
+        "Always"
+      ],
+      "correctIndex": 1,
+      "explain": "A square matrix is invertible if and only if its determinant is non-zero."
+    },
+    {
+      "id": "MATH101-q09",
+      "question": "What is the transpose of a matrix?",
+      "choices": [
+        "Computing the inverse",
+        "Multiplying by -1",
+        "Flipping rows and columns",
+        "Negating all entries"
+      ],
+      "correctIndex": 2,
+      "explain": "The transpose of a matrix is obtained by swapping its rows and columns."
+    },
+    {
+      "id": "MATH101-q10",
+      "question": "What is the dimension of the null space of a matrix?",
+      "choices": [
+        "Equal to the rank",
+        "Always zero",
+        "Number of rows",
+        "Number of columns minus rank"
+      ],
+      "correctIndex": 3,
+      "explain": "By the rank-nullity theorem, dim(null space) = number of columns - rank of the matrix."
+    }
+  ]
+}
