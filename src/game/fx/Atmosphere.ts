@@ -30,6 +30,10 @@ export class Atmosphere {
   private fogs: Phaser.GameObjects.NoiseSimplex2D[] = [];
   private candles: Array<{ glow: Phaser.GameObjects.Image; flame: Phaser.GameObjects.Image; base: number }> = [];
   private t = 0;
+  private lantern?: Phaser.GameObjects.Image;
+  private holes: Phaser.GameObjects.Image[] = [];
+  private push = { x: 0, y: 0 };
+  private lastPointer = { x: -1, y: -1 };
   private readonly reduced: boolean;
   private readonly scene: Phaser.Scene;
   private readonly opts: AtmosphereOptions;
@@ -98,6 +102,20 @@ export class Atmosphere {
       // Canvas renderer or missing shader support: skip fog.
     }
 
+    // The cursor is a lantern: warm light that parts the fog around it.
+    this.lantern = scene.add.image(-500, -500, 'glow-soft').setTint(0xf2c27a).setScale(1.5).setAlpha(0.55).setDepth(55);
+    this.lantern.setBlendMode(Phaser.BlendModes.ADD);
+    for (const f of this.fogs) {
+      try {
+        const hole = new Phaser.GameObjects.Image(scene, -500, -500, 'glow-soft').setScale(2.6);
+        f.enableFilters();
+        f.filters?.internal.addMask(hole, true);
+        this.holes.push(hole);
+      } catch {
+        /* masks unavailable: the lantern glow alone still reads */
+      }
+    }
+
     // Dust motes drifting through candlelight.
     if (!this.reduced) {
       scene.add
@@ -151,10 +169,33 @@ export class Atmosphere {
   update(dtMs: number): void {
     this.t += dtMs / 1000;
     const drift = this.reduced ? 0.02 : 1;
+    // Pointer: move the lantern and let fast movement stir the fog.
+    const p = this.scene.input.activePointer;
+    if (p && (p.x !== this.lastPointer.x || p.y !== this.lastPointer.y)) {
+      if (this.lastPointer.x >= 0 && !this.reduced) {
+        this.push.x += (p.x - this.lastPointer.x) * 0.00004;
+        this.push.y += (p.y - this.lastPointer.y) * 0.00004;
+      }
+      this.lastPointer = { x: p.x, y: p.y };
+    }
+    const k = Math.pow(0.5, dtMs / 900);
+    this.push.x *= k;
+    this.push.y *= k;
+    if (this.lantern && this.lastPointer.x >= 0) {
+      const ease = this.reduced ? 1 : 0.18;
+      this.lantern.x += (this.lastPointer.x - this.lantern.x) * ease;
+      this.lantern.y += (this.lastPointer.y - this.lantern.y) * ease;
+      this.lantern.setAlpha(0.5 + (this.reduced ? 0 : Math.sin(this.t * 6) * 0.04 + Math.sin(this.t * 13.7) * 0.02));
+      for (const h of this.holes) h.setPosition(this.lantern.x, this.lantern.y);
+    }
     this.fogs.forEach((f, i) => {
       const speed = (i === 0 ? 0.012 : 0.02) * drift;
-      f.noiseOffset = [this.t * speed * (i === 0 ? 1 : 1.6), Math.sin(this.t * 0.05) * 0.05];
-      f.noiseFlow = this.t * 0.04 * drift;
+      const base = [this.t * speed * (i === 0 ? 1 : 1.6), Math.sin(this.t * 0.05) * 0.05];
+      const stir = i === 0 ? 0.6 : 1;
+      f.setData('px', ((f.getData('px') as number) ?? 0) - this.push.x * stir);
+      f.setData('py', ((f.getData('py') as number) ?? 0) - this.push.y * stir);
+      f.noiseOffset = [base[0] + (f.getData('px') as number), base[1] + (f.getData('py') as number)];
+      f.noiseFlow = this.t * 0.04 * drift + Math.hypot(this.push.x, this.push.y) * 40;
     });
     if (this.reduced) return;
     for (const c of this.candles) {

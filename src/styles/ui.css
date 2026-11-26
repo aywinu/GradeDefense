@@ -663,3 +663,11 @@
 .wr-detail .train-btn { margin-top: 14px; }
 .wr-foot { font-family: var(--font-body); font-style: italic; font-size: 13.5px; color: rgba(168, 159, 140, 0.7); text-align: center; padding-bottom: 10px; }
 .wr-foot .dd-kbd { font-style: normal; margin-left: 4px; }
+
+/* Custom cursor: a gilded gothic pointer with a candle-spark tip */
+html, body, canvas, .ui-layer {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M3 2 L3 21 L8 16.5 L11.5 25 L15 23.5 L11.6 15.2 L18 15 Z' fill='%23120f1a' stroke='%23f2b45a' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M5.2 6 L5.2 16.5 L8.6 13.6' fill='none' stroke='%23e9dcc0' stroke-opacity='.35' stroke-width='1'/%3E%3Ccircle cx='3' cy='2' r='1.6' fill='%23fff3d6'/%3E%3C/svg%3E") 3 2, auto;
+}
+button, [data-interactive], .wr-row, .tl-stone, .choice, a {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M3 2 L3 21 L8 16.5 L11.5 25 L15 23.5 L11.6 15.2 L18 15 Z' fill='%233a2410' stroke='%23ffd27a' stroke-width='1.6' stroke-linejoin='round'/%3E%3Ccircle cx='3' cy='2' r='2.4' fill='%23fff3d6'/%3E%3Ccircle cx='3' cy='2' r='4.5' fill='%23f2b45a' fill-opacity='.35'/%3E%3C/svg%3E") 3 2, pointer !important;
+}

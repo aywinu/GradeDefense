@@ -21,6 +21,8 @@ if (app) {
   `;
 
   // Boot Phaser game
-  new Phaser.Game(gameConfig);
+  const game = new Phaser.Game(gameConfig);
+  // Exposed for the Playwright smoke test and demo recording.
+  (window as unknown as { __dd: Phaser.Game }).__dd = game;
 }
 
