@@ -3,14 +3,25 @@
  * Handles enemy movement, tower firing, damage, kills, fortress damage, and wave end detection.
  * Returns new state + events for the renderer to consume.
  * 
- * Ref: tasks.md Phase 3.6-3.8
+ * NO Date.now() calls. All timing uses state.timeMs (game clock).
+ * 
+ * Ref: tasks.md Phase 3.6-3.8, 3.10
  */
 
-import type { GameState } from './types';
+import type { GameState, EnemyStats } from './types';
 import type { RngFunction } from './rng';
 import { selectTarget } from './targeting';
 import { applyNeglectBuff } from './neglect';
-import { Layout } from '../game/layout';
+
+/**
+ * Simulation configuration passed from the game layer.
+ * Core must not import from src/game, so layout constants are passed in.
+ */
+export interface SimConfig {
+  fortressX: number; // fortress right edge (Layout.FORTRESS_X_MAX)
+  spawnX: number; // enemy spawn X position (Layout.ENEMY_SPAWN_X)
+  waveStartTimeMs: number; // time when current wave started (for spawn scheduling)
+}
 
 /**
  * Simulation events emitted during a step.
@@ -21,7 +32,8 @@ export type SimEvent =
   | { type: 'kill'; enemyId: string; gold: number; x: number; y: number }
   | { type: 'fortressHit'; enemyId: string; damage: number }
   | { type: 'waveCleared'; wave: number }
-  | { type: 'projectile'; fromX: number; fromY: number; toX: number; toY: number; towerId: string };
+  | { type: 'projectile'; fromX: number; fromY: number; toX: number; toY: number; towerId: string }
+  | { type: 'spawn'; enemy: EnemyStats }; // emitted when pending enemy is released
 
 export interface SimResult {
   state: GameState;
@@ -33,12 +45,14 @@ export interface SimResult {
  * 
  * @param state - Current game state
  * @param dtMs - Delta time in milliseconds
+ * @param config - Simulation configuration (layout constants)
  * @param rng - Random number generator (for future stochastic mechanics, unused for now)
  * @returns New state and events
  */
 export function stepSimulation(
   state: GameState,
   dtMs: number,
+  config: SimConfig,
   _rng: RngFunction
 ): SimResult {
   const events: SimEvent[] = [];
@@ -48,21 +62,41 @@ export function stepSimulation(
     ...state,
     enemies: state.enemies.map(e => ({ ...e })),
     towers: state.towers.map(t => ({ ...t })),
+    pending: state.pending.map(e => ({ ...e })),
   };
   
+  // Advance game clock
+  newState.timeMs += dtMs;
+  
   const dtSec = dtMs / 1000;
-  const now = Date.now(); // Use wall-clock time for lastFiredAt tracking
   
   // Track enemies to remove (killed or reached fortress)
   const enemiesToRemove = new Set<string>();
   
-  // --- PHASE 1: Tower firing (before movement, so positions are consistent) ---
+  // --- PHASE 1: Release pending spawns ---
+  const stillPending: EnemyStats[] = [];
+  for (const pendingEnemy of newState.pending) {
+    // Check if it's time to spawn (spawnAtMs is relative to wave start)
+    const spawnTime = config.waveStartTimeMs + pendingEnemy.spawnDelayMs;
+    if (newState.timeMs >= spawnTime) {
+      // Spawn this enemy
+      newState.enemies.push(pendingEnemy);
+      events.push({ type: 'spawn', enemy: pendingEnemy });
+    } else {
+      // Keep in pending
+      stillPending.push(pendingEnemy);
+    }
+  }
+  newState.pending = stillPending;
+  
+  // --- PHASE 2: Tower firing (before movement, so positions are consistent) ---
   for (const tower of newState.towers) {
-    // Check fire rate cooldown
-    const timeSinceLastShot = now - tower.lastFiredAt;
+    // Check fire rate cooldown (using game time, not wall-clock)
+    const timeSinceLastShot = newState.timeMs - tower.lastFiredAt;
     const shotCooldown = 1000 / tower.fireRate; // ms per shot
     
-    if (timeSinceLastShot < shotCooldown) {
+    // Allow firing if never fired (lastFiredAt === 0) or if cooldown has passed
+    if (tower.lastFiredAt !== 0 && timeSinceLastShot < shotCooldown) {
       continue; // Still on cooldown
     }
     
@@ -74,7 +108,7 @@ export function stepSimulation(
     }
     
     // Fire!
-    tower.lastFiredAt = now;
+    tower.lastFiredAt = newState.timeMs;
     
     // Emit projectile event
     events.push({
@@ -88,7 +122,7 @@ export function stepSimulation(
     
     // Apply damage
     target.hp -= tower.damage;
-    target.lastDamagedAt = now;
+    target.lastDamagedAt = newState.timeMs;
     
     // Emit hit event
     events.push({
@@ -116,7 +150,7 @@ export function stepSimulation(
     }
   }
   
-  // --- PHASE 2: Enemy movement ---
+  // --- PHASE 3: Enemy movement ---
   for (const enemy of newState.enemies) {
     if (enemy.hp <= 0) {
       continue; // Skip dead enemies
@@ -126,11 +160,11 @@ export function stepSimulation(
     enemy.x -= enemy.speed * dtSec;
     
     // Update progress (1 at fortress, 0 at spawn)
-    enemy.progress = 1 - (enemy.x - Layout.FORTRESS_X_MAX) / (Layout.ENEMY_SPAWN_X - Layout.FORTRESS_X_MAX);
+    enemy.progress = 1 - (enemy.x - config.fortressX) / (config.spawnX - config.fortressX);
     enemy.pathProgress = enemy.progress; // Keep deprecated field in sync
     
     // Check if reached fortress
-    if (enemy.x <= Layout.FORTRESS_X_MAX) {
+    if (enemy.x <= config.fortressX) {
       newState.fortressHp -= enemy.damage;
       events.push({
         type: 'fortressHit',
@@ -141,18 +175,21 @@ export function stepSimulation(
     }
   }
   
-  // --- PHASE 3: Neglect buff application ---
-  const elapsedGameTime = now; // Use wall-clock time for neglect tracking
+  // --- PHASE 4: Neglect buff application ---
   for (let i = 0; i < newState.enemies.length; i++) {
-    newState.enemies[i] = applyNeglectBuff(newState.enemies[i], elapsedGameTime);
+    newState.enemies[i] = applyNeglectBuff(newState.enemies[i], newState.timeMs);
   }
   
-  // --- PHASE 4: Remove dead/reached enemies ---
+  // --- PHASE 5: Remove dead/reached enemies ---
   newState.enemies = newState.enemies.filter(e => !enemiesToRemove.has(e.id));
   
-  // --- PHASE 5: Check wave cleared ---
-  if (newState.enemies.length === 0 && state.enemies.length > 0) {
-    // Wave just cleared (had enemies, now has none)
+  // --- PHASE 6: Check wave cleared ---
+  // Wave is cleared when both enemies and pending are empty
+  const hadEnemiesOrPending = state.enemies.length > 0 || state.pending.length > 0;
+  const nowEmpty = newState.enemies.length === 0 && newState.pending.length === 0;
+  
+  if (hadEnemiesOrPending && nowEmpty) {
+    // Wave just cleared (had enemies/pending, now has none)
     events.push({
       type: 'waveCleared',
       wave: state.wave,

@@ -148,6 +148,19 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 - [ ] 3.9.1: Run `npm run dev` and manually test: boot → title → battle → wave 1 completes (Ref: R1.1, R1.2)
 - [ ] 3.9.2: Verify enemies move, towers fire, HP decreases, gold increases (Ref: R3, R4, R8)
 
+### 3.10: Sim Purity & Spawn Management Fixes
+- [x] 3.10.1: Add `timeMs` (game clock) to GameState, advance by dtMs in stepSimulation (Ref: reviewer feedback)
+- [x] 3.10.2: Replace all Date.now() calls in src/core with state.timeMs (Ref: reviewer feedback)
+- [x] 3.10.3: Add test that reads src/core/*.ts sources and asserts no "Date.now(" occurrences (Ref: reviewer feedback)
+- [x] 3.10.4: Pass `SimConfig { fortressX, spawnX }` parameter instead of importing from ../game/layout (Ref: reviewer feedback)
+- [x] 3.10.5: Add `pending: EnemyStats[]` to GameState, move spawn scheduling to core simulation (Ref: reviewer feedback)
+- [x] 3.10.6: stepSimulation releases due spawns into `enemies` and emits 'spawn' event (Ref: reviewer feedback)
+- [x] 3.10.7: 'waveCleared' fires only when both enemies and pending are empty, exactly once per wave (Ref: reviewer feedback)
+- [x] 3.10.8: Update BattleScene to use simulation-managed spawns instead of its own timers (Ref: reviewer feedback)
+- [x] 3.10.9: Add 'special' charge field to GameState (usage stays as is) (Ref: reviewer feedback)
+- [x] 3.10.10: Update sim.test.ts: cooldowns respect dt, time scale, waveCleared not fired while pending non-empty, spawn events (Ref: reviewer feedback)
+- [x] 3.10.11: Run `npx vitest run` and `npm run build` to verify (Ref: tech.md)
+
 ---
 
 ## Phase 4: Study Checkpoints

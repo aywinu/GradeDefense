@@ -10,7 +10,7 @@ import { TowerView } from '../entities/TowerView';
 import { EnemyView } from '../entities/EnemyView';
 import { resolveSemester } from '../../core/semester';
 import { generateWave, campaignLength } from '../../core/wave';
-import { stepSimulation } from '../../core/sim';
+import { stepSimulation, type SimConfig } from '../../core/sim';
 import { mulberry32 } from '../../core/rng';
 import type { DemoSemester, Semester, GameState, EnemyStats, TowerStats } from '../../core/types';
 
@@ -21,6 +21,7 @@ export class BattleScene extends Phaser.Scene {
   private semester!: Semester;
   private gameState!: GameState;
   private gameOver = false; // Flag to prevent multiple victory/defeat triggers
+  private waveStartTimeMs = 0; // Track when current wave started
   
   // Visual objects (keyed by ID)
   private towerViews: Map<string, TowerView> = new Map();
@@ -67,10 +68,14 @@ export class BattleScene extends Phaser.Scene {
       maxFortressHp: 100,
       towers: [],
       enemies: [],
+      pending: [],
       chargeMeter: 0,
+      special: 0,
       answeredQuestions: [],
       lastAnswerTime: 0,
+      timeMs: 0,
     };
+    this.waveStartTimeMs = 0;
   }
 
   /**
@@ -177,15 +182,9 @@ export class BattleScene extends Phaser.Scene {
     const now = Date.now();
     const waveEnemies = generateWave(this.semester, waveNumber, now);
     
-    // Add enemies to game state
-    this.gameState.enemies = waveEnemies;
-    
-    // Schedule spawns with delays
-    waveEnemies.forEach((enemy) => {
-      this.time.delayedCall(enemy.spawnDelayMs, () => {
-        this.spawnEnemy(enemy);
-      });
-    });
+    // Put all enemies in pending queue; sim will release them based on spawnDelayMs
+    this.gameState.pending = waveEnemies;
+    this.waveStartTimeMs = this.gameState.timeMs;
   }
 
   /**
@@ -258,7 +257,13 @@ export class BattleScene extends Phaser.Scene {
   private stepGameSimulation(delta: number): import('../../core/sim').SimResult {
     const rng = mulberry32(Date.now()); // Use wall-clock seed for now
     
-    const result = stepSimulation(this.gameState, delta, rng);
+    const config: SimConfig = {
+      fortressX: Layout.FORTRESS_X_MAX,
+      spawnX: Layout.ENEMY_SPAWN_X,
+      waveStartTimeMs: this.waveStartTimeMs,
+    };
+    
+    const result = stepSimulation(this.gameState, delta, config, rng);
     this.gameState = result.state;
     
     return result;
@@ -270,6 +275,10 @@ export class BattleScene extends Phaser.Scene {
   private handleSimulationEvents(events: import('../../core/sim').SimEvent[]): void {
     for (const event of events) {
       switch (event.type) {
+        case 'spawn':
+          this.spawnEnemy(event.enemy);
+          break;
+        
         case 'projectile':
           this.renderProjectile(event.fromX, event.fromY, event.toX, event.toY);
           break;
@@ -382,6 +391,7 @@ export class BattleScene extends Phaser.Scene {
   private startNextWave(): void {
     this.time.delayedCall(3000, () => {
       this.gameState.wave++;
+      this.waveStartTimeMs = this.gameState.timeMs;
       this.spawnWave(this.gameState.wave);
     });
   }

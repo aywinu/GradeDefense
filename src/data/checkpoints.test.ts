@@ -7,6 +7,7 @@ type CheckpointQuestion = {
   choices: string[];
   correctIndex: number;
   explain: string;
+  topic: string;
 };
 
 type CheckpointData = {
@@ -106,6 +107,28 @@ describe('checkpoints.json schema validation', () => {
           q.explain.trim().length,
           `${courseId}[${index}]: explain field is empty`
         ).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  it('should have non-empty topic field (max 24 characters)', () => {
+    expectedCourses.forEach(courseId => {
+      data[courseId].forEach((q, index) => {
+        // Check field exists and is a string
+        expect(q.topic, `${courseId}[${index}]: topic field missing`).toBeDefined();
+        expect(typeof q.topic, `${courseId}[${index}]: topic should be string`).toBe('string');
+        
+        // Check non-empty
+        expect(
+          q.topic.trim().length,
+          `${courseId}[${index}]: topic field is empty`
+        ).toBeGreaterThan(0);
+        
+        // Check max length
+        expect(
+          q.topic.length,
+          `${courseId}[${index}]: topic "${q.topic}" exceeds 24 characters (${q.topic.length})`
+        ).toBeLessThanOrEqual(24);
       });
     });
   });

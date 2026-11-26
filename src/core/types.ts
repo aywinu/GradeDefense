@@ -110,9 +110,12 @@ export interface GameState {
   maxFortressHp: number;
   towers: TowerStats[];
   enemies: EnemyStats[];
+  pending: EnemyStats[]; // enemies waiting to spawn (each has spawnAtMs relative to wave start)
   chargeMeter: number; // 0-100
+  special: number; // special charge meter (0-100)
   answeredQuestions: string[]; // question IDs (use array, not Set, for serialization)
   lastAnswerTime: number;
+  timeMs: number; // game clock in milliseconds (simulation time, not wall-clock)
 }
 
 export interface CheckpointQuestion {
