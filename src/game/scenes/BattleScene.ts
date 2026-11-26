@@ -603,7 +603,8 @@ export class BattleScene extends Phaser.Scene {
     if (step === 1) {
       this.time.delayedCall(2500, () => {
         if (this.tutorialStep !== 1 || this.phase !== 'fight') return;
-        this.coachEl = coach('Press <span class="dd-kbd">C</span> to open a <b>study checkpoint</b>. A correct answer charges the Lantern.', 1330, 150, 'up');
+        this.coachEl = coach('Press <span class="dd-kbd">C</span> (or the glowing <b>Study</b> button) to open a <b>study checkpoint</b>. A correct answer charges the Lantern.', 1000, 400, 'none');
+        document.querySelector('.hud-btn.check')?.classList.add('beckon');
         this.tutorialStep = 2;
       });
     } else if (step === 3) {
@@ -613,13 +614,16 @@ export class BattleScene extends Phaser.Scene {
         this.showLanternCoach();
       }
     } else if (step === 4) {
-      this.coachEl = coach('Gold from banished creatures raises new <b>sentinels</b> on the glowing runes. Click one.', 640, 560, 'up');
+      document.querySelector('.hud-btn.special')?.classList.remove('beckon');
+      this.coachEl = coach('Gold from banished creatures raises new <b>sentinels</b> on the glowing runes in each lane. Click one.', 1000, 400, 'none');
       this.time.delayedCall(6000, () => this.coachEl?.remove());
     }
   }
 
   private showLanternCoach(): void {
-    this.coachEl = coach('The Lantern is full. Press <span class="dd-kbd">Space</span> to burn every creature on the field.', 1400, 150, 'up');
+    this.coachEl = coach('The Lantern is full. Press <span class="dd-kbd">Space</span> to burn every creature on the field.', 1000, 400, 'none');
+    document.querySelector('.hud-btn.check')?.classList.remove('beckon');
+    document.querySelector('.hud-btn.special')?.classList.add('beckon');
   }
 
   private endTutorial(): void {
