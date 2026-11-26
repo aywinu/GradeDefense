@@ -154,8 +154,8 @@ export class BattleScene extends Phaser.Scene {
     const html = this.semester.courses
       .slice(0, Layout.LANE_COUNT)
       .map((c, i) => {
-        const y = 112 + i * 118;
-        return `<div class="lane-name" style="top:${y}px;--c:${hex(getCourseColor(c.id))}">${c.title}</div>`;
+        const at = this.view.laneScreen(i);
+        return `<div class="lane-name" style="left:${at.x}px;top:${at.y}px;--c:${hex(getCourseColor(c.id))}">${c.title}</div>`;
       })
       .join('');
     mountLayer('lane-names', html);

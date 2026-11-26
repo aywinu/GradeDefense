@@ -675,7 +675,7 @@ button, [data-interactive], .wr-row, .tl-stone, .choice, a {
 /* 3D battle overlays */
 .lane-names .lane-name {
   position: absolute;
-  right: 26px;
+  transform: translate(-100%, -50%);
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 12px;

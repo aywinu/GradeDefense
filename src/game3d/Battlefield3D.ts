@@ -20,11 +20,13 @@ import type { ItemType } from '../core/types';
 
 export const SIM = { xMin: 150, xMax: 1650, yMin: 110, yMax: 870, lanes: 6 };
 const UNIT = 100; // sim pixels per world unit
-const CAM_POS = new THREE.Vector3(0.2, 15.5, 13.2);
-const CAM_LOOK = new THREE.Vector3(0.4, 0, 0.9);
+const CAM_POS = new THREE.Vector3(0.4, 14.2, 14.8);
+const CAM_LOOK = new THREE.Vector3(0.4, 0, 0.6);
 
+/** Lanes are spread wider in depth than the sim's 2D layout, for readability. */
+const ZK = 1.6;
 export function toWorld(x: number, y: number): THREE.Vector3 {
-  return new THREE.Vector3((x - 900) / UNIT, 0, (y - 490) / UNIT);
+  return new THREE.Vector3((x - 900) / UNIT, 0, ((y - 490) / UNIT) * ZK);
 }
 
 interface EnemyRec {
@@ -140,7 +142,7 @@ export class Battlefield3D {
     this.canvas.className = 'dd-3d';
     container.appendChild(this.canvas);
 
-    this.camera = new THREE.PerspectiveCamera(40, 16 / 9, 0.1, 140);
+    this.camera = new THREE.PerspectiveCamera(37, 16 / 9, 0.1, 140);
     this.camera.position.copy(CAM_POS);
     this.camera.lookAt(CAM_LOOK);
 
@@ -180,19 +182,23 @@ export class Battlefield3D {
     const sc = moon.shadow.camera;
     sc.left = -11;
     sc.right = 11;
-    sc.top = 8;
-    sc.bottom = -8;
+    sc.top = 11;
+    sc.bottom = -11;
     sc.far = 40;
     moon.shadow.bias = -0.0005;
     this.scene.add(moon);
+    // Warm key from the altar side: candlelight vs moonlight contrast on every creature.
+    const warm = new THREE.DirectionalLight(0xffb070, 0.7);
+    warm.position.set(-12, 5, 4);
+    this.scene.add(warm);
   }
 
   private buildEnvironment() {
     const { map, bump } = tex.flagstones();
-    map.repeat.set(5, 3);
-    bump.repeat.set(5, 3);
+    map.repeat.set(6, 4.6);
+    bump.repeat.set(6, 4.6);
     const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(30, 18),
+      new THREE.PlaneGeometry(34, 26),
       new THREE.MeshStandardMaterial({ map, bumpMap: bump, bumpScale: 2.2, roughness: 0.88, color: 0xc4bcd4 }),
     );
     floor.rotation.x = -Math.PI / 2;
@@ -211,7 +217,7 @@ export class Battlefield3D {
     const curbMat = new THREE.MeshStandardMaterial({ map: stoneTex, color: 0x6a6280, roughness: 0.95 });
     const laneH = (SIM.yMax - SIM.yMin) / SIM.lanes / UNIT;
     for (let i = 0; i <= SIM.lanes; i++) {
-      const z = (SIM.yMin + i * laneH * UNIT - 490) / UNIT;
+      const z = toWorld(0, SIM.yMin + i * laneH * UNIT).z;
       const curb = new THREE.Mesh(new THREE.BoxGeometry(16.5, 0.12, 0.09), curbMat);
       curb.position.set(0.3, 0.06, z);
       curb.receiveShadow = true;
@@ -221,14 +227,14 @@ export class Battlefield3D {
 
     // Altar with the open grimoire (the fortress) on the left
     const altarMat = new THREE.MeshStandardMaterial({ map: stone(5), color: 0x5a5270, roughness: 0.9 });
-    const altar = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.9, 7.8), altarMat);
+    const altar = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.9, 12.6), altarMat);
     altar.position.set(-8.6, 0.45, 0.1);
     altar.castShadow = altar.receiveShadow = true;
     this.scene.add(altar);
     const book = new THREE.Group();
     const pageMat = new THREE.MeshStandardMaterial({ map: tex.parchment(true), roughness: 0.85, emissive: 0x3a2a10, emissiveIntensity: 0.25 });
     const coverMat = new THREE.MeshStandardMaterial({ color: 0x3a1a1c, roughness: 0.7 });
-    const cover = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.06, 2.0), coverMat);
+    const cover = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.06, 2.4), coverMat);
     book.add(cover);
     for (const s of [-1, 1]) {
       const pg = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 0.92), pageMat);
@@ -247,21 +253,21 @@ export class Battlefield3D {
 
     // A candle at the head of every lane
     for (let i = 0; i < SIM.lanes; i++) {
-      const z = (SIM.yMin + (i + 0.5) * laneH * UNIT - 490) / UNIT;
-      this.addCandle(-7.25, z - 0.35, i);
+      const z = toWorld(0, SIM.yMin + (i + 0.5) * laneH * UNIT).z;
+      this.addCandle(-7.25, z - 0.45, i);
     }
     // Candle cluster on the altar
     for (const [dx, dz] of [
-      [0.3, -2.8],
-      [-0.2, -2.4],
-      [0.25, 2.7],
-      [-0.25, 3.1],
+      [0.3, -4.6],
+      [-0.2, -4.0],
+      [0.25, 4.3],
+      [-0.25, 5.0],
     ])
       this.addCandle(-8.6 + dx, dz, 9 + dx * 10, 0.9, 1.4);
 
     // Graveyard gate and stones on the right where the horde spawns
     const gateMat = new THREE.MeshStandardMaterial({ map: stone(7), color: 0x4a4458, roughness: 1 });
-    for (const z of [-4.3, 4.5]) {
+    for (const z of [-6.6, 6.9]) {
       const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.7, 3.2, 0.7), gateMat);
       pillar.position.set(9.4, 1.6, z);
       pillar.castShadow = true;
@@ -272,8 +278,8 @@ export class Battlefield3D {
       this.scene.add(cap);
     }
     const ironMat = new THREE.MeshStandardMaterial({ color: 0x15121c, roughness: 0.5, metalness: 0.7 });
-    for (let z = -4.6; z <= 4.8; z += 0.32) {
-      if (Math.abs(z) < 3.9) continue;
+    for (let z = -7.2; z <= 7.4; z += 0.32) {
+      if (Math.abs(z) < 6.2) continue;
       const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.4, 5), ironMat);
       bar.position.set(9.4, 1.2, z);
       this.scene.add(bar);
@@ -281,7 +287,7 @@ export class Battlefield3D {
     const r = mulberry(4);
     for (let k = 0; k < 34; k++) {
       const x = 10.2 + r() * 7;
-      const z = -7 + r() * 14;
+      const z = -9 + r() * 18;
       const tomb = r() < 0.7 ? tombstone(gateMat, r) : cross(gateMat);
       tomb.position.set(x, 0, z);
       tomb.rotation.set((r() - 0.5) * 0.15, -Math.PI / 2 + (r() - 0.5) * 0.5, (r() - 0.5) * 0.2);
@@ -346,7 +352,7 @@ export class Battlefield3D {
         depthWrite: false,
         fog: false,
       });
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(34, 20), mat);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(36, 26), mat);
       m.rotation.x = -Math.PI / 2;
       m.position.set(2, L.y, 0);
       m.renderOrder = 5;
@@ -497,6 +503,14 @@ export class Battlefield3D {
     e.label?.remove();
     this.scene.remove(e.c.root);
     this.enemies.delete(id);
+  }
+
+  /** Screen position (stage px) for the far end of a lane, for its name plate. */
+  laneScreen(lane: number): { x: number; y: number } {
+    const laneH = (SIM.yMax - SIM.yMin) / SIM.lanes;
+    const p = toWorld(SIM.xMax - 60, SIM.yMin + (lane + 0.5) * laneH);
+    this.camera.updateMatrixWorld();
+    return this.project(p);
   }
 
   enemyScreen(id: string): { x: number; y: number } | null {

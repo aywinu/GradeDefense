@@ -303,7 +303,7 @@ function page(rim: number, scale: number): Creature {
 // ───────────────────────── Wraith (exam boss) ─────────────────────────
 function wraith(rim: number, scale: number): Creature {
   const root = new THREE.Group();
-  const shroudMat = new THREE.MeshStandardMaterial({ color: 0x4a4258, roughness: 0.85, side: THREE.DoubleSide });
+  const shroudMat = new THREE.MeshStandardMaterial({ color: 0x5a5266, roughness: 0.8, side: THREE.DoubleSide });
   // Lathe profile: hood to flared hem
   const prof: THREE.Vector2[] = [];
   const pts = [
