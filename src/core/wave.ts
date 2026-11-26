@@ -4,10 +4,12 @@
  * 
  * CAMPAIGN SYSTEM:
  * - The campaign walks through the remaining semester week by week
+ * - Empty weeks are SKIPPED, campaign is the list of non-empty weeks
+ * - Each wave tracks its real `week` number for UI display ("Week 6")
  * - Wave k (1-indexed) covers items due in [(k-1)*7, k*7) days from now
  * - Overdue ungraded items (days < 0) join wave 1 as "overdue" (+25% speed)
  * - Each item becomes a "spawn group" (main creature + escorts) for horde feel
- * - Wave 1 is capped to be tutorial-friendly
+ * - Spawns spread over 25-40s for full waves (groups ordered by due date, minions trail 0.4-1.2s)
  * 
  * NO Phaser imports allowed in this file.
  */
@@ -22,6 +24,11 @@ import {
   fortressDamage,
   daysUntilDue,
 } from './scoring';
+
+/**
+ * Maximum HP multiplier for exam bosses relative to a full-urgency assignment.
+ */
+const EXAM_BOSS_HP_CAP_MULTIPLIER = 4.0;
 
 /**
  * Base stats for each enemy type (main creatures).
@@ -88,20 +95,29 @@ const SPAWN_GROUPS: Record<ItemType, SpawnGroup> = {
 };
 
 /**
- * Calculate the number of weeks (waves) in the campaign.
- * Based on the last ungraded item due date.
+ * Week metadata for campaign waves.
+ */
+export interface WaveWeek {
+  waveIndex: number; // 1-indexed wave number (skips empty weeks)
+  weekNumber: number; // actual week number (1-10)
+  itemCount: number; // number of items in this week
+}
+
+/**
+ * Calculate the list of non-empty weeks (waves) in the campaign.
+ * Empty weeks are skipped; each wave tracks its real week number for UI.
  * 
  * @param semester - The semester data
  * @param now - Current timestamp
- * @returns Number of weeks (min 1, max 10)
+ * @returns Array of non-empty weeks with metadata
  */
-export function campaignLength(semester: Semester, now: number): number {
+export function campaignWeeks(semester: Semester, now: number): WaveWeek[] {
   const ungradedItems = semester.courses.flatMap((c) =>
     c.items.filter((item) => item.grade === null)
   );
 
   if (ungradedItems.length === 0) {
-    return 1; // no items left, default to 1 wave
+    return [{ waveIndex: 1, weekNumber: 1, itemCount: 0 }];
   }
 
   // Find the furthest due date
@@ -109,17 +125,55 @@ export function campaignLength(semester: Semester, now: number): number {
     ...ungradedItems.map((item) => daysUntilDue(item.dueDate, now))
   );
 
-  // Convert to weeks (round up)
-  const weeks = Math.ceil(Math.max(0, furthestDays) / 7);
+  // Convert to weeks (round up), clamp to [1, 10]
+  const totalWeeks = Math.max(1, Math.min(10, Math.ceil(Math.max(0, furthestDays) / 7)));
 
-  // Clamp to [1, 10]
-  return Math.max(1, Math.min(10, weeks));
+  // Count items per week
+  const weeks: WaveWeek[] = [];
+  let waveIndex = 1;
+
+  for (let week = 1; week <= totalWeeks; week++) {
+    const minDays = (week - 1) * 7;
+    const maxDays = week * 7;
+
+    const itemCount = ungradedItems.filter((item) => {
+      const days = daysUntilDue(item.dueDate, now);
+      
+      // Week 1: include overdue items (days < 0) and items in [0, 7)
+      if (week === 1) {
+        return days < maxDays;
+      }
+      
+      // Other weeks: items in [minDays, maxDays)
+      return days >= minDays && days < maxDays;
+    }).length;
+
+    // Skip empty weeks
+    if (itemCount > 0) {
+      weeks.push({ waveIndex, weekNumber: week, itemCount });
+      waveIndex++;
+    }
+  }
+
+  return weeks.length > 0 ? weeks : [{ waveIndex: 1, weekNumber: 1, itemCount: 0 }];
+}
+
+/**
+ * Calculate the number of waves (non-empty weeks) in the campaign.
+ * 
+ * @param semester - The semester data
+ * @param now - Current timestamp
+ * @returns Number of non-empty waves (min 1, max 10)
+ */
+export function campaignLength(semester: Semester, now: number): number {
+  return campaignWeeks(semester, now).length;
 }
 
 /**
  * Generate a wave of enemies for the campaign.
  * Wave k (1-indexed) covers items due in [(k-1)*7, k*7) days.
  * Overdue items join wave 1.
+ * Spawns are spread over 25-40s for full waves, grouped by due date.
  * 
  * @param semester - The semester data with absolute due dates
  * @param waveNumber - Current wave number (1-indexed)
@@ -133,8 +187,17 @@ export function generateWave(
   now: number,
   rng: RngFunction = Math.random
 ): EnemyStats[] {
-  const minDays = (waveNumber - 1) * 7;
-  const maxDays = waveNumber * 7;
+  // Find the actual week number for this wave index
+  const weeks = campaignWeeks(semester, now);
+  const waveWeek = weeks.find(w => w.waveIndex === waveNumber);
+  
+  if (!waveWeek) {
+    return []; // Invalid wave number
+  }
+
+  const weekNumber = waveWeek.weekNumber;
+  const minDays = (weekNumber - 1) * 7;
+  const maxDays = weekNumber * 7;
 
   // Filter items for this wave
   const waveItems = semester.courses.flatMap((course, courseIndex) =>
@@ -145,7 +208,7 @@ export function generateWave(
         if (item.grade !== null) return false;
 
         // Wave 1: include overdue items (days < 0) and items in [0, 7)
-        if (waveNumber === 1) {
+        if (weekNumber === 1) {
           return days < maxDays;
         }
 
@@ -160,21 +223,31 @@ export function generateWave(
       }))
   );
 
-  // Sort by priority (highest first)
-  waveItems.sort((a, b) => b.priority - a.priority);
+  // Sort by due date (earliest first) for spawn order
+  waveItems.sort((a, b) => a.days - b.days);
+
+  // Calculate spawn timing: spread over 25-40s for full waves
+  const BASE_SPAWN_DURATION_MS = 25000; // 25 seconds
+  const MAX_SPAWN_DURATION_MS = 40000; // 40 seconds
+  const totalDuration = waveItems.length <= 1 
+    ? 0 
+    : BASE_SPAWN_DURATION_MS + (waveItems.length / 40) * (MAX_SPAWN_DURATION_MS - BASE_SPAWN_DURATION_MS);
+  
+  const groupInterval = waveItems.length > 1 
+    ? totalDuration / (waveItems.length - 1) 
+    : 0;
 
   // Create spawn groups for each item
   let allEnemies: EnemyStats[] = [];
-  let spawnDelayAccumulator = 0;
-  const SPAWN_INTERVAL_MS = 2000; // 2 seconds between groups
-
-  for (const { item, courseIndex, days } of waveItems) {
-    const group = createSpawnGroup(item, courseIndex, days, now, spawnDelayAccumulator, rng);
+  
+  for (let i = 0; i < waveItems.length; i++) {
+    const { item, courseIndex, days } = waveItems[i];
+    const baseDelay = i * groupInterval;
+    
+    const group = createSpawnGroup(item, courseIndex, days, now, baseDelay, rng);
     allEnemies = allEnemies.concat(group);
-
-    // Increment delay for next group
-    spawnDelayAccumulator += SPAWN_INTERVAL_MS;
   }
+
   // Cap total wave size at 40
   if (allEnemies.length > 40) {
     allEnemies = allEnemies.slice(0, 40);
@@ -186,6 +259,7 @@ export function generateWave(
 /**
  * Create a spawn group for a coursework item.
  * Returns main enemy + escorts/minions.
+ * Minions trail their leaders by 0.4-1.2s for natural spacing.
  * 
  * @param item - The coursework item
  * @param courseIndex - Course index (0-5) for lane
@@ -221,18 +295,24 @@ function createSpawnGroup(
     );
   }
 
-  // Create minions
+  // Create minions (trail by 0.4-1.2s)
   const minionCount =
     groupConfig.baseMinionCount + groupConfig.minionScaling(item.points);
 
+  const MINION_TRAIL_MIN = 400; // 0.4s
+  const MINION_TRAIL_MAX = 1200; // 1.2s
+
   for (let i = 0; i < minionCount; i++) {
+    // Randomize trail time between 0.4-1.2s for each minion
+    const trailDelay = MINION_TRAIL_MIN + rng() * (MINION_TRAIL_MAX - MINION_TRAIL_MIN);
+    
     enemies.push(
       createMinion(
         item,
         courseIndex,
         days,
         now,
-        baseDelay + 1000 + i * 300, // minions spawn after main
+        baseDelay + trailDelay + i * 300, // minions spawn after main with varied delay
         groupConfig.minionType,
         rng
       )
@@ -268,6 +348,16 @@ function createEnemy(
 
   // Apply multipliers
   const hpMult = enemyHpMultiplier(urgency, item.points);
+  let hp = Math.round(baseStats.hp * hpMult);
+
+  // Cap exam boss HP to max ~4x a full-urgency assignment's HP
+  if (item.type === 'exam') {
+    const maxAssignmentUrgency = 1.0; // full urgency
+    const maxAssignmentHp = BASE_STATS.assignment.hp * enemyHpMultiplier(maxAssignmentUrgency, 50); // typical assignment
+    const maxBossHp = maxAssignmentHp * EXAM_BOSS_HP_CAP_MULTIPLIER;
+    hp = Math.min(hp, Math.round(maxBossHp));
+  }
+
   let speedMult = enemySpeedMultiplier(urgency);
 
   // Overdue buff: +25% speed
@@ -281,8 +371,8 @@ function createEnemy(
     courseId: item.courseId,
     itemId: item.id,
     type: item.type,
-    hp: Math.round(baseStats.hp * hpMult),
-    maxHp: Math.round(baseStats.hp * hpMult),
+    hp,
+    maxHp: hp,
     speed: baseStats.speed * speedMult,
     damage: fortressDamage(item.points),
     lane: courseIndex,
@@ -392,5 +482,91 @@ export function getWaveItemIds(semester: Semester, waveNumber: number, now: numb
   // Return unique item IDs (not minion IDs)
   const itemIds = new Set(wave.map((e) => e.itemId));
   return Array.from(itemIds);
+}
+
+/**
+ * Generate a tutorial wave with exactly 1 shambler + 2 draft minions.
+ * Uses the lowest-points upcoming assignment, with low HP and slow speed for learning.
+ * 
+ * @param semester - The semester data
+ * @param now - Current timestamp
+ * @param rng - Optional seeded RNG function
+ * @returns Array of exactly 3 enemies (1 shambler + 2 minions)
+ */
+export function tutorialWave(
+  semester: Semester,
+  now: number,
+  rng: RngFunction = Math.random
+): EnemyStats[] {
+  // Find all upcoming ungraded assignments
+  const upcomingAssignments = semester.courses.flatMap((course, courseIndex) =>
+    course.items
+      .filter((item) => 
+        item.type === 'assignment' && 
+        item.grade === null && 
+        daysUntilDue(item.dueDate, now) >= 0
+      )
+      .map((item) => ({ item, courseIndex, days: daysUntilDue(item.dueDate, now) }))
+  );
+
+  // Pick the lowest-points assignment
+  upcomingAssignments.sort((a, b) => a.item.points - b.item.points);
+  
+  if (upcomingAssignments.length === 0) {
+    // Fallback: create a synthetic tutorial assignment
+    const syntheticItem: CourseworkItem = {
+      id: 'tutorial-assignment',
+      courseId: semester.courses[0]?.id || 'TUTORIAL',
+      name: 'Tutorial Assignment',
+      type: 'assignment',
+      dueDate: new Date(now + 7 * 86400000), // 7 days out
+      points: 30,
+      grade: null,
+    };
+    
+    return createTutorialGroup(syntheticItem, 0, 7, now, rng);
+  }
+
+  const { item, courseIndex, days } = upcomingAssignments[0];
+  return createTutorialGroup(item, courseIndex, days, now, rng);
+}
+
+/**
+ * Create a tutorial spawn group: 1 weak shambler + 2 weak minions.
+ * 
+ * @param item - The assignment item
+ * @param courseIndex - Course index
+ * @param days - Days until due
+ * @param now - Current timestamp
+ * @param rng - RNG function
+ * @returns Array of exactly 3 enemies
+ */
+function createTutorialGroup(
+  item: CourseworkItem,
+  courseIndex: number,
+  days: number,
+  now: number,
+  rng: RngFunction
+): EnemyStats[] {
+  const enemies: EnemyStats[] = [];
+
+  // Create weak shambler (50% HP, 70% speed)
+  const shambler = createEnemy(item, courseIndex, days, now, 0, false, rng);
+  shambler.hp = Math.round(shambler.hp * 0.5);
+  shambler.maxHp = shambler.hp;
+  shambler.speed = shambler.speed * 0.7;
+  enemies.push(shambler);
+
+  // Create 2 weak minions (60% HP, 70% speed, trail by 0.5-0.8s)
+  for (let i = 0; i < 2; i++) {
+    const trailDelay = 500 + rng() * 300; // 0.5-0.8s
+    const minion = createMinion(item, courseIndex, days, now, trailDelay, 'draft', rng);
+    minion.hp = Math.round(minion.hp * 0.6);
+    minion.maxHp = minion.hp;
+    minion.speed = minion.speed * 0.7;
+    enemies.push(minion);
+  }
+
+  return enemies;
 }
 

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { generateWave, getWaveItemIds, campaignLength } from './wave';
+import { generateWave, getWaveItemIds, campaignLength, campaignWeeks, tutorialWave } from './wave';
 import { mulberry32 } from './rng';
 import type { Semester, Course } from './types';
 
@@ -124,7 +124,102 @@ describe('campaign system', () => {
     expect(length).toBe(3);
   });
 
-  it('campaignLength is clamped to [1, 10]', () => {
+  it('campaignWeeks skips empty weeks', () => {
+    const now = Date.now();
+    
+    // Create semester with items in week 1 and week 3 (week 2 empty)
+    const semester: Semester = {
+      courses: [
+        {
+          id: 'TEST',
+          title: 'Test',
+          color: '#fff',
+          items: [
+            {
+              id: 'TEST-week1',
+              courseId: 'TEST',
+              name: 'Week 1 Assignment',
+              type: 'assignment',
+              dueDate: new Date(now + 2 * 86400000), // 2 days (week 1)
+              points: 50,
+              grade: null,
+            },
+            {
+              id: 'TEST-week3',
+              courseId: 'TEST',
+              name: 'Week 3 Assignment',
+              type: 'assignment',
+              dueDate: new Date(now + 16 * 86400000), // 16 days (week 3)
+              points: 50,
+              grade: null,
+            },
+          ],
+        },
+      ],
+      startDate: new Date(now),
+    };
+
+    const weeks = campaignWeeks(semester, now);
+
+    // Should have 2 waves (week 2 is empty and skipped)
+    expect(weeks.length).toBe(2);
+    expect(weeks[0].waveIndex).toBe(1);
+    expect(weeks[0].weekNumber).toBe(1);
+    expect(weeks[1].waveIndex).toBe(2);
+    expect(weeks[1].weekNumber).toBe(3); // week 2 was skipped
+  });
+
+  it('campaignLength counts only non-empty weeks', () => {
+    const now = Date.now();
+    
+    // Create semester with gaps
+    const semester: Semester = {
+      courses: [
+        {
+          id: 'TEST',
+          title: 'Test',
+          color: '#fff',
+          items: [
+            {
+              id: 'TEST-1',
+              courseId: 'TEST',
+              name: 'Item 1',
+              type: 'assignment',
+              dueDate: new Date(now + 1 * 86400000), // week 1
+              points: 50,
+              grade: null,
+            },
+            {
+              id: 'TEST-2',
+              courseId: 'TEST',
+              name: 'Item 2',
+              type: 'assignment',
+              dueDate: new Date(now + 20 * 86400000), // week 3
+              points: 50,
+              grade: null,
+            },
+            {
+              id: 'TEST-3',
+              courseId: 'TEST',
+              name: 'Item 3',
+              type: 'assignment',
+              dueDate: new Date(now + 50 * 86400000), // week 8
+              points: 50,
+              grade: null,
+            },
+          ],
+        },
+      ],
+      startDate: new Date(now),
+    };
+
+    const length = campaignLength(semester, now);
+
+    // Should have 3 waves (not 8)
+    expect(length).toBe(3);
+  });
+
+  it('campaignLength is clamped to [1, 10] weeks', () => {
     const now = Date.now();
 
     // Empty semester
@@ -134,7 +229,8 @@ describe('campaign system', () => {
     };
     expect(campaignLength(emptySemester, now)).toBe(1);
 
-    // Very long semester (100 days = 15 weeks)
+    // Very long semester (100 days = 15 weeks, but only some have items)
+    // Create items in weeks 1, 3, 5, 7, 9, 10 (6 non-empty weeks)
     const longSemester: Semester = {
       courses: [
         {
@@ -145,9 +241,54 @@ describe('campaign system', () => {
             {
               id: 'TEST-1',
               courseId: 'TEST',
-              name: 'Far Item',
+              name: 'Item Week 1',
               type: 'assignment',
-              dueDate: new Date(now + 100 * 86400000),
+              dueDate: new Date(now + 1 * 86400000), // week 1
+              points: 10,
+              grade: null,
+            },
+            {
+              id: 'TEST-2',
+              courseId: 'TEST',
+              name: 'Item Week 3',
+              type: 'assignment',
+              dueDate: new Date(now + 15 * 86400000), // week 3
+              points: 10,
+              grade: null,
+            },
+            {
+              id: 'TEST-3',
+              courseId: 'TEST',
+              name: 'Item Week 5',
+              type: 'assignment',
+              dueDate: new Date(now + 29 * 86400000), // week 5
+              points: 10,
+              grade: null,
+            },
+            {
+              id: 'TEST-4',
+              courseId: 'TEST',
+              name: 'Item Week 7',
+              type: 'assignment',
+              dueDate: new Date(now + 43 * 86400000), // week 7
+              points: 10,
+              grade: null,
+            },
+            {
+              id: 'TEST-5',
+              courseId: 'TEST',
+              name: 'Item Week 9',
+              type: 'assignment',
+              dueDate: new Date(now + 57 * 86400000), // week 9
+              points: 10,
+              grade: null,
+            },
+            {
+              id: 'TEST-6',
+              courseId: 'TEST',
+              name: 'Item Week 10',
+              type: 'assignment',
+              dueDate: new Date(now + 69 * 86400000), // week 10 (capped)
               points: 10,
               grade: null,
             },
@@ -156,7 +297,7 @@ describe('campaign system', () => {
       ],
       startDate: new Date(now),
     };
-    expect(campaignLength(longSemester, now)).toBe(10); // capped at 10
+    expect(campaignLength(longSemester, now)).toBe(6); // 6 non-empty weeks
   });
 
   it('wave 1 covers items due in [0, 7) days', () => {
@@ -530,6 +671,81 @@ describe('enemy properties', () => {
     expect(uniqueDelays.size).toBeGreaterThan(1); // multiple different delays
   });
 
+  it('spawn delays are non-decreasing within a group', () => {
+    const now = Date.now();
+    const semester: Semester = {
+      courses: [
+        {
+          id: 'TEST',
+          title: 'Test',
+          color: '#fff',
+          items: [
+            {
+              id: 'TEST-assignment',
+              courseId: 'TEST',
+              name: 'Test Assignment',
+              type: 'assignment',
+              dueDate: new Date(now + 86400000),
+              points: 50,
+              grade: null,
+            },
+          ],
+        },
+      ],
+      startDate: new Date(now),
+    };
+
+    const wave = generateWave(semester, 1, now, mulberry32(42));
+
+    // Main enemy should spawn first (delay 0)
+    const mainEnemy = wave.find((e) => !e.isMinion);
+    expect(mainEnemy?.spawnDelayMs).toBe(0);
+
+    // Minions should spawn after the main enemy
+    const minions = wave.filter((e) => e.isMinion);
+    for (const minion of minions) {
+      expect(minion.spawnDelayMs).toBeGreaterThan(0);
+      expect(minion.spawnDelayMs).toBeGreaterThanOrEqual(400); // min trail delay
+      expect(minion.spawnDelayMs).toBeLessThanOrEqual(2000); // reasonable max
+    }
+  });
+
+  it('spawns spread over time for larger waves', () => {
+    const now = Date.now();
+    
+    // Create a wave with multiple items spread over days
+    const semester: Semester = {
+      courses: Array.from({ length: 6 }, (_, i) => ({
+        id: `COURSE${i}`,
+        title: `Course ${i}`,
+        color: '#fff',
+        items: Array.from({ length: 4 }, (_, j) => ({
+          id: `COURSE${i}-item${j}`,
+          courseId: `COURSE${i}`,
+          name: `Item ${j}`,
+          type: 'assignment' as const,
+          dueDate: new Date(now + (j + 1) * 86400000),
+          points: 50,
+          grade: null,
+        })),
+      })),
+      startDate: new Date(now),
+    };
+
+    const wave = generateWave(semester, 1, now, mulberry32(42));
+
+    // Check that spawns span a reasonable time window
+    const delays = wave.map((e) => e.spawnDelayMs);
+    const maxDelay = Math.max(...delays);
+    const minDelay = Math.min(...delays);
+
+    // With many items, spawns should be spread over at least 10 seconds
+    expect(maxDelay - minDelay).toBeGreaterThan(10000);
+    
+    // And should not exceed 50 seconds (40s base + some minion trail)
+    expect(maxDelay).toBeLessThan(50000);
+  });
+
   it('enemies have label and daysLeft', () => {
     const now = Date.now();
     const semester = createTestSemester(now);
@@ -563,5 +779,111 @@ describe('enemy properties', () => {
         expect(minion.label).toBe(parentItem.name);
       }
     }
+  });
+});
+
+describe('tutorialWave', () => {
+  it('spawns exactly 3 creatures (1 shambler + 2 minions)', () => {
+    const now = Date.now();
+    const semester = createTestSemester(now);
+
+    const wave = tutorialWave(semester, now, mulberry32(42));
+
+    expect(wave.length).toBe(3);
+
+    const mainEnemies = wave.filter((e) => !e.isMinion);
+    const minions = wave.filter((e) => e.isMinion);
+
+    expect(mainEnemies.length).toBe(1);
+    expect(minions.length).toBe(2);
+  });
+
+  it('uses the lowest-points assignment', () => {
+    const now = Date.now();
+    const semester: Semester = {
+      courses: [
+        {
+          id: 'TEST',
+          title: 'Test',
+          color: '#fff',
+          items: [
+            {
+              id: 'TEST-high',
+              courseId: 'TEST',
+              name: 'High Points Assignment',
+              type: 'assignment',
+              dueDate: new Date(now + 5 * 86400000),
+              points: 100,
+              grade: null,
+            },
+            {
+              id: 'TEST-low',
+              courseId: 'TEST',
+              name: 'Low Points Assignment',
+              type: 'assignment',
+              dueDate: new Date(now + 5 * 86400000),
+              points: 20,
+              grade: null,
+            },
+          ],
+        },
+      ],
+      startDate: new Date(now),
+    };
+
+    const wave = tutorialWave(semester, now, mulberry32(42));
+
+    const mainEnemy = wave.find((e) => !e.isMinion);
+    expect(mainEnemy?.itemId).toBe('TEST-low');
+  });
+
+  it('tutorial enemies have reduced HP and speed', () => {
+    const now = Date.now();
+    const semester = createTestSemester(now);
+
+    const tutWave = tutorialWave(semester, now, mulberry32(42));
+    const normalWave = generateWave(semester, 1, now, mulberry32(42));
+
+    // Find comparable enemies (same item type)
+    const tutMain = tutWave.find((e) => !e.isMinion && e.type === 'assignment');
+    const normalMain = normalWave.find((e) => !e.isMinion && e.type === 'assignment');
+
+    if (tutMain && normalMain) {
+      // Tutorial enemy should have less HP and speed
+      expect(tutMain.hp).toBeLessThan(normalMain.hp);
+      expect(tutMain.speed).toBeLessThan(normalMain.speed);
+    }
+  });
+
+  it('creates synthetic assignment if no assignments exist', () => {
+    const now = Date.now();
+    const semester: Semester = {
+      courses: [
+        {
+          id: 'TEST',
+          title: 'Test',
+          color: '#fff',
+          items: [
+            {
+              id: 'TEST-quiz',
+              courseId: 'TEST',
+              name: 'Quiz',
+              type: 'quiz',
+              dueDate: new Date(now + 5 * 86400000),
+              points: 20,
+              grade: null,
+            },
+          ],
+        },
+      ],
+      startDate: new Date(now),
+    };
+
+    const wave = tutorialWave(semester, now, mulberry32(42));
+
+    // Should still create 3 enemies
+    expect(wave.length).toBe(3);
+    expect(wave.filter((e) => !e.isMinion).length).toBe(1);
+    expect(wave.filter((e) => e.isMinion).length).toBe(2);
   });
 });

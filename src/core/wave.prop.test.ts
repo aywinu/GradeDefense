@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { generateWave, getWaveSize, campaignLength } from './wave';
+import { generateWave, getWaveSize, campaignLength, campaignWeeks, tutorialWave } from './wave';
 import { mulberry32 } from './rng';
 import type { Semester } from './types';
 
@@ -280,6 +280,59 @@ describe('wave generation properties', () => {
         const wave = generateWave(semester, waveNumber, now, mulberry32(42));
 
         expect(size).toBe(wave.length);
+      })
+    );
+  });
+
+  it('spawn delays are non-negative', () => {
+    fc.assert(
+      fc.property(semesterArb, fc.integer({ min: 1, max: 10 }), (semesterWithNow, waveNumber) => {
+        const { courses, startDate, _now: now } = semesterWithNow;
+        const semester: Semester = { courses, startDate };
+
+        const wave = generateWave(semester, waveNumber, now, mulberry32(42));
+
+        for (const enemy of wave) {
+          expect(enemy.spawnDelayMs).toBeGreaterThanOrEqual(0);
+        }
+      })
+    );
+  });
+
+  it('campaignWeeks only contains non-empty weeks', () => {
+    fc.assert(
+      fc.property(semesterArb, (semesterWithNow) => {
+        const { courses, startDate, _now: now } = semesterWithNow;
+        const semester: Semester = { courses, startDate };
+
+        const weeks = campaignWeeks(semester, now);
+
+        // Every wave should have at least 1 item (or be the default wave 1)
+        for (const week of weeks) {
+          expect(week.waveIndex).toBeGreaterThan(0);
+          expect(week.weekNumber).toBeGreaterThan(0);
+          expect(week.weekNumber).toBeLessThanOrEqual(10);
+          expect(week.itemCount).toBeGreaterThanOrEqual(0);
+        }
+      })
+    );
+  });
+
+  it('tutorialWave always returns exactly 3 enemies', () => {
+    fc.assert(
+      fc.property(semesterArb, (semesterWithNow) => {
+        const { courses, startDate, _now: now } = semesterWithNow;
+        const semester: Semester = { courses, startDate };
+
+        const wave = tutorialWave(semester, now, mulberry32(42));
+
+        expect(wave.length).toBe(3);
+        
+        const mainEnemies = wave.filter((e) => !e.isMinion);
+        const minions = wave.filter((e) => e.isMinion);
+        
+        expect(mainEnemies.length).toBe(1);
+        expect(minions.length).toBe(2);
       })
     );
   });

@@ -219,7 +219,7 @@ describe('scoring (property-based tests)', () => {
     it('is deterministic', () => {
       fc.assert(
         fc.property(
-          fc.date({ min: new Date('2000-01-01'), max: new Date('2100-01-01') }),
+          fc.date({ min: new Date('2000-01-01'), max: new Date('2100-01-01'), noInvalidDate: true }),
           fc.integer({ min: 0, max: 1e12 }),
           (dueDate, now) => {
             const days1 = daysUntilDue(dueDate, now);
@@ -233,7 +233,7 @@ describe('scoring (property-based tests)', () => {
     it('returns positive for future dates', () => {
       fc.assert(
         fc.property(
-          fc.date({ min: new Date('2026-01-02'), max: new Date('2100-01-01') }),
+          fc.date({ min: new Date('2026-01-02'), max: new Date('2100-01-01'), noInvalidDate: true }),
           (dueDate: Date) => {
             // Skip invalid dates
             if (isNaN(dueDate.getTime())) return true;
@@ -249,7 +249,7 @@ describe('scoring (property-based tests)', () => {
     it('returns negative for past dates', () => {
       fc.assert(
         fc.property(
-          fc.date({ min: new Date('2000-01-01'), max: new Date('2025-12-31') }),
+          fc.date({ min: new Date('2000-01-01'), max: new Date('2025-12-31'), noInvalidDate: true }),
           (dueDate: Date) => {
             const now = new Date('2026-01-01').getTime();
             const days = daysUntilDue(dueDate, now);

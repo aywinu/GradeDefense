@@ -58,6 +58,15 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 - [x] 1.7.8: Update property tests: verify determinism with seeded RNG, all creatures reference real items (Ref: design.md)
 - [x] 1.7.9: Run `npx vitest run` and `npm run build` to verify (Ref: tech.md)
 
+### 1.8: Wave Generation Improvements
+- [x] 1.8.1: Skip empty weeks in campaign: return list of non-empty weeks with original week numbers
+- [x] 1.8.2: Add `week` field to wave metadata so UI can show "Week 6"
+- [x] 1.8.3: Spread spawns over 25-40s for full waves: order groups by due date, minions trail leaders by 0.4-1.2s
+- [x] 1.8.4: Add `tutorialWave(semester, now, rng)`: exactly 1 shambler (lowest-points assignment) + 2 draft minions, low HP, slow
+- [x] 1.8.5: Cap exam boss HP to max ~4x full-urgency assignment HP
+- [x] 1.8.6: Update tests: verify no empty waves, delays non-decreasing within groups, tutorialWave has 3 creatures
+- [x] 1.8.7: Run `npx vitest run` and `npm run build` to verify (Ref: tech.md)
+
 ---
 
 ## Phase 2: Demo Data
@@ -87,17 +96,17 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 ## Phase 3: Battlefield (Minimal Phaser Scene)
 
 ### 3.1: Phaser Boot Scene
-- [ ] 3.1.1: Create `src/game/scenes/BootScene.ts` extending Phaser.Scene (Ref: design.md Scene Flow)
-- [ ] 3.1.2: Wait for fonts with `await document.fonts.ready` in BootScene (fonts loaded via <link> in index.html) (Ref: design.md Fonts)
-- [ ] 3.1.3: Preload placeholder sprites (1x1 colored rectangles for towers/enemies) (Ref: design.md Procedural Art)
-- [ ] 3.1.4: Transition to TitleScene on load complete (Ref: design.md Scene Flow)
+- [x] 3.1.1: Create `src/game/scenes/BootScene.ts` extending Phaser.Scene (Ref: design.md Scene Flow)
+- [x] 3.1.2: Wait for fonts with `await document.fonts.ready` in BootScene (fonts loaded via <link> in index.html) (Ref: design.md Fonts)
+- [x] 3.1.3: Preload placeholder sprites (1x1 colored rectangles for towers/enemies) (Ref: design.md Procedural Art) [SKIPPED: not needed for minimal scenes]
+- [x] 3.1.4: Transition to TitleScene on load complete (Ref: design.md Scene Flow)
 
 ### 3.2: Title Scene (Minimal)
-- [ ] 3.2.1: Create `src/game/scenes/TitleScene.ts` (Ref: R1.1)
-- [ ] 3.2.2: Display logo text "Deadline Defense" with Cinzel font, blood-red color (Ref: R1.1, design.md Art Direction)
-- [ ] 3.2.3: Add "Start" button (Phaser Text or DOM element) (Ref: R1.1)
-- [ ] 3.2.4: Wire button to transition to BattleScene (skip tutorial for now) (Ref: design.md Scene Flow)
-- [ ] 3.2.5: Keyboard navigation: Enter to start (Ref: R1.1)
+- [x] 3.2.1: Create `src/game/scenes/TitleScene.ts` (Ref: R1.1)
+- [x] 3.2.2: Display logo text "Deadline Defense" with Cinzel font, blood-red color (Ref: R1.1, design.md Art Direction)
+- [x] 3.2.3: Add "Start" button (Phaser Text or DOM element) (Ref: R1.1)
+- [x] 3.2.4: Wire button to transition to BattleScene (skip tutorial for now) (Ref: design.md Scene Flow)
+- [x] 3.2.5: Keyboard navigation: Enter to start (Ref: R1.1)
 
 ### 3.3: Battle Scene (Core Loop)
 - [ ] 3.3.1: Create `src/game/scenes/BattleScene.ts` (Ref: design.md BattleScene)

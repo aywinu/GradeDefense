@@ -21,3 +21,5 @@ The hackathon requires Kiro, and Kiro did a large part of the work (see `KIRO_US
 | 2026-11-26 | Task 2.2 questions | Kiro + Claude Code (fact-check fixes) |
 | 2026-11-26 | Task 1.7 semester campaign waves (redesign) | Kiro |
 | 2026-11-26 | Task 2.1 demo semester + resolveSemester | Kiro |
+| 2026-11-26 | Task 1.8 wave pacing (skip empty weeks, spread spawns, tutorial wave, boss HP cap) | Kiro |
+| 2026-11-26 | Tasks 3.1–3.2 Phaser boot + minimal title | Kiro; Claude fixed a flaky property test (invalid dates) |
