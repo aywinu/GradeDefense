@@ -206,13 +206,13 @@ export class WarRoomScene extends Phaser.Scene {
       [
         { target: null, art: 'deadline', title: 'Your semester is under siege', body: 'Every real deadline from your courses becomes a creature. Exams are bosses, quizzes are swarms. You defend by <b>studying</b>.' },
         { target: '.wr-counsel', art: 'epitaph', title: "Tonight's counsel", body: 'One sentence that tells you the single most useful thing to do right now, based on dates, weights and how ready you are.' },
-        { target: '.wr-cta [data-train]', art: 'train', title: 'Train', body: 'A five-question practice trial for one course. Correct answers raise your readiness and <b>forge</b> that lane\'s sentinels. Key <span class="dd-kbd">T</span>.' },
+        { target: '.wr-cta [data-train]', art: 'train', title: 'Train', body: 'A five-question practice trial for one course. Correct answers raise your readiness and <b>pre-weaken</b> that course\'s deadlines before the battle. Key <span class="dd-kbd">T</span>.' },
         { target: '.wr-list', art: 'candles', title: 'Your courses', body: 'Each lit candle is 10% readiness. The word on the right is the threat level. Use <span class="dd-kbd">↑</span><span class="dd-kbd">↓</span> or click a course to see its details.' },
         { target: '.wr-detail', art: 'train', title: 'Battle plan', body: 'The great enemies of the selected course with real dates and weights, how many trials to do before each, and the topics you missed.' },
         { target: '[data-import]', art: 'timeline', title: 'Your real semester', body: 'Export your calendar from Moodle (Calendar → Export → .ics) and import it here. It is parsed in your browser; nothing is uploaded. Or install our Moodle block and it arrives on its own.' },
         { target: '.epitaph', art: 'epitaph', title: 'Here waits…', body: 'The next big deadline across all courses, carved in stone so you never lose sight of it.' },
         { target: '.timeline', art: 'timeline', title: 'The graveyard of deadlines', body: 'Your whole semester as tombstones. Bigger stones weigh more. Hover one to read it.' },
-        { target: '[data-action="battle"]', art: 'lantern', title: 'Face the siege', body: 'Fight this week\'s deadlines. Study checkpoints charge your Lantern; exams trigger quick-time questions. Key <span class="dd-kbd">Enter</span>.' },
+        { target: '[data-action="battle"]', art: 'lantern', title: 'Face the siege', body: 'Fight this week\'s deadlines: pick a creature and duel it with questions from its own course. Every correct answer breaks a seal. Key <span class="dd-kbd">Enter</span>.' },
       ],
       () => {
         this.busy = false;
@@ -267,7 +267,7 @@ export class WarRoomScene extends Phaser.Scene {
       : '<li class="none">No great enemies on the horizon.</li>';
     const plan = v.next
       ? v.recommendedTrials > 0
-        ? `${v.recommendedTrials} practice trial${v.recommendedTrials > 1 ? 's' : ''} before ${v.next.name.replace(/ - .*/, '')}. Each correct answer forges this lane's sentinels.`
+        ? `${v.recommendedTrials} practice trial${v.recommendedTrials > 1 ? 's' : ''} before ${v.next.name.replace(/ - .*/, '')}. Each one weakens its deadline before the battle.`
         : `Ready for ${v.next.name.replace(/ - .*/, '')}. One trial a day keeps it that way.`
       : 'Nothing due. Keep your edge sharp.';
     const d = this.layer.querySelector<HTMLDivElement>('.wr-detail')!;

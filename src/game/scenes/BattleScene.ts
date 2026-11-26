@@ -3,7 +3,7 @@
  * targeting, neglect, qte) drive the state; this scene renders it in the
  * "Haunted Study" style and connects every battle to real study:
  * - Scout report before each wave (what is due this week, readiness, Train).
- * - Study checkpoints (C) charge the Lantern of Knowledge (Space).
+ * - Duels (R18): pick a deadline and break its seals with questions from its course.
  * - Bosses (exams) trigger quick-time exam questions at 50% HP.
  * - Sentinels are forged by practice trials (forge levels from the War Room).
  * - Debrief after each wave maps the battle back to real study actions.
@@ -22,10 +22,11 @@ import { stepSimulation, type SimConfig, type SimEvent } from '../../core/sim';
 import { shouldTriggerQTE, resolveQTE } from '../../core/qte';
 import { mulberry32 } from '../../core/rng';
 import { BALANCE } from '../../core/balance';
-import type { Semester, GameState, EnemyStats, TowerStats } from '../../core/types';
-import { getSemester, questionsFor, recordSession, forgeLevel, forgeBonus, readinessFor, courseView, type Question } from '../../study/model';
+import { sealsFor, applyAnswer, creepSpeed } from '../../core/duel';
+import type { Semester, GameState, EnemyStats } from '../../core/types';
+import { getSemester, questionsFor, recordSession, forgeLevel, readinessFor, courseView, type Question } from '../../study/model';
 import { load, save } from '../../save/save';
-import { Hud, titleCard, scoutReport, debrief, quickCheck, qteCard, pauseMenu, coach, type ScoutGroup } from '../../ui/BattleUI';
+import { Hud, titleCard, scoutReport, debrief, duelCard, qteCard, pauseMenu, coach, type ScoutGroup } from '../../ui/BattleUI';
 import { clearLayers } from '../../ui/stage';
 import { openTrial } from '../../ui/TrialPanel';
 import { runTour, hasSeen } from '../../ui/Tour';
@@ -33,14 +34,8 @@ import { sfx, startDrone, stopDrone } from '../../audio/sfx';
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
-/** Sentinel sockets per lane (x positions). Socket 0 starts built. Tuned in src/core/balance.ts. */
-const SOCKETS = BALANCE.sockets;
-const SOCKET_COST = BALANCE.socketCost;
-const BASE_TOWER = BALANCE.tower;
-const SPECIAL_DAMAGE = 140;
-const CHECK_CHARGE = 34;
 
-type Phase = 'scout' | 'intro' | 'fight' | 'check' | 'qte' | 'debrief' | 'paused' | 'over';
+type Phase = 'scout' | 'intro' | 'fight' | 'check' | 'duel' | 'qte' | 'debrief' | 'paused' | 'over';
 
 interface WaveStats {
   kills: number;
@@ -64,6 +59,9 @@ export class BattleScene extends Phaser.Scene {
   private rng = mulberry32(Date.now() & 0xffff);
   private timeScale = 1;
   private clearing = false;
+  private targetId: string | null = null;
+  private streak = 0;
+  private lastHudTarget = '';
 
   private view!: Battlefield3D;
   private labels?: HTMLDivElement;
@@ -102,20 +100,18 @@ export class BattleScene extends Phaser.Scene {
     // The 3D battlefield renders over the Phaser canvas; DOM labels float above it.
     this.labels = mountLayer('enemy-labels');
     this.view = new Battlefield3D(document.getElementById('game-container')!, this.labels, this.reduced);
-    this.view.onSocketClick = (key) => {
-      if (!(this.phase === 'fight' || this.phase === 'scout' || this.phase === 'intro')) return;
-      const [courseId, socketStr] = key.split('#');
-      const lane = this.semester.courses.findIndex((c) => c.id === courseId);
-      this.buildTower(courseId, lane, Number(socketStr));
+    this.view.onEnemyClick = (id) => {
+      if (this.phase !== 'fight') return;
+      this.setTarget(id);
+      void this.openDuel(id);
     };
     this.drawLaneLabels();
 
     this.initializeGameState();
-    this.spawnSentinels();
 
     this.hud = new Hud({
-      onCheck: () => this.openCheckpoint(),
-      onSpecial: () => this.castLantern(),
+      onCheck: () => void this.openDuel(),
+      onSpecial: () => void this.openDuel(),
       onPause: () => this.togglePause(),
     });
     this.setupInput();
@@ -163,91 +159,110 @@ export class BattleScene extends Phaser.Scene {
     mountLayer('lane-names', html);
   }
 
-  private towerKey(courseId: string, socket: number) {
-    return `${courseId}#${socket}`;
-  }
-
-  private spawnSentinels(): void {
-    this.semester.courses.slice(0, Layout.LANE_COUNT).forEach((course, lane) => {
-      SOCKETS.forEach((sx, socket) => {
-        if (socket === 0) this.buildTower(course.id, lane, socket, true);
-        else this.addSocket(course.id, lane, socket, sx);
-      });
-    });
-  }
-
-  private towerStats(courseId: string, x: number, y: number): TowerStats {
-    const b = forgeBonus(forgeLevel(courseId));
-    return {
-      courseId,
-      x,
-      y,
-      range: BASE_TOWER.range * b.range,
-      damage: BASE_TOWER.damage * b.damage,
-      fireRate: BASE_TOWER.fireRate * b.fireRate,
-      lastFiredAt: -9999,
-      upgrades: { damage: 0, speed: 0, range: 0 },
-    };
-  }
-
-  private buildTower(courseId: string, lane: number, socket: number, free = false): boolean {
-    const cost = SOCKET_COST[socket];
-    if (!free) {
-      if (this.gameState.gold < cost) {
-        this.hud?.caption(`Need ${cost} gold to raise a sentinel`, 'bad');
-        return false;
-      }
-      this.gameState.gold -= cost;
-    }
-    const x = SOCKETS[socket];
-    const y = laneY(lane) + 8;
-    const stats = this.towerStats(courseId, x, y);
-    this.gameState.towers.push(stats);
-    const key = this.towerKey(courseId, socket);
-    this.view.addTower(key, x, y, getCourseColor(courseId), forgeLevel(courseId));
-    this.towerKeys.set(`${x},${y}`, key);
-    this.view.removeSocket(key);
-    this.socketsOpen.delete(key);
-    if (!free) {
-      sfx('forge');
-      this.hud?.caption('A sentinel rises', 'good');
-    }
-    return true;
-  }
-
-  private addSocket(courseId: string, lane: number, socket: number, x: number): void {
-    const key = this.towerKey(courseId, socket);
-    this.view.addSocket(key, x, laneY(lane) + 8, getCourseColor(courseId));
-    this.socketsOpen.add(key);
-  }
-
   private setupInput(): void {
     const kb = this.input.keyboard;
     if (!kb) return;
-    kb.on('keydown-C', () => this.openCheckpoint());
     kb.on('keydown-SPACE', (e: KeyboardEvent) => {
       e.preventDefault();
-      this.castLantern();
+      void this.openDuel();
+    });
+    kb.on('keydown-C', () => void this.openDuel());
+    kb.on('keydown-TAB', (e: KeyboardEvent) => {
+      e.preventDefault();
+      if (this.phase === 'fight') this.cycleTarget(e.shiftKey ? -1 : 1);
     });
     kb.on('keydown-P', () => this.togglePause());
     kb.on('keydown-M', () => this.hud?.toggleMute());
     kb.on('keydown-ESC', () => {
       if (this.phase === 'fight') this.togglePause();
     });
-    // Number keys 1-6 + B raise the next sentinel in that lane (keyboard building).
-    kb.on('keydown', (e: KeyboardEvent) => {
-      if (this.phase !== 'fight' || !e.shiftKey) return;
-      const lane = Number(e.key) - 1;
-      if (!(lane >= 0 && lane < Layout.LANE_COUNT)) return;
-      const course = this.semester.courses[lane];
-      if (!course) return;
-      for (let s = 1; s < SOCKETS.length; s++) {
-        if (this.socketsOpen.has(this.towerKey(course.id, s))) {
-          this.buildTower(course.id, lane, s);
+  }
+
+  // ───────────────────────── targeting & duels ─────────────────────────
+
+  private nearestEnemies(): EnemyStats[] {
+    return [...this.gameState.enemies].sort((a, b) => b.pathProgress - a.pathProgress);
+  }
+
+  private setTarget(id: string | null): void {
+    this.targetId = id;
+    this.view.setTarget(id);
+  }
+
+  private cycleTarget(dir: number): void {
+    const list = this.nearestEnemies();
+    if (!list.length) return;
+    const i = list.findIndex((e) => e.id === this.targetId);
+    const next = list[(i + dir + list.length) % list.length];
+    this.setTarget(next.id);
+  }
+
+  /**
+   * Duel one deadline with questions from its own course (R18). Each correct
+   * answer breaks a seal (Kiro's applyAnswer); a wrong one lets it lurch
+   * closer but shows the explanation. Time slows while you think.
+   */
+  private async openDuel(id?: string): Promise<void> {
+    if (this.phase !== 'fight') return;
+    const pick = (id && this.gameState.enemies.find((e) => e.id === id)) || this.gameState.enemies.find((e) => e.id === this.targetId) || this.nearestEnemies()[0];
+    if (!pick) return;
+    this.setTarget(pick.id);
+    this.phase = 'duel';
+    this.timeScale = 0.2;
+    this.view.setSlowmo(true);
+    const course = this.semester.courses.find((c) => c.id === pick.courseId)!;
+    const color = getCourseColor(pick.courseId);
+    if (this.tutorial) this.advanceTutorial(2);
+    while (this.phase === 'duel') {
+      const e = this.gameState.enemies.find((x) => x.id === pick.id);
+      if (!e) break;
+      const q = this.pickQuestion(e.courseId);
+      const ok = await duelCard(q, {
+        name: e.isMinion ? `${e.label} (minion)` : e.label,
+        courseTitle: course.title,
+        color: hex(color),
+        seals: Math.ceil(e.hp),
+        maxSeals: Math.ceil(e.maxHp),
+        daysLeft: e.daysLeft,
+        streak: this.streak,
+      });
+      if (ok === null || this.phase !== 'duel') break;
+      this.stats.checks.total++;
+      this.noteAnswer(e.courseId, q.id, ok);
+      const live = this.gameState.enemies.find((x) => x.id === pick.id);
+      if (!live) break;
+      const span = Layout.ENEMY_SPAWN_X - Layout.FORTRESS_X_MAX;
+      const res = applyAnswer({ seals: Math.ceil(live.hp), maxSeals: Math.ceil(live.maxHp), progress: live.pathProgress }, ok, this.streak);
+      if (ok) {
+        this.streak++;
+        this.stats.checks.ok++;
+        this.view.strike(live.id, color);
+        sfx('crit');
+        this.floatLabel(live.id, res.damage > 1 ? `−${res.damage} seals` : '−1 seal', 0xe9dcc0, 17);
+        await new Promise((r) => setTimeout(r, 420));
+        const still = this.gameState.enemies.find((x) => x.id === pick.id);
+        if (!still) break;
+        still.hp = res.state.seals;
+        this.view.moveEnemy(still.id, still.x, still.y, still.hp / still.maxHp);
+        if (res.state.seals <= 0) {
+          this.killEnemy(still);
+          this.hud?.caption(`${still.label} is defeated: you are readier for it`, 'good');
+          if (this.tutorial) this.advanceTutorial(3);
           break;
         }
+      } else {
+        this.streak = 0;
+        live.x = Math.max(Layout.FORTRESS_X_MAX + 1, live.x - res.lurch * span);
+        live.pathProgress = live.progress = res.state.progress;
+        this.floatLabel(live.id, 'creeps closer', 0xc9636b, 15);
+        this.hud?.caption('Wrong: it creeps closer. Read the explanation, it comes back.', 'bad');
       }
-    });
+    }
+    this.view.setSlowmo(false);
+    this.timeScale = 1;
+    if (this.phase === 'duel') this.phase = 'fight';
+    const next = this.nearestEnemies()[0];
+    this.setTarget(next?.id ?? null);
   }
 
   // ───────────────────────── wave flow ─────────────────────────
@@ -259,12 +274,31 @@ export class BattleScene extends Phaser.Scene {
   private prepareWave(wave: number): EnemyStats[] {
     const now = Date.now();
     const list = wave === 0 ? tutorialWave(this.semester, now, this.rng) : generateWave(this.semester, wave, now, this.rng);
-    return list.map((e) => {
+    // Duel combat (R18): at most two minions per deadline, seals instead of HP,
+    // slow creeping so a week plays like a study session.
+    const minionsPer = new Map<string, number>();
+    const span = Layout.ENEMY_SPAWN_X - Layout.FORTRESS_X_MAX;
+    const kept = list.filter((e) => {
+      if (!e.isMinion) return true;
+      const k = e.parentItemId ?? e.itemId;
+      const n = (minionsPer.get(k) ?? 0) + 1;
+      minionsPer.set(k, n);
+      return n <= (wave === 0 ? 1 : 2);
+    });
+    void BALANCE;
+    return kept.map((e, i) => {
       const lane = Math.min(Layout.LANE_COUNT - 1, Math.max(0, e.lane));
       const y = laneY(lane) + (e.isMinion ? Phaser.Math.Between(-26, 26) : 0);
-      const hpK = wave === 0 ? 1 : BALANCE.enemyHpScale;
-      const dmgK = wave === 0 ? 1 : BALANCE.enemyDamageScale;
-      return { ...e, lane, x: Layout.ENEMY_SPAWN_X, y, pathProgress: 0, progress: 0, hp: e.hp * hpK, maxHp: e.maxHp * hpK, damage: Math.round(e.damage * dmgK) };
+      const item = this.semester.courses.flatMap((c) => c.items).find((it) => it.id === (e.parentItemId ?? e.itemId));
+      const seals = sealsFor(e, item?.points ?? 20);
+      // Training in the War Room pre-weakens that course's deadlines.
+      const pre = e.isMinion ? 0 : Math.min(seals - 1, Math.floor(forgeLevel(e.courseId) / 2));
+      const speed = creepSpeed(e.type, !!e.isMinion, e.daysLeft) * span * (wave === 0 ? 1.6 : 1);
+      return {
+        ...e, lane, x: Layout.ENEMY_SPAWN_X, y, pathProgress: 0, progress: 0,
+        hp: seals - pre, maxHp: seals, speed, damage: e.isMinion ? 5 : e.type === 'exam' ? 30 : 15,
+        spawnDelayMs: wave === 0 ? i * 1500 : e.spawnDelayMs * 2.5,
+      };
     });
   }
 
@@ -333,13 +367,11 @@ export class BattleScene extends Phaser.Scene {
     runTour(
       'battle',
       [
-        { target: '.hud-wave', art: 'timeline', title: 'This week of your semester', body: 'Each wave is one real week. The creatures are what is due in it.' },
-        { target: '.hud-hp', art: 'hp', title: 'Your semester', body: 'The grimoire on the altar. Every deadline that reaches it costs integrity. At zero, the semester falls.' },
-        { target: { x: 380, y: 150, w: 760, h: 560 }, art: 'deadline', title: 'The horde', body: 'Every creature carries its coursework on a scroll: name and days left. Exams are crowned wraiths; quizzes are swarms of cursed pages.' },
-        { target: '.hud-btn.check', art: 'study', title: 'Study checkpoint', body: 'Pauses the siege and asks a question from the course under most pressure. Correct answers charge the Lantern. Key <span class="dd-kbd">C</span>.' },
-        { target: '.hud-btn.special', art: 'lantern', title: 'Lantern of Knowledge', body: 'When fully charged, a wave of light burns every creature on the field. Key <span class="dd-kbd">Space</span>.' },
-        { target: '.hud-gold', art: 'sentinel', title: 'Gold and sentinels', body: 'Banished creatures drop gold. Click a glowing rune on a lane to raise another sentinel there (or <span class="dd-kbd">Shift</span> + lane number).' },
-        { target: null, art: 'qte', title: 'Quick-time exams', body: 'When a boss breaks, time slows and a question appears with a burning timer. Answer with <span class="dd-kbd">1</span>–<span class="dd-kbd">4</span>: a correct answer is a critical strike, a wrong one enrages it.' },
+        { target: '.hud-wave', art: 'timeline', title: 'This week of your semester', body: 'Each wave is one real week. The creatures are what is due in it, crawling slowly toward your semester.' },
+        { target: '.hud-hp', art: 'hp', title: 'Your semester', body: 'Every deadline that reaches the altar costs integrity. At zero, the semester falls.' },
+        { target: { x: 380, y: 150, w: 760, h: 560 }, art: 'deadline', title: 'The horde', body: 'Each creature carries its coursework on a scroll. Exams are crowned wraiths with many seals; quizzes are cursed pages.' },
+        { target: '.hud-btn.check', art: 'study', title: 'Duel', body: 'Click a creature (or <span class="dd-kbd">Tab</span> to target, <span class="dd-kbd">Space</span> to duel). Answer questions from its course: each correct answer breaks a seal.' },
+        { target: null, art: 'qte', title: 'Last stand', body: 'If an exam reaches the duel zone, time slows and a timed question appears. Know it, and you strike twice.' },
         { target: '.hud-right', art: 'keys', title: 'Controls', body: '<span class="dd-kbd">P</span> pause, <span class="dd-kbd">M</span> sound. Reduced motion lives in the pause menu. Every sound also appears as a caption.' },
       ],
       () => {
@@ -371,7 +403,7 @@ export class BattleScene extends Phaser.Scene {
       `Fortress integrity <b>${Math.ceil(this.gameState.fortressHp)}%</b> &middot; Gold <b>${this.gameState.gold}</b>`,
       this.stats.checks.total + this.stats.qte.total
         ? `Study answers in battle: <b>${this.stats.checks.ok + this.stats.qte.ok} / ${this.stats.checks.total + this.stats.qte.total}</b> correct.`
-        : 'You did not open a single book this wave. The Lantern stayed dark.',
+        : 'You did not answer a single question this wave.',
     ];
     const advice = this.adviceFor(true);
     if (last) {
@@ -436,16 +468,6 @@ export class BattleScene extends Phaser.Scene {
 
   // ───────────────────────── study actions ─────────────────────────
 
-  /** Lane under the most pressure: the course whose creatures are closest to the desk. */
-  private pressuredCourse(): string {
-    let best: { id: string; p: number } | null = null;
-    for (const e of this.gameState.enemies) {
-      const p = e.pathProgress + (e.isMinion ? 0 : 0.2);
-      if (!best || p > best.p) best = { id: e.courseId, p };
-    }
-    return best?.id ?? this.semester.courses[0].id;
-  }
-
   private pickQuestion(courseId: string): Question {
     const pool = questionsFor(courseId);
     const seen = new Set(this.gameState.answeredQuestions);
@@ -470,53 +492,6 @@ export class BattleScene extends Phaser.Scene {
     this.sessionAnswers.clear();
   }
 
-  private async openCheckpoint(): Promise<void> {
-    if (this.phase !== 'fight') return;
-    this.phase = 'check';
-    const courseId = this.pressuredCourse();
-    const course = this.semester.courses.find((c) => c.id === courseId)!;
-    const q = this.pickQuestion(courseId);
-    const result = await quickCheck(q, course.title, hex(getCourseColor(courseId)));
-    if (this.phase !== 'check') return; // scene left meanwhile
-    if (result !== null) {
-      this.stats.checks.total++;
-      this.noteAnswer(courseId, q.id, result);
-      if (result) {
-        this.stats.checks.ok++;
-        this.gameState.special = Math.min(100, this.gameState.special + CHECK_CHARGE);
-        this.hud?.caption(`Correct: the Lantern gathers light (+${CHECK_CHARGE}%)`, 'good');
-        if (this.gameState.special >= 100) this.hud?.caption('The Lantern is ready: press Space', 'good');
-      } else {
-        this.hud?.caption('Missed: the explanation is your weapon next time');
-      }
-    }
-    this.phase = 'fight';
-    if (this.tutorial && result !== null) this.advanceTutorial(3);
-  }
-
-  private castLantern(): void {
-    if (this.phase !== 'fight') return;
-    if (this.gameState.special < 100) {
-      this.hud?.caption('The Lantern needs light: answer study checkpoints (C)');
-      return;
-    }
-    this.gameState.special = 0;
-    sfx('special');
-    this.hud?.caption('Lantern of Knowledge: every creature burns', 'good');
-    const W = Layout.CANVAS_WIDTH;
-    this.view.lanternSweep(0x6ee7d0);
-    for (const e of [...this.gameState.enemies]) {
-      const delay = this.reduced ? 0 : (e.x / W) * 700;
-      this.time.delayedCall(delay, () => {
-        const live = this.gameState.enemies.find((x) => x.id === e.id);
-        if (!live) return;
-        this.damageEnemy(live, SPECIAL_DAMAGE, 0x6ee7d0);
-      });
-    }
-    if (this.tutorial) this.advanceTutorial(4);
-  }
-
-  /** Apply out-of-sim damage (Lantern, QTE crits) and handle kills consistently. */
   private damageEnemy(e: EnemyStats, amount: number, color: number): void {
     const before = e.hp / e.maxHp;
     e.hp -= amount;
@@ -533,9 +508,8 @@ export class BattleScene extends Phaser.Scene {
 
   private killEnemy(e: EnemyStats): void {
     this.gameState.enemies = this.gameState.enemies.filter((x) => x.id !== e.id);
-    this.gameState.gold += e.isMinion ? 4 : 12;
     this.onKillFx(e.id, e.x, e.y, e.courseId);
-    // Kills outside the simulation (Lantern, QTE crit) can empty the field; the
+    // Kills outside the simulation (duels, QTE crit) can empty the field; the
     // sim only reports waveCleared for its own kills, so check here too.
     if (!this.gameState.enemies.length && !this.gameState.pending.length && !this.clearing) {
       this.clearing = true;
@@ -574,7 +548,10 @@ export class BattleScene extends Phaser.Scene {
       this.stats.qte.ok++;
       sfx('crit');
       this.hud?.caption('Critical strike: knowledge cuts deep', 'good');
-      if (live) this.damageEnemy(live, Math.max(outcome.damage ?? 0, live.maxHp * 0.5), 0xffffff);
+      if (live) {
+        this.view.strike(live.id, 0xffffff);
+        this.damageEnemy(live, Math.min(live.hp, 2), 0xffffff);
+      }
     } else if (live && outcome.enrage) {
       sfx('enrage');
       this.hud?.caption(`${live.label} is enraged`, 'bad');
@@ -590,14 +567,11 @@ export class BattleScene extends Phaser.Scene {
 
   private beginTutorial(): void {
     this.gameState.wave = 0;
-    this.gameState.gold = 120;
     this.coachEl = coach(
-      'Every creature is a <b>real deadline</b> from your courses. Its scroll shows what it is and how many days are left.<br/><br/>Your sentinels fight on their own. <b>You</b> fight by studying.',
-      800,
-      470,
+      'Every creature is a <b>real deadline</b> from your courses, crawling toward your semester. Its scroll shows what it is and how many days are left.',
+      1000,
+      420,
     );
-    const go = this.add.text(0, 0, '');
-    go.destroy();
     this.time.delayedCall(this.reduced ? 3000 : 5200, () => {
       this.coachEl?.remove();
       void this.startWave(this.prepareWave(0));
@@ -608,30 +582,17 @@ export class BattleScene extends Phaser.Scene {
     if (!this.tutorial || step <= this.tutorialStep) return;
     this.tutorialStep = step;
     this.coachEl?.remove();
+    document.querySelector('.hud-btn.check')?.classList.remove('beckon');
     if (step === 1) {
-      this.time.delayedCall(2500, () => {
+      this.time.delayedCall(1800, () => {
         if (this.tutorialStep !== 1 || this.phase !== 'fight') return;
-        this.coachEl = coach('Press <span class="dd-kbd">C</span> (or the glowing <b>Study</b> button) to open a <b>study checkpoint</b>. A correct answer charges the Lantern.', 1000, 400, 'none');
+        this.coachEl = coach('<b>Click a creature</b> (or press <span class="dd-kbd">Space</span>) to duel it with questions from <b>its own course</b>.', 1000, 420);
         document.querySelector('.hud-btn.check')?.classList.add('beckon');
-        this.tutorialStep = 2;
       });
     } else if (step === 3) {
-      if (this.gameState.special >= 100) this.showLanternCoach();
-      else {
-        this.gameState.special = Math.max(this.gameState.special, 100); // the tutorial lends a full charge
-        this.showLanternCoach();
-      }
-    } else if (step === 4) {
-      document.querySelector('.hud-btn.special')?.classList.remove('beckon');
-      this.coachEl = coach('Gold from banished creatures raises new <b>sentinels</b> on the glowing runes in each lane. Click one.', 1000, 400, 'none');
-      this.time.delayedCall(6000, () => this.coachEl?.remove());
+      this.coachEl = coach('Each correct answer breaks a <b>seal</b>. Wrong answers let it creep closer, but show you why. Exams have many seals: beat one and you are ready for it.', 1000, 420);
+      this.time.delayedCall(6500, () => this.coachEl?.remove());
     }
-  }
-
-  private showLanternCoach(): void {
-    this.coachEl = coach('The Lantern is full. Press <span class="dd-kbd">Space</span> to burn every creature on the field.', 1000, 400, 'none');
-    document.querySelector('.hud-btn.check')?.classList.remove('beckon');
-    document.querySelector('.hud-btn.special')?.classList.add('beckon');
   }
 
   private endTutorial(): void {
@@ -642,8 +603,8 @@ export class BattleScene extends Phaser.Scene {
         title: 'The first night is survived',
         lines: [
           'Deadlines become creatures. <b>Studying is your weapon.</b>',
-          'Correct answers charge the Lantern and, in the War Room, forge stronger sentinels.',
-          'Exams arrive as bosses. When one breaks, a <b>quick-time exam</b> question decides the blow.',
+          'Pick a deadline and duel it with questions from its course: every correct answer breaks a seal.',
+          'Training in the War Room weakens a course\'s deadlines before they even arrive.',
         ],
         advice: [],
         primary: 'Enter the War Room',
@@ -675,6 +636,13 @@ export class BattleScene extends Phaser.Scene {
       charge: this.gameState.special,
       progress: this.waveTotal ? Math.min(1, defeated / this.waveTotal) : 0,
     });
+    const tgt = this.gameState.enemies.find((e) => e.id === this.targetId);
+    if (!tgt && this.phase === 'fight' && this.gameState.enemies.length) this.setTarget(this.nearestEnemies()[0].id);
+    const tt = tgt ? `Target: <b>${tgt.label}</b> · ${Math.ceil(tgt.hp)} seal${Math.ceil(tgt.hp) === 1 ? '' : 's'}` : '';
+    if (tt !== this.lastHudTarget) {
+      this.lastHudTarget = tt;
+      this.hud?.setTarget(tt);
+    }
     this.view.setDanger(Phaser.Math.Clamp((0.5 - hp / this.gameState.maxFortressHp) * 1.6, 0, 0.8));
     this.view.update(deltaRaw);
 
@@ -695,7 +663,7 @@ export class BattleScene extends Phaser.Scene {
     }
     this.handleEvents(res.events, hpBefore);
     // The exam arrives: every boss that crosses into the duel zone forces a
-    // quick-time question even if the sentinels have not broken it yet.
+    // quick-time question when it reaches the duel zone.
     if (this.phase === 'fight') {
       for (const e of this.gameState.enemies) {
         if (e.type !== 'exam' || e.isMinion || this.qteDone.has(e.id)) continue;
@@ -824,16 +792,13 @@ export class BattleScene extends Phaser.Scene {
     gsap.to(el, { y: -40, opacity: 0, duration: this.reduced ? 0.6 : 1, ease: 'power2.out', onComplete: () => el.remove() });
   }
 
+  /** Training from the scout report pre-weakens that course's waiting deadlines. */
   private refreshForge(courseId: string): void {
-    const lvl = forgeLevel(courseId);
-    const b = forgeBonus(lvl);
-    for (const t of this.gameState.towers) {
-      if (t.courseId !== courseId) continue;
-      t.damage = BASE_TOWER.damage * b.damage;
-      t.fireRate = BASE_TOWER.fireRate * b.fireRate;
-      t.range = BASE_TOWER.range * b.range;
+    const pre = Math.floor(forgeLevel(courseId) / 2);
+    for (const e of this.gameState.pending) {
+      if (e.courseId !== courseId || e.isMinion) continue;
+      e.hp = Math.max(1, Math.min(e.hp, e.maxHp - pre));
     }
-    for (const k of this.towerKeys.values()) if (k.startsWith(`${courseId}#`)) this.view.setForge(k, lvl);
   }
 
   // ───────────────────────── pause / exit ─────────────────────────

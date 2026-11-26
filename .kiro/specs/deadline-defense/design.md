@@ -280,6 +280,105 @@ Using `fast-check`, verify:
 
 ---
 
+## Duel Combat (`src/core/duel.ts`)
+
+**Design Change (2026-11-27):** No sentinels, no Lantern of Knowledge. The player directly targets deadline-creatures and weakens them by answering questions from the creature's course. This replaces the passive tower-defense model with active, skill-based combat.
+
+### Core Mechanic
+
+Each creature has **seals** (shields that must be broken to defeat it). The player chooses a creature, answers a question from its course, and:
+- **Correct answer**: breaks 1 seal (2 if the player has a ≥3-answer streak)
+- **Wrong answer**: shows explanation, creature lurches +6% closer to the altar
+
+Creatures advance slowly (~3-6 minutes per wave if unanswered), so defeating a big enemy (exam with 8-10 seals) means you have studied for it.
+
+### Pure Functions
+
+```typescript
+export interface DuelState {
+  seals: number; // remaining seals (creature defeated when 0)
+  maxSeals: number; // initial seals (for UI)
+  progress: number; // 0-1 toward altar
+}
+
+export interface ApplyAnswerResult {
+  state: DuelState;
+  damage: number; // seals broken (1 or 2)
+  lurch: number; // progress added (0.06 if wrong, 0 if correct)
+}
+
+/**
+ * Compute initial seals based on creature type and points.
+ */
+export function sealsFor(
+  enemy: Pick<EnemyStats, 'type' | 'isMinion'>,
+  points: number
+): number;
+
+/**
+ * Apply an answer to a duel state.
+ * - Correct: damage 1 (2 if streak ≥ 3), no lurch
+ * - Wrong: damage 0, lurch +0.06
+ */
+export function applyAnswer(
+  state: DuelState,
+  correct: boolean,
+  streak: number
+): ApplyAnswerResult;
+
+/**
+ * Compute creature movement speed (progress per second).
+ * Regular creatures: ~180-300s to cross.
+ * Exams: ~360s to cross.
+ * Overdue items: 25% faster.
+ */
+export function creepSpeed(
+  type: ItemType,
+  isMinion: boolean,
+  daysLeft: number
+): number;
+
+export function isDefeated(state: DuelState): boolean;
+export function reachedAltar(state: DuelState): boolean;
+```
+
+### Seal Counts
+
+| Type               | Base Seals | Bonus                |
+|--------------------|------------|----------------------|
+| Minion             | 1          | —                    |
+| Quiz               | 2          | —                    |
+| Assignment         | 3          | +1 if points ≥ 50    |
+| Project/Presentation | 5        | —                    |
+| Exam               | 8          | +2 if points ≥ 100   |
+
+### Movement Speed Targets
+
+| Type               | Target Crossing Time (if unanswered) |
+|--------------------|--------------------------------------|
+| Minion             | ~120s                                |
+| Quiz               | ~180s                                |
+| Assignment         | ~240s                                |
+| Project/Presentation | ~300s                              |
+| Exam               | ~360s                                |
+
+Overdue items (daysLeft < 0) are 25% faster.
+
+### Property Tests (Invariants)
+
+Using `fast-check`, verify:
+
+1. **Seals Bounds**: `0 ≤ seals ≤ maxSeals` after any answer
+2. **Progress Bounds**: `0 ≤ progress ≤ 1` after any answer
+3. **Correct Answers Never Increase Progress**: `applyAnswer(s, true, _).state.progress === s.progress`
+4. **Wrong Answers Never Decrease Seals**: `applyAnswer(s, false, _).state.seals === s.seals`
+5. **Damage Capped**: `damage ≤ seals` before the answer
+6. **Defeat Requires N Correct Answers**: With no streak (streak=0), defeating a creature with N seals requires exactly N correct answers
+7. **Speed Always Positive**: `creepSpeed(...) > 0` and finite for all inputs
+8. **Determinism**: Same inputs → same outputs (no Date.now, no random)
+
+---
+
 ## Scene Flow (`src/game/scenes/`)
 
 ```

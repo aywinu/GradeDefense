@@ -788,3 +788,20 @@ canvas.dd-3d { display: block; }
 .d-actions { display: flex; align-items: center; gap: 22px; margin-top: 14px; }
 .d-actions .train-btn { margin-top: 0; }
 .d-actions .link-btn { margin-left: 0; font-family: var(--font-body); font-style: italic; font-size: 15px; text-transform: none; letter-spacing: 0; }
+
+/* Duel */
+.duel { background: transparent; place-items: center start; padding-left: 36px; pointer-events: none; }
+.duel .duel-card { pointer-events: auto; width: 660px; padding: 24px 30px 20px; background: linear-gradient(180deg, rgba(36, 29, 51, 0.96), rgba(18, 15, 26, 0.97)); }
+.duel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.duel-name { font-family: var(--font-heading); font-weight: 700; font-size: 24px; margin-top: 4px; color: #f0e4c8; }
+.duel-when { font-family: var(--font-body); font-style: italic; font-size: 15px; color: #c9636b; margin-top: 2px; }
+.duel .qc-q { padding-right: 0; font-size: 24px; margin-top: 16px; }
+.duel .qc-choices { margin-top: 16px; }
+.duel .choice { font-size: 17px; min-height: 52px; }
+.seals { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 210px; padding-top: 6px; }
+.seals i { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(233, 220, 192, 0.25); }
+.seals i.on { background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--c) 70%, white 20%), color-mix(in srgb, var(--c) 55%, #2a1214)); border-color: color-mix(in srgb, var(--c) 60%, transparent); box-shadow: 0 0 8px color-mix(in srgb, var(--c) 40%, transparent); }
+.seals i.breaking { animation: seal-break 0.6s ease-out forwards; }
+@keyframes seal-break { 40% { transform: scale(1.5); filter: brightness(2); } 100% { transform: scale(0.2); opacity: 0; } }
+.hud-target { font-family: var(--font-body); font-style: italic; font-size: 15px; color: var(--faded-ink); max-width: 360px; text-align: right; }
+.hud-target b { color: var(--parchment); font-style: normal; font-family: var(--font-heading); }

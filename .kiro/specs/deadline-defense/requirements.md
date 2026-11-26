@@ -143,9 +143,9 @@ A dark-fantasy tower-defense game where the student's real semester is the fortr
 
 ---
 
-## R4: Towers & Defenders
+## R4: Towers & Defenders [SUPERSEDED by R18]
 
-### R4.1: Towers Per Course
+### R4.1: Towers Per Course [SUPERSEDED]
 **WHEN** the game starts,  
 **THE SYSTEM SHALL** provide one tower slot per course.
 
@@ -160,7 +160,7 @@ A dark-fantasy tower-defense game where the student's real semester is the fortr
 - 6 towers (one per course) are available at wave 1
 - Each tower auto-targets enemies from its course
 
-### R4.2: Tower Upgrades
+### R4.2: Tower Upgrades [SUPERSEDED]
 **WHEN** the player has earned upgrade currency (from study checkpoints),  
 **THE SYSTEM SHALL** allow upgrading a tower in one of three paths:
 - **Damage** (cost 50): +5 damage per level, max 3 levels
@@ -172,7 +172,7 @@ A dark-fantasy tower-defense game where the student's real semester is the fortr
 - Upgrades persist across waves
 - Keyboard shortcut to open upgrade menu
 
-### R4.3: Tower Targeting
+### R4.3: Tower Targeting [SUPERSEDED]
 **WHEN** multiple enemies are in range,  
 **THE SYSTEM SHALL** prioritize:
 1. Enemies from the tower's course
@@ -223,7 +223,7 @@ A dark-fantasy tower-defense game where the student's real semester is the fortr
 - No punishment for wrong answers beyond missed charge
 - Visual feedback completes in <1s
 
-### R5.4: Charged Special Attack
+### R5.4: Charged Special Attack [SUPERSEDED by R18]
 **WHEN** the charge meter reaches 100%,  
 **THE SYSTEM SHALL** enable a "Special Attack" button that:
 - Deals massive AOE damage to all enemies of one course
@@ -669,6 +669,88 @@ A dark-fantasy tower-defense game where the student's real semester is the fortr
 - Trial recommendations are non-negative integers (pure function, unit-testable)
 - Feedback is concise (<3 sentences per course in Debrief)
 - High-weight items (≥50 points) are always mentioned if present in wave
+
+---
+
+## R18: Duel Combat
+
+### R18.1: Direct Player-Creature Engagement
+**WHEN** the player is in battle,  
+**THE SYSTEM SHALL** allow direct targeting and weakening of deadline-creatures through study questions rather than passive tower defense.
+
+**ACCEPTANCE:**
+- No automated sentinels or towers firing automatically
+- Player explicitly chooses which creature to attack
+- Combat is active, not passive
+
+### R18.2: Seal-Based Defeat Mechanism
+**WHEN** a creature is spawned,  
+**THE SYSTEM SHALL** assign it a number of seals based on its type and point value:
+- Minions: 1 seal
+- Quiz: 2 seals
+- Assignment: 3 seals (+1 if points ≥ 50)
+- Project/Presentation: 5 seals
+- Exam: 8 seals (+2 if points ≥ 100)
+
+**WHEN** the player attacks a creature,  
+**THE SYSTEM SHALL** present a study question from that creature's course.
+
+**WHEN** the player answers correctly,  
+**THE SYSTEM SHALL**:
+- Remove 1 seal from the creature (2 seals if the player has a streak of ≥3 correct answers)
+- Display visual feedback (seal breaking animation)
+
+**WHEN** all seals are broken,  
+**THE SYSTEM SHALL** defeat the creature.
+
+**ACCEPTANCE:**
+- Seals are always integers ≥ 1
+- Damage never exceeds remaining seals
+- Defeating a creature requires answering N correct questions where N = initial seals (when no streak bonus)
+- Visual representation clearly shows remaining seals
+
+### R18.3: Wrong Answer Consequences
+**WHEN** the player answers incorrectly,  
+**THE SYSTEM SHALL**:
+- Display the correct answer and explanation
+- Cause the creature to lurch closer to the altar by +6% progress
+- Deal no damage to seals (no punishment beyond proximity loss)
+
+**ACCEPTANCE:**
+- Wrong answers never defeat creatures or reduce seals
+- Progress increases are capped at 100% (reaching the altar)
+- Explanation is shown for 2-3 seconds minimum
+
+### R18.4: Creature Movement Speed
+**WHEN** creatures advance toward the altar,  
+**THE SYSTEM SHALL** move them at speeds calibrated so:
+- Regular creatures (quiz, assignment, project/presentation) take ~180-300 seconds to cross if unanswered
+- Exams take ~360 seconds to cross if unanswered
+- Overdue items (daysLeft < 0) move 25% faster
+
+**ACCEPTANCE:**
+- Movement speed is deterministic based on type and overdue status
+- Speed is always positive and finite
+- Waves last approximately as long as a focused study session (3-6 minutes per wave)
+
+### R18.5: Core Logic as Pure Functions
+**THE SYSTEM SHALL** implement duel combat rules as pure functions in `src/core/duel.ts`:
+- `sealsFor(enemy, points): number` — compute initial seals
+- `applyAnswer(state, correct, streak): { state, damage, lurch }` — update duel state
+- `creepSpeed(type, isMinion, daysLeft): number` — compute movement speed
+- `isDefeated(state): boolean` and `reachedAltar(state): boolean` — check win/loss conditions
+
+**ACCEPTANCE:**
+- Zero imports of Phaser, Three.js, or DOM APIs in `src/core/duel.ts`
+- Unit tests in `src/core/duel.test.ts` cover all edge cases
+- Property-based tests in `src/core/duel.prop.test.ts` verify invariants:
+  - Seals never negative and never exceed maxSeals
+  - Progress stays in [0, 1]
+  - Correct answers never increase progress
+  - Wrong answers never decrease seals
+  - Creature defeat requires exactly N correct answers when streak = 0
+  - Speeds are always positive and finite
+- All tests pass with `npx vitest run src/core`
 
 ---
 

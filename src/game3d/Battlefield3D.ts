@@ -127,6 +127,9 @@ export class Battlefield3D {
   private cracks = 0;
   private book!: THREE.Group;
   onSocketClick?: (key: string) => void;
+  onEnemyClick?: (id: string) => void;
+  private targetRing?: THREE.Mesh;
+  private targetId: string | null = null;
 
   constructor(container: HTMLElement, labelLayer: HTMLDivElement, reduced: boolean) {
     this.reduced = reduced;
@@ -176,7 +179,7 @@ export class Battlefield3D {
   // ───────────── environment ─────────────
 
   private buildLights() {
-    this.scene.add(new THREE.HemisphereLight(0x8a82b0, 0x1a1424, 1.1));
+    this.scene.add(new THREE.HemisphereLight(0x9a92c0, 0x1a1424, 1.45));
     const moon = new THREE.DirectionalLight(0xb4bcff, 1.6);
     moon.position.set(8, 14, -6);
     moon.castShadow = true;
@@ -484,6 +487,41 @@ export class Battlefield3D {
     if (e.hpEl) e.hpEl.style.width = `${Math.max(0, hpFrac) * 100}%`;
   }
 
+  /** Mark the creature being duelled with a slowly turning candle-gold ring. */
+  setTarget(id: string | null) {
+    this.targetId = id;
+    if (!this.targetRing) {
+      this.targetRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.55, 0.66, 48),
+        new THREE.MeshBasicMaterial({ color: 0xf2b45a, transparent: true, opacity: 0.85, side: THREE.DoubleSide, toneMapped: false, depthWrite: false }),
+      );
+      this.targetRing.rotation.x = -Math.PI / 2;
+      this.scene.add(this.targetRing);
+    }
+    this.targetRing.visible = !!id && this.enemies.has(id);
+  }
+
+  /** A bolt of knowledge from the grimoire to the creature. */
+  strike(id: string, color: number) {
+    const e = this.enemies.get(id);
+    if (!e) return;
+    const from = new THREE.Vector3(-8.3, 1.4, 0.1);
+    const to = e.c.root.position.clone().add(new THREE.Vector3(0, e.c.height * 0.55, 0));
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), new THREE.MeshBasicMaterial({ color, toneMapped: false }));
+    m.position.copy(from);
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glowTex, color, blending: THREE.AdditiveBlending, depthWrite: false }));
+    halo.scale.setScalar(1.1);
+    m.add(halo);
+    this.scene.add(m);
+    const trail = this.makePoints(18, color, 0.2);
+    this.scene.add(trail);
+    this.bolts.push({ m, from, to, t: 0, dur: 0.42, trail });
+    setTimeout(() => {
+      e.c.flash();
+      this.burst(to, color, 30, 2.4);
+    }, 420);
+  }
+
   hitEnemy(id: string) {
     this.enemies.get(id)?.c.flash();
   }
@@ -602,7 +640,7 @@ export class Battlefield3D {
   }
 
   setSlowmo(on: boolean) {
-    this.desatTarget = on ? 0.75 : 0;
+    this.desatTarget = on ? 0.4 : 0;
   }
 
   // ───────────── frame ─────────────
@@ -672,6 +710,16 @@ export class Battlefield3D {
         const s = this.project(root.position.clone().add(new THREE.Vector3(0, e.c.height + 0.25, 0)));
         e.label.style.transform = `translate(${Math.min(1560, Math.max(40, s.x))}px, ${Math.max(150, s.y)}px) translate(-50%, -100%)`;
       }
+    }
+
+    if (this.targetRing?.visible && this.targetId) {
+      const tgt = this.enemies.get(this.targetId);
+      if (tgt && tgt.dying === undefined) {
+        this.targetRing.position.set(tgt.c.root.position.x, 0.05, tgt.c.root.position.z);
+        this.targetRing.rotation.z += dt * 0.8;
+        const k = 1 + Math.sin(t * 4) * 0.05;
+        this.targetRing.scale.set(k * (tgt.isBoss ? 1.6 : 1), k * (tgt.isBoss ? 1.6 : 1), 1);
+      } else this.targetRing.visible = false;
     }
 
     // Bolts
@@ -759,6 +807,8 @@ export class Battlefield3D {
     let over = false;
     const hits = this.ray.intersectObjects([...this.sockets.values()], false);
     if (hits.length) over = true;
+    const live = [...this.enemies.values()].filter((r) => r.dying === undefined).map((r) => r.c.root);
+    if (this.ray.intersectObjects(live, true).length) over = true;
     for (const s of this.sockets.values()) (s.material as THREE.MeshBasicMaterial).opacity = hits[0]?.object === s ? 0.8 : 0.22;
     this.canvas.style.cursor = over ? 'pointer' : '';
     this.lastMouse.copy(n);
@@ -766,6 +816,17 @@ export class Battlefield3D {
 
   private onClick = (e: PointerEvent) => {
     this.ray.setFromCamera(this.ndc(e), this.camera);
+    const roots = [...this.enemies.entries()].filter(([, r]) => r.dying === undefined);
+    const hitE = this.ray.intersectObjects(roots.map(([, r]) => r.c.root), true)[0];
+    if (hitE) {
+      let o: THREE.Object3D | null = hitE.object;
+      while (o && !roots.some(([, r]) => r.c.root === o)) o = o.parent;
+      const found = roots.find(([, r]) => r.c.root === o);
+      if (found) {
+        this.onEnemyClick?.(found[0]);
+        return;
+      }
+    }
     const hits = this.ray.intersectObjects([...this.sockets.values()], false);
     const key = hits[0]?.object.userData.key as string | undefined;
     if (key) this.onSocketClick?.(key);

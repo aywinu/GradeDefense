@@ -176,8 +176,9 @@ function zombie(rim: number, scale: number): Creature {
     flash: fx.flash,
     setEnraged: fx.setEnraged,
     update(_t, dt, speed) {
-      phase += dt * (2.2 + speed * 3.5);
-      const s = Math.sin(phase);
+      phase += dt * (1.2 + speed * 3.5);
+      const amp = 0.2 + 0.8 * speed; // barely creeping: sway in place
+      const s = Math.sin(phase) * amp;
       // stepping leg (right), dragging leg (left)
       legR.pivot.rotation.z = s * 0.5;
       shinR.pivot.rotation.z = Math.max(0, -Math.cos(phase)) * -0.8;
@@ -257,8 +258,9 @@ function skeleton(rim: number, scale: number): Creature {
     flash: fx.flash,
     setEnraged: fx.setEnraged,
     update(_t, dt, speed) {
-      phase += dt * (4 + speed * 5);
-      const s = Math.sin(phase);
+      phase += dt * (1.6 + speed * 5);
+      const amp = 0.25 + 0.75 * speed;
+      const s = Math.sin(phase) * amp;
       for (const l of limbs) {
         const sw = s * l.side * (l.leg ? 0.6 : -0.5);
         l.a.pivot.rotation.z = sw + (l.leg ? 0 : 0.15);
@@ -488,8 +490,8 @@ function golem(rim: number, scale: number): Creature {
     flash: fx.flash,
     setEnraged: fx.setEnraged,
     update(t, dt, speed) {
-      phase += dt * (1.6 + speed * 2);
-      const s = Math.sin(phase);
+      phase += dt * (0.9 + speed * 2);
+      const s = Math.sin(phase) * (0.2 + 0.8 * speed);
       legs[0].rotation.z = s * 0.35;
       legs[1].rotation.z = -s * 0.35;
       arms[0].rotation.z = -s * 0.3 - 0.1;

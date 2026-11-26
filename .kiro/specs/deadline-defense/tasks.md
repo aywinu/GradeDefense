@@ -1,9 +1,9 @@
 # Tasks — Deadline Defense
 
-**Status (2026-11-27):** 354 done (implemented as designed), 59 superseded (implemented differently, all complete), 24 deferred (manual tests or future work)  
-Core rules ✓ | Demo data ✓ | 3D Battlefield ✓ | Study model ✓ | QTE core ✓ | Readiness ✓ | War Room ✓ | Trial ✓ | Save ✓ | Import (ICS/postMessage/notes) ✓ | Moodle block ✓ | LMS showcase ✓ | E2E tests ✓ | Deploy ✓ | Docs ✓
+**Status (2026-11-27):** 368 done (implemented as designed), 59 superseded (implemented differently, all complete), 24 deferred (manual tests or future work)  
+Core rules ✓ | Demo data ✓ | 3D Battlefield ✓ | Study model ✓ | QTE core ✓ | Readiness ✓ | War Room ✓ | Trial ✓ | Save ✓ | Import (ICS/postMessage/notes) ✓ | Moodle block ✓ | LMS showcase ✓ | E2E tests ✓ | Deploy ✓ | Docs ✓ | **Duel Combat ✓**
 
-Implementation ordered for vertical slice: core rules + tests → demo data → battlefield → checkpoints → tutorial → polish → import → save → a11y → build/test.
+Implementation ordered for vertical slice: core rules + tests → demo data → battlefield → checkpoints → tutorial → polish → import → save → a11y → build/test → **duel combat (R18)**.
 
 ---
 
@@ -196,11 +196,11 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 - [x] 4.5.2: Display charge meter (0-100%) as progress bar in top-right (Ref: R5.2)
 - [x] 4.5.3: Update meter on correct answer (Ref: R5.3)
 
-### 4.6: Special Attack
-- [x] 4.6.1: Listen for `Space` key in BattleScene (Ref: R5.4, R9.1)
-- [x] 4.6.2: If charge ≥ 100%, trigger AOE damage to all enemies of selected course (Ref: R5.4)
-- [x] 4.6.3: Reset charge to 0% (Ref: R5.4)
-- [x] 4.6.4: Display dramatic particle effect (Phaser particles, flash screen white) (Ref: R5.4)
+### 4.6: Special Attack [SUPERSEDED by R18]
+- [x] ~~4.6.1: Listen for `Space` key in BattleScene (Ref: R5.4, R9.1)~~ → superseded by R18 duel combat
+- [x] ~~4.6.2: If charge ≥ 100%, trigger AOE damage to all enemies of selected course (Ref: R5.4)~~ → superseded by R18 duel combat
+- [x] ~~4.6.3: Reset charge to 0% (Ref: R5.4)~~ → superseded by R18 duel combat
+- [x] ~~4.6.4: Display dramatic particle effect (Phaser particles, flash screen white) (Ref: R5.4)~~ → superseded by R18 duel combat
 - [x] ~~4.6.5: Play special attack sound (Howler, synthesised with ZzFX) (Ref: R5.4, design.md Audio)~~ → superseded: WebAudio synthesis in src/audio/sfx.ts
 
 ### 4.7: Checkpoint Integration Test
@@ -443,7 +443,7 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 
 ---
 
-## Phase 9: Tower Upgrades
+## Phase 9: Tower Upgrades [SUPERSEDED by R18]
 
 ### 9.1: Upgrade UI
 - [x] ~~8.1.1: Create `src/ui/UpgradePanel.ts` as DOM overlay (Ref: R4.2)~~ → superseded: forge system via study trials (src/study/model.ts forgeLevel) with sparks per correct answer
@@ -685,6 +685,41 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 
 ---
 
+## Phase 18: Duel Combat (Design Change 2026-11-27)
+
+### 18.1: Core Duel Rules (Pure Functions)
+- [x] 18.1.1: Create `src/core/duel.ts` with `DuelState`, `ApplyAnswerResult` types (Ref: R18.5)
+- [x] 18.1.2: Implement `sealsFor(enemy, points): number` (minions 1; quiz 2; assignment 3+1 if ≥50pts; project/presentation 5; exam 8+2 if ≥100pts) (Ref: R18.2)
+- [x] 18.1.3: Implement `applyAnswer(state, correct, streak): { state, damage, lurch }` (correct: damage 1 or 2 if streak ≥3; wrong: damage 0, lurch +0.06) (Ref: R18.2, R18.3)
+- [x] 18.1.4: Implement `creepSpeed(type, isMinion, daysLeft): number` (regular ~180-300s, exams ~360s, overdue +25%) (Ref: R18.4)
+- [x] 18.1.5: Implement `isDefeated(state): boolean` and `reachedAltar(state): boolean` (Ref: R18.5)
+- [x] 18.1.6: Verify zero Phaser/Three.js/DOM imports in `src/core/duel.ts` (Ref: R18.5)
+
+### 18.2: Unit Tests
+- [x] 18.2.1: Create `src/core/duel.test.ts` (Ref: R18.5)
+- [x] 18.2.2: Test `sealsFor`: verify seal counts for all types and point thresholds (Ref: R18.2)
+- [x] 18.2.3: Test `applyAnswer`: correct answer damage (1 or 2), wrong answer lurch (+0.06), seals never negative (Ref: R18.2, R18.3)
+- [x] 18.2.4: Test `creepSpeed`: verify target crossing times and overdue boost (Ref: R18.4)
+- [x] 18.2.5: Integration test: N seals require exactly N correct answers when streak = 0 (Ref: R18.5)
+- [x] 18.2.6: Integration test: wrong answers eventually cause altar reach (ceil(1/0.06) = 17 wrong answers) (Ref: R18.3)
+
+### 18.3: Property-Based Tests
+- [x] 18.3.1: Create `src/core/duel.prop.test.ts` using fast-check (Ref: R18.5)
+- [x] 18.3.2: Property: seals never negative and never exceed maxSeals (Ref: R18.5)
+- [x] 18.3.3: Property: damage never exceeds seals before the answer (Ref: R18.5)
+- [x] 18.3.4: Property: progress stays in [0, 1] (Ref: R18.5)
+- [x] 18.3.5: Property: correct answers never increase progress (Ref: R18.5)
+- [x] 18.3.6: Property: wrong answers never decrease seals (Ref: R18.5)
+- [x] 18.3.7: Property: creature defeat requires exactly N correct answers when streak = 0 (Ref: R18.5)
+- [x] 18.3.8: Property: creepSpeed is always positive and finite (Ref: R18.5)
+- [x] 18.3.9: Property: determinism (same inputs → same outputs) (Ref: R18.5)
+
+### 18.4: Verification
+- [x] 18.4.1: Run `npx vitest run src/core/duel` and verify all tests pass (Ref: R18.5)
+- [x] 18.4.2: Run `npx tsc --noEmit` and verify zero TypeScript errors (Ref: R18.5)
+
+---
+
 ## Summary
 
 Tasks are ordered for vertical slice development:
@@ -695,7 +730,7 @@ Tasks are ordered for vertical slice development:
 5. **Quick-Time Exam Events (QTE)** (boss encounters with time pressure)
 6. **Tutorial** (played onboarding)
 7. **Theme polish** (spooky UI, audio, animations)
-8. **Tower upgrades** (progression system)
+8. **Tower upgrades [SUPERSEDED by R18]** (progression system)
 9. **Moodle import** (real deadlines via ICS)
 10. **PDF questions** (optional, no paid AI)
 11. **Persistence** (save/load)
@@ -704,5 +739,6 @@ Tasks are ordered for vertical slice development:
 14. **Build/smoke tests** (Playwright Chromium, performance)
 15. **Kiro hooks** (test-on-save, pre-commit)
 16. **Final polish** (README, demo video with QTE + showcase, deployment)
+17. **Duel combat** (R18: player-vs-creature with seals, no sentinels)
 
 Each phase delivers a playable or testable increment. Kiro agents can work on independent phases in parallel (e.g., checkpoint UI while another agent works on PDF import, or QTE while Moodle block is being developed).

@@ -3,152 +3,190 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Learning Portal · Dashboard</title>
+    <title>Dashboard | Campus</title>
     <link rel="icon" href="data:," />
     <style>
-      :root { --bg: #f4f5f7; --card: #fff; --ink: #1d2125; --muted: #6a737b; --line: #dee2e6; --brand: #3d5a80; }
+      /* A generic LMS dashboard in the familiar "Boost" layout. No third-party logos or branding. */
+      :root { --bg: #f8f9fa; --card: #fff; --ink: #1d2125; --muted: #6a737b; --line: #dee2e6; --brand: #0f6cbf; --danger: #ca3120; }
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--ink); }
-      header { height: 56px; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 20px; gap: 26px; }
-      .logo { font-weight: 700; color: var(--brand); display: flex; align-items: center; gap: 8px; }
-      .logo i { width: 22px; height: 22px; border-radius: 6px; background: var(--brand); display: inline-block; }
-      nav a { color: var(--muted); text-decoration: none; margin-right: 18px; font-size: 14px; }
-      nav a.on { color: var(--ink); font-weight: 600; border-bottom: 2px solid var(--brand); padding-bottom: 17px; }
-      .user { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
-      .user i { width: 32px; height: 32px; border-radius: 50%; background: #c8d2dc; display: inline-block; }
-      main { display: grid; grid-template-columns: 1fr 780px; gap: 24px; padding: 24px; max-width: 1500px; margin: 0 auto; }
-      h1 { font-size: 26px; font-weight: 600; margin-bottom: 16px; }
-      .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 18px; margin-bottom: 18px; }
-      .card h2 { font-size: 17px; font-weight: 600; margin-bottom: 12px; }
+      body { font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--ink); font-size: 15px; }
+      header { position: sticky; top: 0; z-index: 5; height: 60px; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 20px; gap: 28px; box-shadow: 0 2px 4px rgba(0,0,0,.04); }
+      .logo { font-weight: 700; font-size: 18px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+      .logo i { width: 26px; height: 26px; border-radius: 6px; background: linear-gradient(135deg, #3d6fb6, #2a4f87); display: inline-block; }
+      nav a { color: var(--ink); text-decoration: none; margin-right: 22px; font-size: 15px; padding: 19px 0; }
+      nav a.on { border-bottom: 3px solid var(--brand); font-weight: 600; }
+      .right { margin-left: auto; display: flex; align-items: center; gap: 20px; color: var(--muted); }
+      .bell { position: relative; font-size: 18px; }
+      .bell b { position: absolute; top: -6px; right: -9px; background: var(--danger); color: #fff; font-size: 10px; border-radius: 9px; padding: 1px 5px; }
+      .avatar { width: 34px; height: 34px; border-radius: 50%; background: #c8d2dc; display: grid; place-items: center; color: #4a5560; font-weight: 600; font-size: 13px; }
+      .wrap { display: grid; grid-template-columns: 1fr 360px; min-height: calc(100vh - 60px); }
+      main { padding: 28px 36px; }
+      h1 { font-size: 28px; font-weight: 600; margin-bottom: 22px; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; margin-bottom: 20px; }
+      .card h2 { font-size: 18px; font-weight: 600; margin-bottom: 14px; }
+      .filters { display: flex; gap: 10px; margin-bottom: 14px; }
+      .filters span { border: 1px solid var(--line); border-radius: 6px; padding: 5px 12px; font-size: 13px; color: var(--muted); background: #fff; }
+      .day { font-size: 14px; font-weight: 700; padding: 12px 0 6px; border-bottom: 1px solid var(--line); }
+      .item { display: grid; grid-template-columns: 34px 1fr auto auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #eef0f2; font-size: 14.5px; }
+      .ico { width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; font-size: 13px; color: #fff; font-weight: 700; }
+      .ico.a { background: #e8467c; } .ico.q { background: #5d63f6; }
+      .item small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+      .item .time { color: var(--muted); font-size: 13px; }
+      .item .btn { border: 1px solid var(--brand); color: var(--brand); border-radius: 6px; padding: 4px 10px; font-size: 12.5px; background: #fff; }
+      .pill { background: var(--danger); color: #fff; font-size: 11px; border-radius: 4px; padding: 1px 6px; margin-left: 8px; }
       .courses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-      .course { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-      .course .img { height: 70px; }
-      .course .t { padding: 10px 12px; font-size: 14px; font-weight: 600; }
+      .course { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+      .course .img { height: 64px; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.12) 0 10px, transparent 10px 20px); }
+      .course .t { padding: 10px 12px 4px; font-size: 14px; font-weight: 600; color: var(--brand); }
       .course .s { padding: 0 12px 12px; font-size: 12px; color: var(--muted); }
-      .bar { height: 6px; background: #e9ecef; border-radius: 3px; margin: 0 12px 12px; overflow: hidden; }
-      .bar i { display: block; height: 100%; background: var(--brand); }
-      .timeline li { list-style: none; display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
-      .timeline li span { color: var(--muted); }
-      .block { padding: 0; overflow: hidden; }
-      .block .bh { padding: 12px 16px; border-bottom: 1px solid var(--line); font-weight: 600; font-size: 15px; display: flex; justify-content: space-between; }
-      .block .bh small { color: var(--muted); font-weight: 400; }
-      .frame { position: relative; aspect-ratio: 16 / 9; background: #07060b; }
-      .frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-      .note { font-size: 12px; color: var(--muted); padding: 10px 16px; }
-      .enter { font: inherit; font-size: 13px; font-weight: 600; color: var(--brand); background: #eef2f7; border: 1px solid #cfd8e3; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
-      .enter:hover { background: #e2e9f2; }
-      /* The takeover: fog escapes the block and swallows the portal */
+      aside { background: #fff; border-left: 1px solid var(--line); padding: 20px; }
+      aside .blk { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 18px; }
+      aside .blk h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+      .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 12px; }
+      .cal b { color: var(--muted); font-weight: 600; }
+      .cal span { padding: 6px 0; border-radius: 4px; position: relative; }
+      .cal span.today { background: var(--brand); color: #fff; }
+      .cal span.ev::after { content: ''; position: absolute; left: 50%; bottom: 1px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: #e8467c; }
+      /* Our block: small, quiet, a little out of place */
+      .dd { background: #120f1a; border-color: #2b2440 !important; color: #e9dcc0; position: relative; overflow: hidden; }
+      .dd h3 { color: #f2b45a; font-family: Georgia, serif; letter-spacing: .04em; }
+      .dd .mini-fog { position: absolute; inset: 0; background: radial-gradient(ellipse at 20% 120%, rgba(110,100,150,.35), transparent 60%), radial-gradient(ellipse at 90% -10%, rgba(110,100,150,.25), transparent 55%); animation: drift 6s ease-in-out infinite alternate; pointer-events: none; }
+      @keyframes drift { to { transform: translateX(12px); opacity: .7; } }
+      .dd .lbl { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #a89f8c; position: relative; }
+      .dd .what { font-family: Georgia, serif; font-size: 17px; margin: 4px 0 2px; position: relative; }
+      .dd .when { font-size: 12.5px; color: #c9636b; position: relative; }
+      .dd .cand { display: flex; gap: 4px; margin: 10px 0 12px; position: relative; align-items: flex-end; height: 18px; }
+      .dd .cand i { width: 4px; height: 12px; background: #3a3150; border-radius: 1px; }
+      .dd .cand i.l { background: #e9dcc0; height: 14px; box-shadow: 0 -4px 6px rgba(242,180,90,.6); }
+      .enter { position: relative; font: inherit; font-size: 13px; font-weight: 600; color: #120f1a; background: #f2b45a; border: 0; border-radius: 6px; padding: 7px 12px; cursor: pointer; width: 100%; }
+      .enter:hover { background: #ffc875; }
       #fog { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
-      .frame.full { position: fixed; inset: 0; aspect-ratio: auto; z-index: 40; transition: opacity 600ms; }
-      body.taken main, body.taken header { filter: grayscale(0.6) brightness(0.6); transition: filter 2.5s; }
+      .stage { position: fixed; inset: 0; z-index: 40; display: none; background: #07060b; }
+      .stage.full { display: block; }
+      .stage iframe { width: 100%; height: 100%; border: 0; }
+      body.taken .wrap, body.taken header { filter: grayscale(0.7) brightness(0.55); transition: filter 2.2s; }
     </style>
   </head>
   <body>
     <header>
-      <div class="logo"><i></i> My Learning Portal</div>
-      <nav><a class="on" href="#">Dashboard</a><a href="#">My courses</a><a href="#">Calendar</a><a href="#">Grades</a></nav>
-      <div class="user">Student <i></i></div>
+      <div class="logo"><i></i> Campus</div>
+      <nav><a href="#">Home</a><a class="on" href="#">Dashboard</a><a href="#">My courses</a></nav>
+      <div class="right"><span class="bell">🔔<b>9</b></span><span>💬</span><div class="avatar">SL</div></div>
     </header>
-    <main>
-      <section>
+    <div class="wrap">
+      <main>
         <h1>Dashboard</h1>
         <div class="card">
-          <h2>Course overview</h2>
-          <div class="courses" id="courses"></div>
+          <h2>Timeline</h2>
+          <div class="filters"><span>Next 30 days ▾</span><span>Sort by dates ▾</span><span>Search by activity type or name</span></div>
+          <div id="timeline"></div>
         </div>
         <div class="card">
-          <h2>Timeline</h2>
-          <ul class="timeline" id="timeline"></ul>
+          <h2>Recently accessed courses</h2>
+          <div class="courses" id="courses"></div>
         </div>
-      </section>
+      </main>
       <aside>
-        <div class="card block">
-          <div class="bh">Deadline Defense <button class="enter" id="enter" title="Open the full game">Enter →</button></div>
-          <div class="frame"><iframe id="dd" title="Deadline Defense" allow="autoplay"></iframe></div>
-          <div class="note">Your upcoming deadlines, defended. Data is sent from this page to the block with postMessage; no tokens leave the portal.</div>
+        <div class="blk"><h3>Calendar <span style="font-weight:400;color:#6a737b;font-size:13px" id="month"></span></h3><div class="cal" id="cal"></div></div>
+        <div class="blk dd" id="ddblock">
+          <div class="mini-fog"></div>
+          <h3>Deadline Defense</h3>
+          <div class="lbl">Next great enemy</div>
+          <div class="what" id="ddwhat"></div>
+          <div class="when" id="ddwhen"></div>
+          <div class="cand" id="ddcand"></div>
+          <button class="enter" id="enter">Defend your semester →</button>
         </div>
+        <div class="blk"><h3>Online users</h3><div style="font-size:13px;color:#6a737b">3 online users (last 5 minutes)</div></div>
       </aside>
-    </main>
+    </div>
+    <div class="stage" id="stage"><iframe id="dd" title="Deadline Defense" allow="autoplay"></iframe></div>
     <canvas id="fog"></canvas>
     <script type="module">
       import demo from '../src/data/demo.json';
-      // Same contract as the real Moodle block (docs/moodle-integration.md).
       const DAY = 86400000;
       const now = Date.now();
-      const hues = ['#5b8def', '#a274f0', '#e0874a', '#d9b54a', '#d85a8e', '#4fc29a'];
+      const hues = ['#4f7fd6', '#8a5fd0', '#d9772f', '#c9a227', '#c94a7e', '#2f9e78'];
       const events = demo.courses.flatMap((c) =>
         c.items
           .filter((i) => i.grade === null)
-          .map((i) => ({
-            id: i.id,
-            courseId: c.id,
-            courseTitle: c.title,
-            name: i.name,
-            dueDate: new Date(now + i.daysOffset * DAY).toISOString(),
-            type: i.type,
-            points: i.points,
-          })),
+          .map((i) => ({ id: i.id, courseId: c.id, courseTitle: c.title, name: i.name, dueDate: new Date(now + i.daysOffset * DAY).toISOString(), type: i.type, points: i.points })),
       );
+      const fmtDay = (d) => d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      // Timeline: every deadline gets the same grey line, whatever it weighs. That is the problem.
+      const soon = [...events].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).filter((e) => new Date(e.dueDate) - now < 30 * DAY);
+      const overdue = { name: 'Reading Reflection 2', courseTitle: 'Management', type: 'assignment', dueDate: new Date(now - DAY).toISOString(), overdue: true };
+      let html = '', lastDay = '';
+      for (const e of [overdue, ...soon]) {
+        const d = new Date(e.dueDate);
+        const day = e.overdue ? 'Overdue' : fmtDay(d);
+        if (day !== lastDay) { html += `<div class="day">${day}</div>`; lastDay = day; }
+        const quiz = e.type === 'quiz' || e.type === 'exam';
+        html += `<div class="item"><div class="ico ${quiz ? 'q' : 'a'}">${quiz ? '?' : '✎'}</div><div>${e.name} ${quiz ? 'closes' : 'is due'}${e.overdue ? '<span class="pill">Overdue</span>' : ''}<small>${e.courseTitle}</small></div><span class="time">23:59</span><span class="btn">${quiz ? 'Attempt quiz' : 'Add submission'}</span></div>`;
+      }
+      document.getElementById('timeline').innerHTML = html;
       document.getElementById('courses').innerHTML = demo.courses
-        .map((c, k) => `<div class="course"><div class="img" style="background:linear-gradient(135deg, ${hues[k]}, #1d2125)"></div><div class="t">${c.title}</div><div class="s">${c.id}</div><div class="bar"><i style="width:${30 + ((k * 17) % 60)}%"></i></div></div>`)
+        .map((c, k) => `<div class="course"><div class="img" style="background-color:${hues[k]}"></div><div class="t">${c.title}</div><div class="s">${c.id} · Autumn 2026</div></div>`)
         .join('');
-      document.getElementById('timeline').innerHTML = events
-        .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
-        .slice(0, 6)
-        .map((e) => `<li>${e.name} · ${e.courseId}<span>${new Date(e.dueDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</span></li>`)
-        .join('');
+      // Calendar with event dots
+      const t = new Date(now);
+      document.getElementById('month').textContent = t.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+      const first = new Date(t.getFullYear(), t.getMonth(), 1);
+      const days = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+      const evDays = new Set(events.map((e) => new Date(e.dueDate)).filter((d) => d.getMonth() === t.getMonth()).map((d) => d.getDate()));
+      let cal = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((x) => `<b>${x}</b>`).join('');
+      for (let k = 0; k < (first.getDay() + 6) % 7; k++) cal += '<span></span>';
+      for (let d = 1; d <= days; d++) cal += `<span class="${d === t.getDate() ? 'today' : ''} ${evDays.has(d) ? 'ev' : ''}">${d}</span>`;
+      document.getElementById('cal').innerHTML = cal;
+      // Our block's quiet teaser
+      const big = events.filter((e) => e.type === 'exam').sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
+      document.getElementById('ddwhat').textContent = big.name;
+      document.getElementById('ddwhen').textContent = `${big.courseTitle} · in ${Math.round((new Date(big.dueDate) - now) / DAY)} days · readiness 0%`;
+      document.getElementById('ddcand').innerHTML = Array.from({ length: 10 }, () => '<i></i>').join('');
+
+      const stage = document.getElementById('stage');
       const frame = document.getElementById('dd');
-      const target = new URL('../?embed=showcase', location.href);
-      frame.src = target.href;
-      // Fog takeover (used in the demo video): wisps leak from the block, then fill the screen.
+      const target = new URL('../?embed=showcase&intro=1', location.href);
+      // Fog escapes the block and swallows the portal, then the game takes over.
       document.getElementById('enter').addEventListener('click', () => {
         const cv = document.getElementById('fog');
         const ctx = cv.getContext('2d');
         const dpr = Math.min(2, devicePixelRatio || 1);
-        cv.width = innerWidth * dpr;
-        cv.height = innerHeight * dpr;
-        ctx.scale(dpr, dpr);
-        const r = frame.getBoundingClientRect();
+        cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.scale(dpr, dpr);
+        const r = document.getElementById('ddblock').getBoundingClientRect();
         const ox = r.left + r.width / 2, oy = r.top + r.height / 2;
-        const puffs = Array.from({ length: 220 }, () => ({ a: Math.random() * Math.PI * 2, d: Math.random() * 30, s: 30 + Math.random() * 90, v: 120 + Math.random() * 420, delay: Math.random() * 1.6, hue: 255 + Math.random() * 20, curl: (Math.random() - 0.5) * 1.4 }));
+        const puffs = Array.from({ length: 240 }, () => ({ a: Math.random() * Math.PI * 2, d: Math.random() * 20, s: 30 + Math.random() * 90, v: 140 + Math.random() * 520, delay: Math.random() * 1.5, hue: 255 + Math.random() * 20, curl: (Math.random() - 0.5) * 1.4 }));
         const t0 = performance.now();
         document.body.classList.add('taken');
-        let swapped = false;
-        const step = (now) => {
-          const t = (now - t0) / 1000;
+        frame.src = target.href;
+        let shown = false;
+        const step = (nowT) => {
+          const t = (nowT - t0) / 1000;
           ctx.clearRect(0, 0, innerWidth, innerHeight);
-          // darkness that grows with the fog
           ctx.fillStyle = `rgba(7,6,11,${Math.min(1, Math.max(0, (t - 0.5) / 1.5))})`;
           ctx.fillRect(0, 0, innerWidth, innerHeight);
           for (const p of puffs) {
             const k = Math.max(0, t - p.delay);
             if (!k) continue;
             const dist = p.d + p.v * k;
-            const ang = p.a + p.curl * k; const x = ox + Math.cos(ang) * dist, y = oy + Math.sin(ang) * dist * 0.7;
+            const ang = p.a + p.curl * k;
+            const x = ox + Math.cos(ang) * dist, y = oy + Math.sin(ang) * dist * 0.75;
             const size = p.s * (1 + k * 0.9);
+            const alpha = Math.min(0.14, k * 0.2) * (t > 3 ? Math.max(0, 1 - (t - 3) / 1.3) : 1);
             const g = ctx.createRadialGradient(x, y, 0, x, y, size);
-            const alpha = Math.min(0.14, k * 0.2) * (t > 3.2 ? Math.max(0, 1 - (t - 3.2) / 1.3) : 1);
             g.addColorStop(0, `hsla(${p.hue},16%,46%,${alpha})`);
             g.addColorStop(0.5, `hsla(${p.hue},16%,32%,${alpha * 0.5})`);
             g.addColorStop(1, `hsla(${p.hue},16%,20%,0)`);
             ctx.fillStyle = g;
             ctx.fillRect(x - size, y - size, size * 2, size * 2);
           }
-          if (t > 2.4 && !swapped) {
-            swapped = true;
-            // Lift the block out of the (filtered) page so it can truly fill the screen.
-            const wrap = frame.parentElement;
-            document.body.appendChild(wrap);
-            wrap.classList.add('full');
-            const intro = new URL('../?embed=showcase&intro=1', location.href);
-            frame.src = intro.href;
-          }
-          if (t > 3.2) cv.style.opacity = String(Math.max(0, 1 - (t - 3.2) / 1.3));
-          if (t < 4.6) requestAnimationFrame(step);
-          else cv.remove();
+          if (t > 2.2 && !shown) { shown = true; stage.classList.add('full'); }
+          if (t > 3) cv.style.opacity = String(Math.max(0, 1 - (t - 3) / 1.3));
+          if (t < 4.4) requestAnimationFrame(step); else cv.remove();
         };
         requestAnimationFrame(step);
       });
+      // Same postMessage contract as the real block (docs/moodle-integration.md).
       window.addEventListener('message', (ev) => {
         if (ev.origin !== target.origin || ev.source !== frame.contentWindow) return;
         if (ev.data?.type === 'gradedefense:ready') frame.contentWindow.postMessage({ type: 'gradedefense:semester', version: 1, events }, target.origin);

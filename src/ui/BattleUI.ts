@@ -38,12 +38,9 @@ export class Hud {
       </div>
       <div class="hud-center" aria-hidden="true"><div class="wave-progress"><i></i></div></div>
       <div class="hud-right">
-        <div class="hud-gold" title="Gold: raise sentinels on the glowing runes"><span class="coin"></span><b class="gv"></b></div>
-        <button class="hud-btn check" data-a="check" title="Study checkpoint (C): correct answers charge the Lantern">
-          <span class="lbl">Study</span><span class="dd-kbd">C</span>
-        </button>
-        <button class="hud-btn special" data-a="special" title="Lantern of Knowledge (Space)">
-          <span class="charge"><i></i></span><span class="lbl">Lantern</span><span class="dd-kbd">Space</span>
+        <div class="hud-target" aria-live="polite"></div>
+        <button class="hud-btn check" data-a="check" title="Duel the targeted deadline with questions from its course (Space). Tab changes the target; click a creature to pick it.">
+          <span class="lbl">Duel</span><span class="dd-kbd">Space</span>
         </button>
         <button class="hud-icon" data-a="mute" aria-label="Toggle sound (M)"></button>
         <button class="hud-icon" data-a="pause" aria-label="Pause (P)">II</button>
@@ -52,7 +49,6 @@ export class Hud {
     `,
     );
     this.el.querySelector('[data-a="check"]')!.addEventListener('click', handlers.onCheck);
-    this.el.querySelector('[data-a="special"]')!.addEventListener('click', handlers.onSpecial);
     this.el.querySelector('[data-a="pause"]')!.addEventListener('click', handlers.onPause);
     this.el.querySelector('[data-a="mute"]')!.addEventListener('click', () => this.toggleMute());
     this.renderMute();
@@ -83,9 +79,6 @@ export class Hud {
     hp.style.width = `${f * 100}%`;
     hp.parentElement!.classList.toggle('low', f < 0.35);
     this.el.querySelector('.hpv')!.textContent = `${Math.max(0, Math.ceil(s.hp))}`;
-    this.el.querySelector('.gv')!.textContent = String(s.gold);
-    this.el.querySelector<HTMLElement>('.charge > i')!.style.height = `${Math.min(100, s.charge)}%`;
-    this.el.querySelector('.hud-btn.special')!.classList.toggle('ready', s.charge >= 100);
     this.el.querySelector<HTMLElement>('.wave-progress > i')!.style.width = `${s.progress * 100}%`;
   }
 
@@ -112,8 +105,11 @@ export class Hud {
   }
 
   goldPulse(): void {
-    if (R()) return;
-    gsap.fromTo(this.el.querySelector('.hud-gold'), { scale: 1.15 }, { scale: 1, duration: 0.35, ease: 'back.out(3)' });
+    /* gold removed in the duel redesign */
+  }
+
+  setTarget(text: string): void {
+    this.el.querySelector('.hud-target')!.innerHTML = text;
   }
 
   destroy(): void {
@@ -179,8 +175,8 @@ export function scoutReport(
       <ul class="scout-list">${rows}</ul>
       ${
         weakest && weakest.readiness < 60
-          ? `<p class="explain">Your ${esc(weakest.title)} readiness is ${weakest.readiness}%. A short trial before the battle forges that lane's sentinels.</p>`
-          : `<p class="explain">Your sentinels are sharp. Hold the line.</p>`
+          ? `<p class="explain">Your ${esc(weakest.title)} readiness is ${weakest.readiness}%. A short trial before the battle pre-weakens those deadlines.</p>`
+          : `<p class="explain">You are well prepared. Hold the line.</p>`
       }
       <div class="actions"><button class="dd-btn" data-begin>Begin the battle<span class="dd-kbd">Enter</span></button></div>
     </div>`,
@@ -370,6 +366,82 @@ function questionCard(o: {
 
     if (!R())
       gsap.from(card, mode === 'qte' ? { scale: 1.25, opacity: 0, duration: 0.35, ease: 'power4.out' } : { y: 24, opacity: 0, duration: 0.3, ease: 'power3.out' });
+  });
+}
+
+export interface DuelInfo {
+  name: string;
+  courseTitle: string;
+  color: string;
+  seals: number;
+  maxSeals: number;
+  daysLeft: number;
+  streak: number;
+}
+
+/**
+ * Duel card: one question from the creature's own course. Resolves with
+ * true/false for an answer, or null if the student steps back (Esc).
+ * The card stays on the side so the creature remains visible.
+ */
+export function duelCard(q: Question, d: DuelInfo): Promise<boolean | null> {
+  return new Promise((resolve) => {
+    const seals = Array.from({ length: d.maxSeals }, (_, i) => `<i class="${i < d.seals ? 'on' : ''}"></i>`).join('');
+    const el = mountLayer(
+      'overlay duel',
+      `<div class="qc duel-card" role="dialog" aria-modal="true" aria-labelledby="duel-q" style="--c:${d.color}">
+        <div class="duel-head">
+          <div><div class="qc-eyebrow">Duel · ${esc(d.courseTitle)}</div><div class="duel-name">${esc(d.name)}</div>
+          <div class="duel-when">${d.daysLeft <= 0 ? 'due now' : d.daysLeft === 1 ? 'due tomorrow' : `due in ${d.daysLeft} days`}${d.streak >= 2 ? ` · streak ${d.streak}` : ''}</div></div>
+          <div class="seals" aria-label="${d.seals} of ${d.maxSeals} seals left">${seals}</div>
+        </div>
+        <p class="qc-q" id="duel-q">${esc(q.question)}</p>
+        <div class="qc-choices">${q.choices.map((c, i) => `<button class="choice" data-i="${i}"><span class="k">${i + 1}</span><span>${esc(c)}</span></button>`).join('')}</div>
+        <p class="qc-explain" aria-live="polite"></p>
+        <div class="qc-foot">1–4 to answer · each correct answer breaks a seal · Esc to step back</div>
+      </div>`,
+    );
+    const card = el.querySelector<HTMLDivElement>('.qc')!;
+    let done = false;
+    const finish = (r: boolean | null, delay: number) => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('keydown', onKey, true);
+      setTimeout(() => {
+        if (R()) {
+          el.remove();
+          resolve(r);
+        } else gsap.to(card, { opacity: 0, x: -20, duration: 0.18, onComplete: () => (el.remove(), resolve(r)) });
+      }, delay);
+    };
+    const answer = (i: number) => {
+      if (done) return;
+      const ok = i === q.correctIndex;
+      sfx(ok ? 'correct' : 'wrong');
+      const btns = card.querySelectorAll<HTMLButtonElement>('.choice');
+      btns.forEach((b) => (b.disabled = true));
+      btns[q.correctIndex].classList.add('right');
+      if (!ok) btns[i].classList.add('wrong');
+      card.querySelector('.qc-explain')!.textContent = ok ? (q.explain ?? 'Correct.') : `The answer is “${q.choices[q.correctIndex]}”. ${q.explain ?? ''}`;
+      if (ok) card.querySelector('.seals i.on:last-of-type')?.classList.add('breaking');
+      finish(ok, ok ? 900 : 2300);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (done) return;
+      if (/^[1-4]$/.test(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+        answer(+e.key - 1);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        finish(null, 0);
+      } else if (e.key !== 'Tab') e.stopPropagation();
+    };
+    window.addEventListener('keydown', onKey, true);
+    card.querySelectorAll<HTMLButtonElement>('.choice').forEach((b) => b.addEventListener('click', () => answer(+b.dataset.i!)));
+    setTimeout(() => card.querySelector<HTMLButtonElement>('.choice')?.focus(), 30);
+    if (!R()) gsap.from(card, { x: -40, opacity: 0, duration: 0.3, ease: "power3.out" });
   });
 }
 
