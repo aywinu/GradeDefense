@@ -21,7 +21,7 @@ import type { ItemType } from '../core/types';
 export const SIM = { xMin: 150, xMax: 1650, yMin: 110, yMax: 870, lanes: 6 };
 const UNIT = 100; // sim pixels per world unit
 const CAM_POS = new THREE.Vector3(0.4, 14.2, 14.8);
-const CAM_LOOK = new THREE.Vector3(0.4, 0, 0.6);
+const CAM_LOOK = new THREE.Vector3(0.4, 0, 0.1);
 
 /** Lanes are spread wider in depth than the sim's 2D layout, for readability. */
 const ZK = 1.6;
@@ -661,7 +661,7 @@ export class Battlefield3D {
       }
       if (e.label) {
         const s = this.project(root.position.clone().add(new THREE.Vector3(0, e.c.height + 0.25, 0)));
-        e.label.style.transform = `translate(${s.x}px, ${s.y}px) translate(-50%, -100%)`;
+        e.label.style.transform = `translate(${Math.min(1560, Math.max(40, s.x))}px, ${Math.max(150, s.y)}px) translate(-50%, -100%)`;
       }
     }
 

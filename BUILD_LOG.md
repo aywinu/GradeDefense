@@ -42,3 +42,4 @@ The hackathon requires Kiro, and Kiro did a large part of the work (see `KIRO_US
 | 2026-11-26 | Moodle block + postMessage handler | Kiro (+ Claude security hardening) |
 | 2026-11-27 | Kiro hooks + custom agent | Kiro |
 | 2026-11-27 | Three.js 3D battlefield + procedural rigged animated creatures, DOM labels | Claude Code |
+| 2026-11-27 | Guided tours with animated SVG illustrations | Claude Code |

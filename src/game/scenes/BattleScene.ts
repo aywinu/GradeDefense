@@ -566,7 +566,7 @@ export class BattleScene extends Phaser.Scene {
       this.stats.qte.ok++;
       sfx('crit');
       this.hud?.caption('Critical strike: knowledge cuts deep', 'good');
-      if (live) this.damageEnemy(live, Math.max(outcome.damage ?? 0, live.maxHp * 0.35), 0xffffff);
+      if (live) this.damageEnemy(live, Math.max(outcome.damage ?? 0, live.maxHp * 0.5), 0xffffff);
     } else if (live && outcome.enrage) {
       sfx('enrage');
       this.hud?.caption(`${live.label} is enraged`, 'bad');
@@ -682,6 +682,18 @@ export class BattleScene extends Phaser.Scene {
       }
     }
     this.handleEvents(res.events, hpBefore);
+    // The exam arrives: every boss that crosses into the duel zone forces a
+    // quick-time question even if the sentinels have not broken it yet.
+    if (this.phase === 'fight') {
+      for (const e of this.gameState.enemies) {
+        if (e.type !== 'exam' || e.isMinion || this.qteDone.has(e.id)) continue;
+        if (e.x < 860) {
+          this.qteDone.set(e.id, 1);
+          void this.runQTE(e);
+          break;
+        }
+      }
+    }
     for (const e of this.gameState.enemies) {
       this.view.moveEnemy(e.id, e.x, e.y, e.hp / e.maxHp);
       const meta = this.enemyMeta.get(e.id);
