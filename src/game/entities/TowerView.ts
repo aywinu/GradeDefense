@@ -1,118 +1,93 @@
 /**
- * TowerView: Phaser rendering for a tower
- * Ref: .kiro/specs/deadline-defense/tasks.md Phase 3.4
- * 
- * Keeps game state updates in plain TS objects.
- * This class only handles rendering.
+ * TowerView: a "sentinel", a stone lantern-obelisk with a course-coloured
+ * soul crystal. Its forge level (earned by studying) adds rune rings.
  */
-
 import Phaser from 'phaser';
 import { getCourseColor } from '../palette';
 
-/**
- * Visual representation of a tower
- */
 export class TowerView extends Phaser.GameObjects.Container {
-  private bodyGraphics: Phaser.GameObjects.Graphics;
-  private rangeCircle: Phaser.GameObjects.Graphics;
-  private courseColor: number;
-  private baseRange: number;
+  readonly courseId: string;
+  private crystal: Phaser.GameObjects.Image;
+  private glow: Phaser.GameObjects.Image;
+  private rangeRing: Phaser.GameObjects.Graphics;
+  private runes: Phaser.GameObjects.Graphics;
+  private color: number;
+  private phase = Math.random() * 6;
+  private recoilUntil = 0;
 
-  constructor(
-    scene: Phaser.Scene,
-    x: number,
-    y: number,
-    courseId: string,
-    range: number
-  ) {
+  constructor(scene: Phaser.Scene, x: number, y: number, courseId: string, range: number, forge = 0) {
     super(scene, x, y);
-    
-    this.courseColor = getCourseColor(courseId);
-    this.baseRange = range;
+    this.courseId = courseId;
+    this.color = getCourseColor(courseId);
 
-    // Create graphics components
-    this.bodyGraphics = new Phaser.GameObjects.Graphics(scene);
-    this.rangeCircle = new Phaser.GameObjects.Graphics(scene);
+    this.rangeRing = scene.add.graphics();
+    this.rangeRing.lineStyle(1, this.color, 0.25);
+    this.rangeRing.strokeCircle(0, 0, range);
+    this.rangeRing.setVisible(false);
 
-    // Add to container
-    this.add(this.rangeCircle);
-    this.add(this.bodyGraphics);
+    const base = scene.add.graphics();
+    // Shadow
+    base.fillStyle(0x000000, 0.45);
+    base.fillEllipse(0, 30, 54, 14);
+    // Plinth
+    base.fillGradientStyle(0x3a3150, 0x3a3150, 0x1d1828, 0x1d1828, 1);
+    base.fillRect(-20, 14, 40, 16);
+    // Obelisk
+    base.fillGradientStyle(0x4a4166, 0x2b2440, 0x2b2440, 0x1d1828, 1);
+    base.beginPath();
+    base.moveTo(-12, 14);
+    base.lineTo(-8, -26);
+    base.lineTo(0, -34);
+    base.lineTo(8, -26);
+    base.lineTo(12, 14);
+    base.closePath();
+    base.fillPath();
+    base.lineStyle(1, this.color, 0.6);
+    base.strokePath();
+    // Carved slit
+    base.lineStyle(2, this.color, 0.5);
+    base.lineBetween(0, -18, 0, 8);
 
-    // Initial draw
-    this.drawRangeCircle(false); // hidden by default
-    this.drawBody();
+    this.runes = scene.add.graphics();
+    this.glow = scene.add.image(0, -40, 'glow').setTint(this.color).setScale(1.3).setAlpha(0.7);
+    this.glow.setBlendMode(Phaser.BlendModes.ADD);
+    this.crystal = scene.add.image(0, -40, 'wisp').setTint(0xffffff).setScale(0.32, 0.42).setAngle(90);
+    this.crystal.setBlendMode(Phaser.BlendModes.ADD);
 
-    // Add to scene
+    this.add([this.rangeRing, base, this.runes, this.glow, this.crystal]);
+    this.setForge(forge);
+    this.setSize(60, 80);
     scene.add.existing(this);
+    this.setDepth(15);
   }
 
-  /**
-   * Draw tower body (simple turret shape)
-   */
-  private drawBody(): void {
-    this.bodyGraphics.clear();
-    
-    // Base (larger circle)
-    this.bodyGraphics.fillStyle(this.courseColor, 0.8);
-    this.bodyGraphics.fillCircle(0, 0, 20);
-    
-    // Top (smaller circle, lighter)
-    this.bodyGraphics.fillStyle(this.courseColor, 1.0);
-    this.bodyGraphics.fillCircle(0, -5, 12);
-    
-    // Stroke outline
-    this.bodyGraphics.lineStyle(2, 0xffffff, 0.3);
-    this.bodyGraphics.strokeCircle(0, 0, 20);
-  }
-
-  /**
-   * Draw range circle
-   * @param visible - Whether to show the range indicator
-   */
-  private drawRangeCircle(visible: boolean): void {
-    this.rangeCircle.clear();
-    
-    if (visible) {
-      this.rangeCircle.lineStyle(2, this.courseColor, 0.4);
-      this.rangeCircle.strokeCircle(0, 0, this.baseRange);
-      this.rangeCircle.fillStyle(this.courseColor, 0.1);
-      this.rangeCircle.fillCircle(0, 0, this.baseRange);
+  setForge(level: number): void {
+    this.runes.clear();
+    for (let i = 0; i < level; i++) {
+      this.runes.lineStyle(1.5, 0xf2b45a, 0.55 - i * 0.06);
+      this.runes.strokeEllipse(0, 28, 60 + i * 12, 16 + i * 3);
     }
   }
 
-  /**
-   * Update range display
-   * @param range - New range in pixels
-   */
-  updateRange(range: number): void {
-    this.baseRange = range;
-    this.drawRangeCircle(this.rangeCircle.visible);
+  showRange(on: boolean): void {
+    this.rangeRing.setVisible(on);
   }
 
-  /**
-   * Show/hide range indicator
-   * @param visible - Whether to show range
-   */
-  setRangeVisible(visible: boolean): void {
-    this.drawRangeCircle(visible);
+  /** Crystal position in world space (projectile origin). */
+  muzzle(): { x: number; y: number } {
+    return { x: this.x, y: this.y - 40 };
   }
 
-  /**
-   * Update visual for upgrades (e.g., make brighter or larger)
-   * @param level - Total upgrade level
-   */
-  updateUpgradeVisual(level: number): void {
-    // Simple visual: increase brightness with upgrades
-    this.bodyGraphics.clear();
-    
-    const alpha = Math.min(1.0, 0.8 + level * 0.05);
-    this.bodyGraphics.fillStyle(this.courseColor, alpha);
-    this.bodyGraphics.fillCircle(0, 0, 20);
-    
-    this.bodyGraphics.fillStyle(this.courseColor, 1.0);
-    this.bodyGraphics.fillCircle(0, -5, 12);
-    
-    this.bodyGraphics.lineStyle(2, 0xffffff, 0.3 + level * 0.1);
-    this.bodyGraphics.strokeCircle(0, 0, 20);
+  fire(timeMs: number): void {
+    this.recoilUntil = timeMs + 120;
+    this.glow.setAlpha(1).setScale(1.7);
+  }
+
+  tick(timeMs: number, reduced: boolean): void {
+    const pulse = reduced ? 0 : Math.sin(timeMs / 500 + this.phase);
+    if (timeMs > this.recoilUntil) {
+      this.glow.setAlpha(0.6 + pulse * 0.1).setScale(1.3 + pulse * 0.08);
+    }
+    if (!reduced) this.crystal.y = -40 + pulse * 2;
   }
 }

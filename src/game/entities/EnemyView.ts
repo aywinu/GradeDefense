@@ -1,207 +1,143 @@
 /**
- * EnemyView: Phaser rendering for an enemy
- * Ref: .kiro/specs/deadline-defense/tasks.md Phase 3.5
- * Ref: .kiro/steering/art-direction.md (enemy design)
- * 
- * Keeps game state updates in plain TS objects.
- * This class only handles rendering.
+ * EnemyView: a ghostly creature carrying its coursework name on a torn scroll.
+ * Shapes per type (art-direction.md): assignment = hooded ghost (shambler),
+ * quiz = imp swarmer, exam = crowned wraith (boss), project/presentation =
+ * stone golem (multi-phase). Minions are small, unlabeled versions.
  */
-
 import Phaser from 'phaser';
 import { getCourseColor } from '../palette';
-import { Palette } from '../palette';
 import type { ItemType } from '../../core/types';
 
-/**
- * Visual representation of an enemy
- */
+const SHAPE: Record<ItemType, { key: string; size: number; minion: number }> = {
+  assignment: { key: 'ghost', size: 0.62, minion: 0.36 },
+  quiz: { key: 'imp', size: 0.7, minion: 0.55 },
+  exam: { key: 'wraith', size: 0.62, minion: 0.26 },
+  project: { key: 'golem', size: 0.6, minion: 0.3 },
+  presentation: { key: 'golem', size: 0.6, minion: 0.3 },
+};
+
 export class EnemyView extends Phaser.GameObjects.Container {
-  private bodyGraphics: Phaser.GameObjects.Graphics;
-  private label: Phaser.GameObjects.Text;
-  private hpBar: Phaser.GameObjects.Graphics;
-  private courseColor: number;
-  private enemyType: ItemType;
-  private isMinion: boolean;
+  readonly isBoss: boolean;
+  readonly isMinion: boolean;
+  private body_: Phaser.GameObjects.Image;
+  private aura: Phaser.GameObjects.Image;
+  private hpBack: Phaser.GameObjects.Rectangle;
+  private hpFill: Phaser.GameObjects.Rectangle;
+  private hpW: number;
+  private phase = Math.random() * Math.PI * 2;
+  private baseScale: number;
+  private color: number;
+  private flashUntil = 0;
+  private enraged = false;
+  private baseTint = 0xffffff;
 
   constructor(
     scene: Phaser.Scene,
     x: number,
     y: number,
     courseId: string,
-    enemyType: ItemType,
-    name: string,
+    type: ItemType,
+    label: string,
     daysLeft: number,
-    isMinion: boolean = false
+    isMinion: boolean,
   ) {
     super(scene, x, y);
-    
-    this.courseColor = getCourseColor(courseId);
-    this.enemyType = enemyType;
     this.isMinion = isMinion;
+    this.isBoss = !isMinion && type === 'exam';
+    this.color = getCourseColor(courseId);
+    const shape = SHAPE[type];
+    this.baseScale = isMinion ? shape.minion : shape.size;
 
-    // Create graphics components
-    this.bodyGraphics = new Phaser.GameObjects.Graphics(scene);
-    this.hpBar = new Phaser.GameObjects.Graphics(scene);
-    
-    // Create label (floating scroll with name + days left)
-    const labelText = isMinion 
-      ? `${name.substring(0, 15)}...` // truncate for minions
-      : `${name}\nDue in ${daysLeft}d`;
-    
-    this.label = new Phaser.GameObjects.Text(scene, 0, -40, labelText, {
-      fontFamily: 'Inter, system-ui, sans-serif',
-      fontSize: isMinion ? '10px' : '12px',
-      color: '#e9dcc0', // Parchment
-      align: 'center',
-      backgroundColor: '#120f1a99', // Semi-transparent Ink
-      padding: { x: 4, y: 2 },
-    });
-    this.label.setOrigin(0.5);
+    this.aura = scene.add.image(0, 8, 'glow').setTint(this.color).setBlendMode(Phaser.BlendModes.ADD);
+    this.aura.setScale(this.baseScale * (this.isBoss ? 3.2 : 1.9)).setAlpha(isMinion ? 0.35 : 0.55);
+    this.body_ = scene.add.image(0, 0, shape.key).setScale(this.baseScale);
+    // Pale core tinted toward the course colour, so silhouettes read on dark stone.
+    const tint = Phaser.Display.Color.Interpolate.ColorWithColor(
+      Phaser.Display.Color.ValueToColor(0xeae6ff),
+      Phaser.Display.Color.ValueToColor(this.color),
+      100,
+      isMinion ? 70 : 55,
+    ).color;
+    this.baseTint = tint;
+    this.body_.setTint(tint).setAlpha(isMinion ? 0.78 : 0.92);
+    this.add([this.aura, this.body_]);
 
-    // Add to container
-    this.add(this.bodyGraphics);
-    this.add(this.hpBar);
-    this.add(this.label);
+    const h = this.body_.displayHeight;
+    this.hpW = Math.max(26, Math.min(this.isBoss ? 140 : 70, this.body_.displayWidth * 0.9));
+    this.hpBack = scene.add.rectangle(0, h / 2 + 6, this.hpW, 4, 0x07060b, 0.85).setStrokeStyle(1, 0x000000, 0.6);
+    this.hpFill = scene.add.rectangle(-this.hpW / 2, h / 2 + 6, this.hpW, 4, 0xe9dcc0).setOrigin(0, 0.5);
+    this.add([this.hpBack, this.hpFill]);
 
-    // Initial draw
-    this.drawBody();
+    if (!isMinion) {
+      const scrollY = -h / 2 - 22;
+      const name = label.replace(/Examination/, 'Exam');
+      const when = daysLeft <= 0 ? 'DUE TODAY' : daysLeft === 1 ? 'DUE TOMORROW' : `${daysLeft} DAYS LEFT`;
+      const t1 = scene.add
+        .text(0, scrollY - 6, name, {
+          fontFamily: 'Spectral, Georgia, serif',
+          fontStyle: '600',
+          fontSize: this.isBoss ? '17px' : '14px',
+          color: '#2a1f12',
+        })
+        .setOrigin(0.5);
+      const t2 = scene.add
+        .text(0, scrollY + 10, when, {
+          fontFamily: 'Inter, system-ui, sans-serif',
+          fontStyle: '700',
+          fontSize: '10px',
+          color: daysLeft <= 7 ? '#8a2a22' : '#5a4630',
+        })
+        .setOrigin(0.5)
+        .setLetterSpacing(1.5);
+      const w = Math.max(t1.width, t2.width) + 34;
+      const scroll = scene.add.image(0, scrollY + 2, 'scroll').setDisplaySize(w, this.isBoss ? 46 : 40);
+      this.add([scroll, t1, t2]);
+    }
 
-    // Add to scene
+    this.setSize(this.body_.displayWidth, h);
     scene.add.existing(this);
+    this.setDepth(this.isBoss ? 22 : isMinion ? 18 : 20);
   }
 
-  /**
-   * Draw enemy body shape based on type
-   */
-  private drawBody(): void {
-    this.bodyGraphics.clear();
-    
-    const size = this.isMinion ? 10 : 15;
-    const alpha = this.isMinion ? 0.7 : 0.9;
-
-    // Different shapes per type (as per art direction and R3.1)
-    switch (this.enemyType) {
-      case 'assignment':
-        // Shambler: rectangle (slow, medium HP)
-        this.bodyGraphics.fillStyle(this.courseColor, alpha);
-        this.bodyGraphics.fillRect(-size, -size, size * 2, size * 2);
-        this.bodyGraphics.lineStyle(2, 0xffffff, 0.3);
-        this.bodyGraphics.strokeRect(-size, -size, size * 2, size * 2);
-        break;
-
-      case 'quiz':
-        // Swarmer: diamond (fast, low HP)
-        this.bodyGraphics.fillStyle(this.courseColor, alpha);
-        this.bodyGraphics.beginPath();
-        this.bodyGraphics.moveTo(0, -size);
-        this.bodyGraphics.lineTo(size, 0);
-        this.bodyGraphics.lineTo(0, size);
-        this.bodyGraphics.lineTo(-size, 0);
-        this.bodyGraphics.closePath();
-        this.bodyGraphics.fillPath();
-        this.bodyGraphics.lineStyle(2, 0xffffff, 0.3);
-        this.bodyGraphics.strokePath();
-        break;
-
-      case 'exam':
-        // Boss: large composite (skull-like)
-        const bossSize = this.isMinion ? size : size * 1.5;
-        this.bodyGraphics.fillStyle(this.courseColor, alpha);
-        this.bodyGraphics.fillCircle(0, 0, bossSize);
-        this.bodyGraphics.fillCircle(-bossSize * 0.5, -bossSize * 0.3, bossSize * 0.4);
-        this.bodyGraphics.fillCircle(bossSize * 0.5, -bossSize * 0.3, bossSize * 0.4);
-        this.bodyGraphics.lineStyle(2, Palette.Crimson, 0.6);
-        this.bodyGraphics.strokeCircle(0, 0, bossSize);
-        break;
-
-      case 'project':
-      case 'presentation':
-        // Multi-phase: hexagon
-        this.bodyGraphics.fillStyle(this.courseColor, alpha);
-        this.bodyGraphics.beginPath();
-        for (let i = 0; i < 6; i++) {
-          const angle = (Math.PI / 3) * i;
-          const px = Math.cos(angle) * size;
-          const py = Math.sin(angle) * size;
-          if (i === 0) {
-            this.bodyGraphics.moveTo(px, py);
-          } else {
-            this.bodyGraphics.lineTo(px, py);
-          }
-        }
-        this.bodyGraphics.closePath();
-        this.bodyGraphics.fillPath();
-        this.bodyGraphics.lineStyle(2, 0xffffff, 0.3);
-        this.bodyGraphics.strokePath();
-        break;
+  /** Called every frame by the scene (cheap bob + flicker). */
+  tick(timeMs: number, reduced: boolean): void {
+    if (!reduced) {
+      const s = this.isBoss ? 0.6 : 1;
+      this.body_.y = Math.sin(timeMs / 380 + this.phase) * 3 * s;
+      this.body_.rotation = Math.sin(timeMs / 600 + this.phase) * 0.04 * s;
+      if (this.isBoss) {
+        const beat = Math.pow(Math.max(0, Math.sin(timeMs / 420)), 12);
+        this.aura.setScale(this.baseScale * (3.2 + beat * 0.6));
+      }
     }
-
-    // Add glow effect for main enemies
-    if (!this.isMinion) {
-      this.bodyGraphics.lineStyle(1, this.courseColor, 0.5);
-      this.bodyGraphics.strokeCircle(0, 0, size + 3);
+    if (this.flashUntil && timeMs > this.flashUntil) {
+      this.flashUntil = 0;
+      this.body_.setTint(this.enraged ? 0xffb0b4 : this.baseTint);
     }
   }
 
-  /**
-   * Update HP bar
-   * @param currentHp - Current HP
-   * @param maxHp - Maximum HP
-   */
-  updateHpBar(currentHp: number, maxHp: number): void {
-    this.hpBar.clear();
-    
-    if (currentHp <= 0 || currentHp >= maxHp) {
-      return; // Don't show bar if full or dead
-    }
-
-    const barWidth = this.isMinion ? 20 : 30;
-    const barHeight = 4;
-    const barY = this.isMinion ? -20 : -30;
-    
-    // Background
-    this.hpBar.fillStyle(0x000000, 0.5);
-    this.hpBar.fillRect(-barWidth / 2, barY, barWidth, barHeight);
-    
-    // HP fill
-    const hpPercent = currentHp / maxHp;
-    const fillWidth = barWidth * hpPercent;
-    const color = hpPercent > 0.5 ? 0x4fc29a : (hpPercent > 0.25 ? 0xf2b45a : 0xb3202c);
-    
-    this.hpBar.fillStyle(color, 0.9);
-    this.hpBar.fillRect(-barWidth / 2, barY, fillWidth, barHeight);
+  hitFlash(timeMs: number): void {
+    this.body_.setTint(0xffffff);
+    this.flashUntil = timeMs + 70;
   }
 
-  /**
-   * Apply neglected visual effect (glow/pulse)
-   */
-  applyNeglectedEffect(): void {
-    this.bodyGraphics.clear();
-    this.drawBody();
-    
-    // Add extra glow for neglected enemies
-    const size = this.isMinion ? 10 : 15;
-    this.bodyGraphics.lineStyle(2, Palette.Crimson, 0.7);
-    this.bodyGraphics.strokeCircle(0, 0, size + 5);
-    
-    // TODO: Add tween pulse animation
+  updateHpBar(hp: number, maxHp: number): void {
+    const f = Phaser.Math.Clamp(hp / maxHp, 0, 1);
+    this.hpFill.width = this.hpW * f;
+    this.hpFill.fillColor = f > 0.5 ? 0xe9dcc0 : f > 0.25 ? 0xf2b45a : 0xff6b74;
   }
 
-  /**
-   * Apply overdue visual effect (red tint)
-   */
   applyOverdueEffect(): void {
-    // Add red tint to label
-    this.label.setBackgroundColor('#b3202c99');
+    this.aura.setTint(0xb3202c).setAlpha(0.75);
   }
 
-  /**
-   * Update label text (for days left changes)
-   */
-  updateLabel(name: string, daysLeft: number): void {
-    const labelText = this.isMinion 
-      ? `${name.substring(0, 15)}...`
-      : `${name}\nDue in ${daysLeft}d`;
-    this.label.setText(labelText);
+  setEnraged(on: boolean): void {
+    this.enraged = on;
+    this.aura.setTint(on ? 0xff3344 : this.color);
+    this.body_.setTint(on ? 0xffb0b4 : this.baseTint);
+  }
+
+  setNeglected(): void {
+    this.aura.setAlpha(0.8).setScale(this.aura.scaleX * 1.15);
   }
 }

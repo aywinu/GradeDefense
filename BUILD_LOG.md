@@ -32,3 +32,4 @@ The hackathon requires Kiro, and Kiro did a large part of the work (see `KIRO_US
 | 2026-11-26 | Task 3.10 sim purity (game clock), SimConfig, pending spawns | Kiro |
 | 2026-11-26 | Task 2.3 question topics | Kiro |
 | 2026-11-26 | War Room scene, TrialPanel, study model glue, versioned save + tests, WebAudio synth | Claude Code |
+| 2026-11-26 | Task 5.1 QTE core | Kiro (+ Claude flaky-test fix) |

@@ -20,6 +20,10 @@ export interface AtmosphereOptions {
   candleX?: number;
   /** Extra fog density 0..1 (title screen wants more). */
   fog?: number;
+  /** Foreground fog strength 0..1 (drawn over creatures; keep low in battle). */
+  frontFog?: number;
+  /** Vignette strength 0..1. */
+  vignette?: number;
 }
 
 export class Atmosphere {
@@ -87,7 +91,7 @@ export class Atmosphere {
     try {
       const back = scene.add.noisesimplex2d(fogCfg(3, 6, 0x000000, shade(0x3a3150, 0.45 + density * 0.4)), W / 2, H / 2, W, H);
       back.setDepth(-80).setBlendMode(Phaser.BlendModes.SCREEN);
-      const front = scene.add.noisesimplex2d(fogCfg(11, 4, 0x000000, shade(0x4a4466, 0.18 + density * 0.3)), W / 2, H / 2, W, H);
+      const front = scene.add.noisesimplex2d(fogCfg(11, 4, 0x000000, shade(0x4a4466, this.opts.frontFog ?? 0.18 + density * 0.3)), W / 2, H / 2, W, H);
       front.setDepth(50).setBlendMode(Phaser.BlendModes.SCREEN);
       this.fogs.push(back, front);
     } catch {
@@ -117,7 +121,7 @@ export class Atmosphere {
 
     // Vignette on the camera.
     try {
-      scene.cameras.main.filters.external.addVignette(0.5, 0.5, 0.95, 0.6);
+      scene.cameras.main.filters.external.addVignette(0.5, 0.5, 0.95, this.opts.vignette ?? 0.6);
     } catch {
       /* filters unavailable */
     }

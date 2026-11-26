@@ -28,3 +28,4 @@ Honest log of what Kiro did in this project. Kiro CLI ran headless (`kiro-cli ch
 | 2026-11-26 | Task 6.1 | Readiness core rules + 61 unit/property tests | Passes |
 | 2026-11-26 | Task 3.10 | Review fixes: game clock instead of Date.now, no game imports in core, pending spawns in state | Passes |
 | 2026-11-26 | Task 2.3 | Topic labels for all 60 questions | Passes |
+| 2026-11-26 | Task 5.1 | QTE core rules, trigger thresholds, outcomes + property tests | Claude added noNaN to a float generator (flaky NaN counterexample) |
