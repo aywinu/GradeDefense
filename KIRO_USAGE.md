@@ -4,7 +4,7 @@ Kiro was the engine of this project, not an add-on. Every game rule, the questio
 
 | | |
 |---|---|
-| Kiro runs | 26, every prompt saved in [`.kiro/runs/`](.kiro/runs) |
+| Kiro runs | 27, every prompt saved in [`.kiro/runs/`](.kiro/runs) |
 | Spec | `.kiro/specs/deadline-defense/` – 17 requirement groups in EARS form (49 WHEN/IF/WHILE clauses), design, ~440 tasks |
 | Steering | 4 files, always included |
 | Hooks | 3 IDE hooks + 2 agent hooks |
@@ -43,7 +43,7 @@ Selected invariants (see `src/core/*.prop.test.ts`, `src/import/*.test.ts`, `src
 - the `.ics` parser and the postMessage guard **never throw on arbitrary input**; a valid payload always yields at most 6 courses;
 - the notes-to-questions generator never throws; every question has 4 distinct choices containing the answer exactly once.
 
-`src/core/balance.test.ts` runs Kiro's pure simulation headlessly over the whole demo semester. It proves the design claim: **an idle player loses, and a player who studies holds**.
+`src/core/balance.test.ts` runs Kiro's pure simulation headlessly over the whole demo semester with a simulated student. It proves the design claim: **a student who never answers loses, and one who answers a question every 10 s at 75% accuracy holds**. Answering more often or more accurately never makes it worse.
 
 ## 4. Hooks
 | Hook | When | What |
@@ -91,6 +91,8 @@ Selected invariants (see `src/core/*.prop.test.ts`, `src/import/*.test.ts`, `src
 | 23 | 11 Notes → questions | cloze generator + properties, pdf.js extraction, study-skills bank | Claude added citation/anaphora filters after a real PDF test |
 | 24 | 15 Smoke tests | 7 Playwright tests | Claude fixed a stale-server config and a default save; all pass |
 | 25 | Spec sync | tasks reconciled with the code (`--agent deadline-dev`) | — |
+| 26 Duel combat (R18) | spec amendment + src/core/duel.ts (seals, applyAnswer, creepSpeed) + unit/property tests | Claude built the duel UI and scene on top |
+| 27 Duel balance | headless semester simulation with a simulated student | passes untuned (creepScale 1.0) |
 
 ## 8. Division of labour (honest)
 - **Kiro:** spec, steering-driven implementation of all of `src/core` (rules, simulation, waves, QTE, readiness), question bank and topics, `.ics` parser, notes-to-questions generator, postMessage contract, the Moodle plugin, hooks, custom agent, Playwright tests.
