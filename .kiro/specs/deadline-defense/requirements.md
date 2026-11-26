@@ -530,6 +530,148 @@ A dark-fantasy tower-defense game where the student's real semester is the fortr
 
 ---
 
+## R15: War Room (Home Screen)
+
+### R15.1: Course Status Cards
+**WHEN** the player enters the War Room (home screen, before any battle),  
+**THE SYSTEM SHALL** display one card per course with:
+- Current grade (computed from past items with grades, or "N/A" if no graded items)
+- Threat level (derived from priority score of upcoming items: "Low" / "Medium" / "High" / "Critical")
+- Next 1-3 big enemies (exams, projects, high-weight assignments) with real dates, weights, and days remaining (e.g., "Midterm Examination: Thu 3 Dec, 100 pts, in 4 days")
+
+**ACCEPTANCE:**
+- One card per course (6 total for demo semester)
+- Cards are visually distinct (course color accent from palette)
+- Threat level uses priority score thresholds (<0.3 = Low, 0.3-0.5 = Medium, 0.5-0.7 = High, ≥0.7 = Critical)
+- Dates and weights are accurate (from real coursework items)
+
+### R15.2: Semester Timeline
+**WHEN** the player views the War Room,  
+**THE SYSTEM SHALL** display a horizontal semester timeline showing:
+- All future deadlines as tombstones (small vertical markers) on a calendar strip
+- Each tombstone is tinted with its course color
+- Current date is marked with a vertical line or indicator
+- Tombstones are positioned proportionally by date (days from now)
+
+**ACCEPTANCE:**
+- Timeline spans from "today" to the furthest deadline (up to 10 weeks)
+- Hovering/clicking a tombstone shows item name and date
+- Timeline is scrollable if deadlines span >3 months
+
+---
+
+## R16: Battle Plan & Practice Trials
+
+### R16.1: Battle Plan for Big Enemies
+**WHEN** the player selects a big enemy (exam, project, or high-weight assignment) in the War Room,  
+**THE SYSTEM SHALL** display a battle plan card with:
+- Topics to review (extracted from that course's checkpoint questions and, if loaded, PDF topics)
+- Number of study sessions (practice trials) remaining before the due date (1 trial per day recommended)
+- Current readiness % for that course (see R16.3)
+- "Train now" button to start a practice trial
+
+**ACCEPTANCE:**
+- Topics are listed as short phrases (e.g., "Matrix multiplication", "Eigenvalues")
+- Study sessions count is computed as `max(0, daysUntilDue - 1)` (at least one day buffer)
+- Readiness % is displayed with color coding (red <40%, yellow 40-70%, green >70%)
+- "Train now" button is prominent and accessible via keyboard (Enter)
+
+### R16.2: Practice Trials (5-Question Training)
+**WHEN** the player clicks "Train now" or selects "Train" from the War Room menu,  
+**THE SYSTEM SHALL** present a 5-question practice trial for the selected course:
+- Questions are drawn from that course's checkpoint pool (or generated from PDF if loaded)
+- Each question is multiple-choice (4 options)
+- Immediate feedback after each answer (correct/incorrect with explanation if available)
+- Score is computed as percentage correct (0-100%)
+
+**ACCEPTANCE:**
+- Trial completes in <2 minutes (no time limit per question)
+- Trial does not pause or affect ongoing game waves
+- Trial can be accessed from War Room or pre-wave Scout report
+- Questions are not repeated within a single trial
+
+### R16.3: Readiness Tracking per Course
+**WHEN** the player completes a practice trial,  
+**THE SYSTEM SHALL**:
+- Update the readiness score for that course (weighted average of recent trial scores with recency weighting)
+- Track trial history (timestamp, score, topic coverage)
+- Display readiness % in War Room course cards and Scout reports
+- Identify weak topics (questions consistently answered incorrectly) and list them in the Battle Plan
+
+**ACCEPTANCE:**
+- Readiness score is in [0, 100] (pure function, unit-testable)
+- More correct answers never lowers readiness (monotonic improvement within a trial)
+- Recency weighting: recent trials (last 7 days) have 2× weight vs older trials
+- Weak topics are listed if answer rate <50% across all trials for that topic
+- Readiness % is persisted in localStorage
+
+### R16.4: Tower Upgrades from Training
+**WHEN** the player completes a practice trial with score ≥70%,  
+**THE SYSTEM SHALL** grant:
+- Tower upgrade currency for that course (e.g., +50 gold or +1 upgrade token per trial)
+- Visual feedback: "Training complete! Tower upgraded." with GSAP animation
+
+**WHEN** the player completes a practice trial with score ≥90%,  
+**THE SYSTEM SHALL** additionally:
+- Charge the special attack meter by +33% for that course
+
+**ACCEPTANCE:**
+- Currency/upgrades are granted immediately after trial ends
+- No reward for scores <70% (encourages re-training on weak topics)
+- Upgrades are course-specific (not generic gold pool)
+- Visual feedback completes in <1s
+
+---
+
+## R17: Scout Report & Debrief
+
+### R17.1: Scout Report (Pre-Wave)
+**WHEN** the player is about to start a wave (from War Room or after previous wave),  
+**THE SYSTEM SHALL** display a Scout Report overlay with:
+- Upcoming enemies in this wave (names, types, courses)
+- Current readiness % for each course represented in the wave
+- Recommendation: "Your CV readiness is 40%. Train before the battle?" if any course readiness <60%
+- Options: "Train now" (opens practice trial for weakest course) or "Start battle" (proceeds to wave)
+
+**ACCEPTANCE:**
+- Scout report is shown immediately after clicking "Start Wave" in War Room
+- Report is skippable (Esc or "Start battle" button)
+- Readiness % is accurate (from latest trial scores)
+- Recommendation highlights the weakest course (lowest readiness % among wave participants)
+- Keyboard navigation: Tab to cycle, Enter to select
+
+### R17.2: Debrief (Post-Wave)
+**WHEN** a wave ends (victory or defeat),  
+**THE SYSTEM SHALL** display a Debrief overlay with:
+- Wave outcome: "Victory" or "Defeat"
+- Performance summary: enemies defeated, fortress damage taken, gold earned
+- Real-world mapping: "The Midterm boss broke through: your CV readiness is low. 2 trials recommended before Thursday."
+- Specific recommendations per course based on enemy outcomes (e.g., if exam enemy survived → "High priority: train CV101 before Dec 3")
+- Next deadline reminder: "Next big enemy: DSA Quiz in 3 days"
+
+**ACCEPTANCE:**
+- Debrief is shown immediately after wave ends (before returning to War Room)
+- Mapping is specific: mentions exact enemy names (e.g., "Midterm Examination") and real due dates
+- Recommendations are actionable: specific trial counts and deadlines
+- "Return to War Room" button is prominent
+- Debrief can be dismissed with Esc or Enter
+
+### R17.3: Real-World Context in Feedback
+**WHEN** generating Scout reports or Debriefs,  
+**THE SYSTEM SHALL**:
+- Use real coursework item names (not generic "Enemy A")
+- Use real due dates and days remaining
+- Compute recommended trial count as `ceil((daysUntilDue - 1) * (1 - readiness/100))` (more trials needed if readiness is low and deadline is close)
+- Prioritize feedback for high-weight items (exams, projects) over low-weight quizzes
+
+**ACCEPTANCE:**
+- Zero placeholder text (e.g., no "TODO" or "generic enemy")
+- Trial recommendations are non-negative integers (pure function, unit-testable)
+- Feedback is concise (<3 sentences per course in Debrief)
+- High-weight items (≥50 points) are always mentioned if present in wave
+
+---
+
 ## R14: Moodle Block & LMS Showcase
 
 ### R14.1: Moodle Block Plugin Structure

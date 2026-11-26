@@ -190,6 +190,96 @@ Using `fast-check`, we verify:
 
 ---
 
+## Readiness & Study Loop (`src/core/readiness.ts`)
+
+Tracks student readiness per course based on practice trial history with recency weighting.
+
+### Core Functions
+
+```typescript
+export interface TrialResult {
+  courseId: CourseId;
+  timestamp: number; // Date.now()
+  score: number; // 0-100
+  questionsAnswered: { questionId: string; correct: boolean; topic?: string }[];
+}
+
+export interface CourseReadiness {
+  courseId: CourseId;
+  readiness: number; // 0-100, weighted average of recent trial scores
+  trialHistory: TrialResult[];
+  weakTopics: string[]; // topics with <50% correct rate
+}
+
+export function calculateReadiness(trialHistory: TrialResult[], now: number): number {
+  // Weighted average with recency weighting (last 7 days = 2× weight, older = 1×)
+  if (trialHistory.length === 0) return 0;
+  
+  let totalWeightedScore = 0;
+  let totalWeight = 0;
+  
+  for (const trial of trialHistory) {
+    const daysAgo = (now - trial.timestamp) / 86400000;
+    const weight = daysAgo <= 7 ? 2.0 : 1.0;
+    totalWeightedScore += trial.score * weight;
+    totalWeight += weight;
+  }
+  
+  return Math.min(100, totalWeightedScore / totalWeight);
+}
+
+export function identifyWeakTopics(trialHistory: TrialResult[]): string[] {
+  // Count correct/incorrect per topic
+  const topicStats = new Map<string, { correct: number; total: number }>();
+  
+  for (const trial of trialHistory) {
+    for (const q of trial.questionsAnswered) {
+      if (!q.topic) continue;
+      const stats = topicStats.get(q.topic) ?? { correct: 0, total: 0 };
+      stats.total++;
+      if (q.correct) stats.correct++;
+      topicStats.set(q.topic, stats);
+    }
+  }
+  
+  // Return topics with <50% correct rate
+  return Array.from(topicStats.entries())
+    .filter(([_, stats]) => stats.total >= 3 && stats.correct / stats.total < 0.5)
+    .map(([topic, _]) => topic)
+    .sort();
+}
+
+export function recommendTrialCount(
+  daysUntilDue: number,
+  readiness: number
+): number {
+  // More trials needed if readiness is low and deadline is close
+  if (daysUntilDue <= 0) return 0;
+  const gap = 1 - readiness / 100; // 0 (fully ready) to 1 (not ready)
+  return Math.max(0, Math.ceil((daysUntilDue - 1) * gap));
+}
+
+export function threatLevel(priorityScore: number): 'Low' | 'Medium' | 'High' | 'Critical' {
+  if (priorityScore < 0.3) return 'Low';
+  if (priorityScore < 0.5) return 'Medium';
+  if (priorityScore < 0.7) return 'High';
+  return 'Critical';
+}
+```
+
+### Property-Based Tests (Invariants)
+
+Using `fast-check`, verify:
+
+1. **Readiness Bounds**: `0 ≤ readiness ≤ 100` for any trial history
+2. **Monotonic Improvement**: Adding a trial with score ≥ current readiness never lowers readiness
+3. **Recency Weighting**: Recent trials (≤7 days) have 2× impact vs older trials
+4. **Trial Recommendations Non-Negative**: `recommendTrialCount(...) ≥ 0`
+5. **Weak Topic Thresholds**: Topics appear in weak list only if <50% correct rate across ≥3 questions
+6. **Determinism**: Same inputs → same outputs (no Date.now in readiness calculation, only in trial timestamps)
+
+---
+
 ## Scene Flow (`src/game/scenes/`)
 
 ```
@@ -200,19 +290,50 @@ Using `fast-check`, we verify:
 ┌──────────┐
 │TitleScene│  Animated title, Start/Continue/Settings buttons
 └────┬─────┘
-     ↓ (if tutorial not completed)
-┌──────────┐
-│TutorScene│  One-wave tutorial, overlay tooltips
-└────┬─────┘
      ↓
 ┌──────────┐
-│BattleScn │  Main gameplay: wave spawning, tower firing, checkpoint panel
+│WarRoom   │  Home screen: course cards with grades/threat levels, semester timeline,
+│  Scene   │  "Train" and "Start Wave" buttons, Battle Plan for big enemies
 └────┬─────┘
-     ↓ (fortress HP = 0)
-┌──────────┐
-│ GameOver │  Stats, Retry button
-└──────────┘
+     │
+     ├─→ (Train) ──→ ┌────────────┐
+     │                │ Trial Scene│  5-question practice trial for selected course
+     │                └─────┬──────┘
+     │                      ↓ (back to War Room)
+     │
+     └─→ (Start Wave) ──→ ┌──────────┐
+                           │Scout Rprt│  Pre-wave: upcoming enemies, readiness check,
+                           │  Overlay │  "Train now" or "Start battle"
+                           └────┬─────┘
+                                ↓ (Start battle)
+                           ┌──────────┐
+                           │BattleScn │  Main gameplay: wave spawning, tower firing, checkpoint panel
+                           └────┬─────┘
+                                ↓ (wave ends)
+                           ┌──────────┐
+                           │ Debrief  │  Post-wave: outcome, performance, real-world mapping,
+                           │  Overlay │  recommendations, next deadline reminder
+                           └────┬─────┘
+                                ↓
+                           ┌──────────┐
+                           │WarRoom   │  (loop back for next wave or more training)
+                           │  Scene   │
+                           └──────────┘
+                                │
+                                ↓ (fortress HP = 0)
+                           ┌──────────┐
+                           │ GameOver │  Stats, Retry button → War Room
+                           └──────────┘
 ```
+
+**Note**: Tutorial (TutorScene) is inserted before first War Room visit if `tutorialCompleted === false`.
+
+### War Room Scene Responsibilities
+- Display course status cards (grade, threat level, next big enemies)
+- Render semester timeline (tombstones for all deadlines)
+- Handle "Train" button → open Trial Scene for selected course
+- Handle "Start Wave" button → show Scout Report overlay
+- Display Battle Plan overlay when big enemy selected (topics, readiness, recommended trials)
 
 ### BattleScene Responsibilities
 - Render towers, enemies, fortress, lanes
@@ -222,6 +343,134 @@ Using `fast-check`, we verify:
 - Apply damage, update HP
 - Trigger sound effects (Howler) and particle effects
 - Display HUD overlay (gold, HP, charge meter) via `src/ui/hud.ts`
+
+---
+
+## War Room UI Design (`src/ui/warroom/`)
+
+The War Room is a DOM-based screen (not Phaser canvas) for accessibility and rich text layout. Uses GSAP for animations.
+
+### Layout Structure
+
+```
+┌────────────────────────────────────────────────────────┐
+│  DEADLINE DEFENSE                        [Settings] [?]│
+├────────────────────────────────────────────────────────┤
+│  Semester Timeline (horizontal scroll)                 │
+│  [==================|=====|==|=====|==============]    │
+│   Nov 28  Dec 5  Dec 12  Dec 19  Dec 26  Jan 2        │
+│    (tombstones positioned by date, course-colored)     │
+├────────────────────────────────────────────────────────┤
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐               │
+│  │ CV101   │  │ PHO101  │  │ MGT101  │  (3 cards/row)│
+│  │ Grade: B│  │ Grade: A│  │ Grade:--│               │
+│  │ 🔥 HIGH │  │ ⚡ MEDIUM│  │ 💀 CRIT.│               │
+│  │ Midterm │  │ Quiz    │  │ Project │               │
+│  │ Dec 3   │  │ Nov 30  │  │ Dec 10  │               │
+│  │ 100 pts │  │ 20 pts  │  │ 80 pts  │               │
+│  │ in 5d   │  │ in 2d   │  │ in 12d  │               │
+│  │ [Train] │  │ [Train] │  │ [Train] │               │
+│  └─────────┘  └─────────┘  └─────────┘               │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐               │
+│  │ DSA101  │  │ MKT101  │  │ MATH101 │               │
+│  │ ...     │  │ ...     │  │ ...     │               │
+│  └─────────┘  └─────────┘  └─────────┘               │
+├────────────────────────────────────────────────────────┤
+│                   [START WAVE]           [TRAIN ALL]  │
+└────────────────────────────────────────────────────────┘
+```
+
+### Course Card Component (`src/ui/warroom/CourseCard.ts`)
+
+DOM element with:
+- **Header**: Course ID badge (colored with course color from palette)
+- **Grade**: Current grade (computed from past items) or "N/A"
+- **Threat indicator**: Icon + text ("Low" / "Medium" / "High" / "Critical") with color coding
+- **Next big enemies**: List of 1-3 upcoming high-priority items (name, date, points, days remaining)
+- **Train button**: Launches Trial Scene for this course
+- **Click to expand**: Shows Battle Plan overlay (topics, readiness %, recommended trials)
+
+Style:
+- Dark parchment background (grimoire page aesthetic, see art-direction.md)
+- Ink borders, ornamental corner flourishes (inline SVG)
+- Hover: subtle glow (candle gold accent)
+- Focus: ring in candle gold for keyboard nav
+
+### Semester Timeline Component (`src/ui/warroom/Timeline.ts`)
+
+Horizontal strip with:
+- **Tombstone markers**: One per future deadline, positioned proportionally by days from now
+- **Course color tint**: Each tombstone uses its course color
+- **Current date marker**: Vertical line or glow at "today"
+- **Hover tooltip**: Shows item name, date, points on tombstone hover
+- **Scrollable**: Horizontal scroll if timeline spans >90 days
+
+Rendering:
+- Canvas or SVG for tombstone shapes (small cross icons)
+- CSS transitions for smooth scroll
+- GSAP entrance animation (tombstones rise from bottom, stagger)
+
+### Battle Plan Overlay (`src/ui/warroom/BattlePlan.ts`)
+
+Modal overlay (appears when big enemy clicked in course card):
+- **Enemy details**: Name, type, due date, weight, days remaining
+- **Topics to review**: Bulleted list (extracted from checkpoint questions for that course)
+- **Readiness %**: Large number with color coding (red/yellow/green)
+- **Weak topics**: List of topics with <50% correct rate (if any)
+- **Recommended trials**: "2 practice sessions before Dec 3" (computed from `recommendTrialCount`)
+- **Train now button**: Primary CTA, launches Trial Scene for this course
+- **Close button**: Esc key or X button
+
+Style:
+- Dark semi-transparent backdrop (vignette effect)
+- Centered panel (grimoire page style)
+- GSAP entrance: ink-bleed wipe from center
+
+### Scout Report Overlay (`src/ui/warroom/ScoutReport.ts`)
+
+Modal overlay (appears when "Start Wave" clicked):
+- **Wave preview**: "This week: Midterm (CV101), Quiz (PHO101), Assignment (DSA101)"
+- **Readiness check**: List courses in wave with current readiness % (highlight lowest in red if <60%)
+- **Recommendation**: "Your CV readiness is 40%. Train before the battle?" (shows if any <60%)
+- **Options**: "Train now" (opens Trial Scene for weakest course) or "Start battle" (proceeds to BattleScene)
+
+Style:
+- Smaller overlay than Battle Plan (top 1/3 of screen)
+- Quick dismissal (Esc or Enter)
+- GSAP entrance: slide from top
+
+### Debrief Overlay (`src/ui/warroom/Debrief.ts`)
+
+Modal overlay (appears after wave ends):
+- **Outcome**: "VICTORY" or "DEFEAT" (large text)
+- **Performance**: Enemies defeated (X/Y), fortress damage (Z pts), gold earned (+G)
+- **Real-world mapping**: 2-3 sentences linking game events to real deadlines, e.g.:
+  - "The Midterm boss broke through: your CV readiness is low."
+  - "2 trials recommended before Thursday."
+  - "Quiz enemies overwhelmed the DSA tower: practice data structures."
+- **Next deadline**: "Next big enemy: MKT Project in 8 days"
+- **Return to War Room button**: Primary CTA
+
+Style:
+- Full-screen overlay (dark backdrop)
+- Centered panel (victory = green accent, defeat = red accent)
+- GSAP entrance: fade + scale from 0.8
+
+### Trial Scene (`src/game/scenes/TrialScene.ts`)
+
+Phaser scene or DOM screen for 5-question practice:
+- **Question counter**: "Question 2/5" (top-left)
+- **Question text**: Large, readable (Spectral font)
+- **4 answer buttons**: Labeled A-D or 1-4, keyboard shortcuts (1-4 keys)
+- **Immediate feedback**: After answer, show "Correct!" (green) or "Incorrect. Answer: B" (red) with 1s delay
+- **Score display**: After 5 questions, show "Score: 4/5 (80%)" with performance message
+- **Rewards**: If score ≥70%, show "Tower upgrade earned!" and "+33% special charge" (if ≥90%)
+- **Return to War Room**: After score screen
+
+Style:
+- Grimoire page aesthetic (dark parchment, ink text)
+- GSAP transitions between questions (page flip effect)
+- No time limit (untimed practice)
 
 ---
 
