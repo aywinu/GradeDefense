@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Learning Portal · Dashboard</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root { --bg: #f4f5f7; --card: #fff; --ink: #1d2125; --muted: #6a737b; --line: #dee2e6; --brand: #3d5a80; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--ink); }
+      header { height: 56px; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 20px; gap: 26px; }
+      .logo { font-weight: 700; color: var(--brand); display: flex; align-items: center; gap: 8px; }
+      .logo i { width: 22px; height: 22px; border-radius: 6px; background: var(--brand); display: inline-block; }
+      nav a { color: var(--muted); text-decoration: none; margin-right: 18px; font-size: 14px; }
+      nav a.on { color: var(--ink); font-weight: 600; border-bottom: 2px solid var(--brand); padding-bottom: 17px; }
+      .user { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
+      .user i { width: 32px; height: 32px; border-radius: 50%; background: #c8d2dc; display: inline-block; }
+      main { display: grid; grid-template-columns: 1fr 780px; gap: 24px; padding: 24px; max-width: 1500px; margin: 0 auto; }
+      h1 { font-size: 26px; font-weight: 600; margin-bottom: 16px; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 18px; margin-bottom: 18px; }
+      .card h2 { font-size: 17px; font-weight: 600; margin-bottom: 12px; }
+      .courses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+      .course { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+      .course .img { height: 70px; }
+      .course .t { padding: 10px 12px; font-size: 14px; font-weight: 600; }
+      .course .s { padding: 0 12px 12px; font-size: 12px; color: var(--muted); }
+      .bar { height: 6px; background: #e9ecef; border-radius: 3px; margin: 0 12px 12px; overflow: hidden; }
+      .bar i { display: block; height: 100%; background: var(--brand); }
+      .timeline li { list-style: none; display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+      .timeline li span { color: var(--muted); }
+      .block { padding: 0; overflow: hidden; }
+      .block .bh { padding: 12px 16px; border-bottom: 1px solid var(--line); font-weight: 600; font-size: 15px; display: flex; justify-content: space-between; }
+      .block .bh small { color: var(--muted); font-weight: 400; }
+      .frame { position: relative; aspect-ratio: 16 / 9; background: #07060b; }
+      .frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+      .note { font-size: 12px; color: var(--muted); padding: 10px 16px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo"><i></i> My Learning Portal</div>
+      <nav><a class="on" href="#">Dashboard</a><a href="#">My courses</a><a href="#">Calendar</a><a href="#">Grades</a></nav>
+      <div class="user">Student <i></i></div>
+    </header>
+    <main>
+      <section>
+        <h1>Dashboard</h1>
+        <div class="card">
+          <h2>Course overview</h2>
+          <div class="courses" id="courses"></div>
+        </div>
+        <div class="card">
+          <h2>Timeline</h2>
+          <ul class="timeline" id="timeline"></ul>
+        </div>
+      </section>
+      <aside>
+        <div class="card block">
+          <div class="bh">Deadline Defense <small>block</small></div>
+          <div class="frame"><iframe id="dd" title="Deadline Defense" allow="autoplay"></iframe></div>
+          <div class="note">Your upcoming deadlines, defended. Data is sent from this page to the block with postMessage; no tokens leave the portal.</div>
+        </div>
+      </aside>
+    </main>
+    <script type="module">
+      import demo from '../src/data/demo.json';
+      // Same contract as the real Moodle block (docs/moodle-integration.md).
+      const DAY = 86400000;
+      const now = Date.now();
+      const hues = ['#5b8def', '#a274f0', '#e0874a', '#d9b54a', '#d85a8e', '#4fc29a'];
+      const events = demo.courses.flatMap((c) =>
+        c.items
+          .filter((i) => i.grade === null)
+          .map((i) => ({
+            id: i.id,
+            courseId: c.id,
+            courseTitle: c.title,
+            name: i.name,
+            dueDate: new Date(now + i.daysOffset * DAY).toISOString(),
+            type: i.type,
+            points: i.points,
+          })),
+      );
+      document.getElementById('courses').innerHTML = demo.courses
+        .map((c, k) => `<div class="course"><div class="img" style="background:linear-gradient(135deg, ${hues[k]}, #1d2125)"></div><div class="t">${c.title}</div><div class="s">${c.id}</div><div class="bar"><i style="width:${30 + ((k * 17) % 60)}%"></i></div></div>`)
+        .join('');
+      document.getElementById('timeline').innerHTML = events
+        .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+        .slice(0, 6)
+        .map((e) => `<li>${e.name} · ${e.courseId}<span>${new Date(e.dueDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</span></li>`)
+        .join('');
+      const frame = document.getElementById('dd');
+      const target = new URL('../?embed=showcase', location.href);
+      frame.src = target.href;
+      window.addEventListener('message', (ev) => {
+        if (ev.origin !== target.origin || ev.source !== frame.contentWindow) return;
+        if (ev.data?.type === 'gradedefense:ready') frame.contentWindow.postMessage({ type: 'gradedefense:semester', version: 1, events }, target.origin);
+      });
+    </script>
+  </body>
+</html>

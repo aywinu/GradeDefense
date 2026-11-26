@@ -14,6 +14,9 @@ import { campaignLength } from '../../core/wave';
 import { load } from '../../save/save';
 import { Graveyard } from '../fx/Graveyard';
 import { runTour, hasSeen } from '../../ui/Tour';
+import { parseICS, icsToSemester } from '../../import/ics';
+import { save as saveData } from '../../save/save';
+import { invalidateSemester } from '../../study/model';
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
@@ -80,7 +83,11 @@ export class WarRoomScene extends Phaser.Scene {
       `
       <header class="wr-header">
         <div>
-          <div class="wr-eyebrow">${dateStr} &middot; ${source}</div>
+          <div class="wr-eyebrow">${dateStr} &middot; ${source}
+            <button class="link-btn" data-import title="Import your real deadlines from a calendar export (.ics), e.g. Moodle → Calendar → Export">Import calendar</button>
+            ${save.semester.source !== 'demo' ? '<button class="link-btn" data-demo>Use demo</button>' : ''}
+            <input type="file" accept=".ics,text/calendar" data-file hidden />
+          </div>
           <div class="wr-title">The War Room</div>
           <p class="wr-counsel">${counsel}</p>
           <div class="wr-cta">
@@ -114,6 +121,14 @@ export class WarRoomScene extends Phaser.Scene {
       b.addEventListener('click', () => this.showDetail(b.dataset.course!));
       b.addEventListener('focus', () => this.showDetail(b.dataset.course!));
     });
+    const file = layer.querySelector<HTMLInputElement>('[data-file]')!;
+    layer.querySelector('[data-import]')?.addEventListener('click', () => file.click());
+    file.addEventListener('change', () => void this.importIcs(file.files?.[0]));
+    layer.querySelector('[data-demo]')?.addEventListener('click', () => {
+      saveData((d) => (d.semester = { source: 'demo' }));
+      invalidateSemester();
+      this.render(false);
+    });
     layer.querySelectorAll<HTMLButtonElement>('.wr-cta [data-train]').forEach((b) => b.addEventListener('click', () => this.train(b.dataset.train!)));
     layer.querySelector<HTMLButtonElement>('[data-action="battle"]')?.addEventListener('click', () => this.battle());
     this.input.keyboard?.removeAllListeners();
@@ -134,6 +149,33 @@ export class WarRoomScene extends Phaser.Scene {
     }
   }
 
+  /** Import a calendar export (.ics), parsed entirely in the browser. */
+  private async importIcs(f?: File) {
+    if (!f) return;
+    try {
+      const text = await f.text();
+      const sem = icsToSemester(parseICS(text), new Date());
+      const items = sem.courses.reduce((n, c) => n + c.items.length, 0);
+      if (!items) throw new Error('No upcoming deadlines found in that calendar.');
+      saveData((d) => (d.semester = { source: 'ics', json: JSON.stringify(sem), importedAt: Date.now() }));
+      invalidateSemester();
+      this.render(false);
+      this.toast(`Imported ${items} deadlines across ${sem.courses.length} courses. Nothing left your browser.`);
+    } catch (e) {
+      this.toast(e instanceof Error ? e.message : 'That file could not be read as a calendar.');
+    }
+  }
+
+  private toast(msg: string) {
+    const t = document.createElement('div');
+    t.className = 'wr-toast';
+    t.setAttribute('role', 'status');
+    t.textContent = msg;
+    this.layer?.appendChild(t);
+    gsap.fromTo(t, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3 });
+    setTimeout(() => gsap.to(t, { opacity: 0, duration: 0.4, onComplete: () => t.remove() }), 4200);
+  }
+
   /** First-visit guided tour of every control on this screen. */
   tour() {
     this.busy = true;
@@ -145,6 +187,7 @@ export class WarRoomScene extends Phaser.Scene {
         { target: '.wr-cta [data-train]', art: 'train', title: 'Train', body: 'A five-question practice trial for one course. Correct answers raise your readiness and <b>forge</b> that lane\'s sentinels. Key <span class="dd-kbd">T</span>.' },
         { target: '.wr-list', art: 'candles', title: 'Your courses', body: 'Each lit candle is 10% readiness. The word on the right is the threat level. Use <span class="dd-kbd">↑</span><span class="dd-kbd">↓</span> or click a course to see its details.' },
         { target: '.wr-detail', art: 'train', title: 'Battle plan', body: 'The great enemies of the selected course with real dates and weights, how many trials to do before each, and the topics you missed.' },
+        { target: '[data-import]', art: 'timeline', title: 'Your real semester', body: 'Export your calendar from Moodle (Calendar → Export → .ics) and import it here. It is parsed in your browser; nothing is uploaded. Or install our Moodle block and it arrives on its own.' },
         { target: '.epitaph', art: 'epitaph', title: 'Here waits…', body: 'The next big deadline across all courses, carved in stone so you never lose sight of it.' },
         { target: '.timeline', art: 'timeline', title: 'The graveyard of deadlines', body: 'Your whole semester as tombstones. Bigger stones weigh more. Hover one to read it.' },
         { target: '[data-action="battle"]', art: 'lantern', title: 'Face the siege', body: 'Fight this week\'s deadlines. Study checkpoints charge your Lantern; exams trigger quick-time questions. Key <span class="dd-kbd">Enter</span>.' },

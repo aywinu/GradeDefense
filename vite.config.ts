@@ -16,6 +16,10 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false,
     rollupOptions: {
+      input: {
+        main: resolve(import.meta.dirname, 'index.html'),
+        lms: resolve(import.meta.dirname, 'showcase/lms.html'),
+      },
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {

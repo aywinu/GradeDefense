@@ -9,7 +9,7 @@ import type { Semester, Course, CourseworkItem, ItemType } from '../core/types';
  * Incoming event from postMessage (Moodle or showcase).
  */
 export interface IncomingEvent {
-  id: number;
+  id: number | string;
   courseId: string;
   courseTitle: string;
   name: string;
@@ -57,7 +57,7 @@ export function isSemesterMessage(data: unknown): data is SemesterMessage {
     const e = event as Record<string, unknown>;
 
     // Required fields
-    if (typeof e.id !== 'number') return false;
+    if (!(typeof e.id === 'number' || (typeof e.id === 'string' && e.id.length <= 100))) return false;
     if (typeof e.courseId !== 'string' || e.courseId.length > 200) return false;
     if (typeof e.courseTitle !== 'string' || e.courseTitle.length > 200) return false;
     if (typeof e.name !== 'string' || e.name.length > 200) return false;
@@ -224,7 +224,8 @@ export function listenForEmbeddedSemester(
   // Listen for semester data
   const handler = (event: MessageEvent) => {
     // Validate origin (unless allowlist is empty, which shouldn't happen but handle gracefully)
-    if (allowlist.size > 0 && !allowlist.has(event.origin)) {
+    // An empty allowlist means we cannot verify the sender: reject everything.
+    if (!allowlist.has(event.origin)) {
       console.warn('[postmessage] Rejected message from untrusted origin:', event.origin);
       return;
     }

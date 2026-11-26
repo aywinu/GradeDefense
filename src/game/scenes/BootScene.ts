@@ -15,6 +15,8 @@ export class BootScene extends Phaser.Scene {
   async create() {
     createTextures(this);
     await loadFonts(3000);
-    this.scene.start('TitleScene');
+    // Embedded in an LMS block: skip the title and open the useful screen.
+    const embedded = new URLSearchParams(location.search).has('embed');
+    this.scene.start(embedded ? 'WarRoomScene' : 'TitleScene');
   }
 }
