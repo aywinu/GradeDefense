@@ -42,7 +42,7 @@ interface EnemyRec {
 interface TowerRec {
   group: THREE.Group;
   crystal: THREE.Mesh;
-  light: THREE.PointLight;
+  light: THREE.Sprite;
   rings: THREE.Group;
   recoil: number;
   grow: number;
@@ -161,6 +161,8 @@ export class Battlefield3D {
     this.composer.addPass(this.post);
     this.composer.addPass(new OutputPass());
 
+    this.sweepLight = new THREE.PointLight(0x6ee7d0, 0, 9, 1.4);
+    this.scene.add(this.sweepLight);
     this.lantern = new THREE.PointLight(0xffc27a, 0, 5.5, 1.6);
     this.lantern.position.set(0, 1.1, 0);
     this.scene.add(this.lantern);
@@ -325,11 +327,10 @@ export class Battlefield3D {
     halo.scale.setScalar(1.1);
     halo.position.copy(flame.position);
     this.scene.add(halo);
-    const light = new THREE.PointLight(0xffa850, intensity, 4.2, 1.7);
+    const light = new THREE.PointLight(0xffa850, x < -8 ? 0 : intensity, 4.2, 1.7);
     light.position.set(x, baseY + h + 0.25, z);
-    if (this.candles.length < 4) light.castShadow = true;
-    this.scene.add(light);
-    this.candles.push({ light, flame, base: intensity, seed });
+    if (x >= -8) this.scene.add(light);
+    this.candles.push({ light, flame, base: x < -8 ? 0 : intensity, seed });
   }
 
   private buildMist() {
@@ -385,8 +386,11 @@ export class Battlefield3D {
       new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 2.2, roughness: 0.2, toneMapped: false }),
     );
     crystal.position.y = 1.62;
-    const light = new THREE.PointLight(color, 0.9, 2.8, 1.8);
-    light.position.y = 1.6;
+    // A halo sprite instead of a real light: adding lights at runtime forces
+    // shader recompiles (hitches) and many lights cost frame time.
+    const light = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glowTex, color, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.55 }));
+    light.position.y = 1.62;
+    light.scale.setScalar(0.9);
     const rings = new THREE.Group();
     g.add(plinth, obelisk, tip, crystal, light, rings);
     this.scene.add(g);
@@ -563,10 +567,13 @@ export class Battlefield3D {
     this.burst(toWorld(x, y).add(new THREE.Vector3(0, 0.8, 0)), color, 8, 2.6);
   }
 
+  private sweepLight?: THREE.PointLight;
+
   lanternSweep(color: number) {
-    const sweep = new THREE.PointLight(color, 30, 9, 1.4);
+    const sweep = this.sweepLight!;
+    sweep.color.set(color);
+    sweep.intensity = 30;
     sweep.position.set(-9, 1.5, 0);
-    this.scene.add(sweep);
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glowTex, color, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.9 }));
     s.scale.set(4, 9, 1);
     s.position.set(-9, 1.5, 0);
@@ -577,7 +584,8 @@ export class Battlefield3D {
       sweep.position.x = s.position.x = -9 + k * 20;
       if (k < 1) requestAnimationFrame(step);
       else {
-        this.scene.remove(sweep, s);
+        sweep.intensity = 0;
+        this.scene.remove(s);
       }
     };
     step();
@@ -632,7 +640,8 @@ export class Battlefield3D {
       }
       tw.crystal.rotation.y += dt * 1.5;
       tw.crystal.position.y = 1.62 + (this.reduced ? 0 : Math.sin(t * 2 + tw.group.position.z) * 0.05);
-      tw.light.intensity = 0.9 + tw.recoil * 2.5;
+      tw.light.material.opacity = 0.45 + tw.recoil * 0.5;
+      tw.light.scale.setScalar(0.9 + tw.recoil * 0.6);
       (tw.crystal.material as THREE.MeshStandardMaterial).emissiveIntensity = 2.2 + tw.recoil * 4;
       tw.recoil = Math.max(0, tw.recoil - dt * 6);
       tw.rings.rotation.y += dt * 0.4;

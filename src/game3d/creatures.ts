@@ -31,6 +31,22 @@ const shared = {
   stone: new THREE.MeshStandardMaterial({ color: 0x4a4458, roughness: 0.95, flatShading: true }),
 };
 
+let glowTexture: THREE.Texture | null = null;
+function glowMap(): THREE.Texture {
+  if (glowTexture) return glowTexture;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const ctx = c.getContext('2d')!;
+  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.4, 'rgba(255,255,255,0.3)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+  glowTexture = new THREE.CanvasTexture(c);
+  return glowTexture;
+}
+
 function eyeMat(color: number) {
   return new THREE.MeshBasicMaterial({ color, toneMapped: false });
 }
@@ -363,8 +379,10 @@ function wraith(rim: number, scale: number): Creature {
     }
     arms.push({ p: arm.pivot, fingers });
   }
-  const light = new THREE.PointLight(rim, 3, 4.5, 2);
-  light.position.set(-0.4, 1.4, 0);
+  // Glow sprite rather than a real light (no runtime light additions).
+  const light = new THREE.Sprite(new THREE.SpriteMaterial({ color: rim, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.35, map: glowMap() }));
+  light.position.set(-0.3, 1.5, 0);
+  light.scale.set(2.6, 3.2, 1);
   root.add(light);
 
   root.scale.setScalar(scale);
@@ -379,7 +397,7 @@ function wraith(rim: number, scale: number): Creature {
     flash: fx.flash,
     setEnraged: (on) => {
       fx.setEnraged(on);
-      light.color.set(on ? 0xff2a3a : rim);
+      light.material.color.set(on ? 0xff2a3a : rim);
     },
     update(t, dt) {
       phase += dt * 1.6;
@@ -403,7 +421,7 @@ function wraith(rim: number, scale: number): Creature {
         a.fingers.rotation.z = Math.sin(phase * 2.6 + i) * 0.25;
       });
       const flick = 0.85 + Math.sin(t * 9) * 0.1 + Math.sin(t * 23) * 0.05;
-      light.intensity = 3 * flick;
+      light.material.opacity = 0.35 * flick;
       eyes.forEach((e) => e.scale.set(1, Math.sin(t * 0.7) > 0.97 ? 0.2 : 1, 1));
       fx.tickFlash();
     },
@@ -455,8 +473,9 @@ function golem(rim: number, scale: number): Creature {
     root.add(l.pivot);
     legs.push(l.pivot);
   }
-  const light = new THREE.PointLight(0xff7a2a, 1.5, 2.5, 2);
+  const light = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xff7a2a, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.4, map: glowMap() }));
   light.position.y = 1;
+  light.scale.setScalar(1.6);
   root.add(light);
   root.scale.setScalar(scale);
   const mats = cloneMats(root);
@@ -478,7 +497,7 @@ function golem(rim: number, scale: number): Creature {
       body.position.y = 1.0 + Math.abs(Math.cos(phase)) * 0.06;
       body.rotation.x = s * 0.06;
       chunks.forEach((c, i) => (c.rotation.y += dt * 0.2 * (i % 2 ? 1 : -1)));
-      light.intensity = 1.3 + Math.sin(t * 5) * 0.3;
+      light.material.opacity = 0.35 + Math.sin(t * 5) * 0.08;
       fx.tickFlash();
     },
   };
