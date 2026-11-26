@@ -67,12 +67,20 @@ export interface EnemyStats {
   maxHp: number;
   speed: number; // pixels per second
   damage: number; // damage to fortress if reaches end
-  x: number;
-  y: number;
-  pathProgress: number; // 0-1 along lane
+  lane: number; // course index (0-5) for rendering
+  progress: number; // 0-1 along lane (pure model)
+  x: number; // pixel position (renderer-managed, can be computed from progress)
+  y: number; // pixel position (renderer-managed, can be computed from lane)
+  pathProgress: number; // 0-1 along lane (deprecated, use progress)
   spawnedAt: number; // timestamp
+  spawnDelayMs: number; // delay before spawning this enemy (for staggered waves)
+  label: string; // item name for floating scroll
+  daysLeft: number; // days until due (for display)
   lastDamagedAt: number | null;
   neglected: boolean; // buff applied?
+  isOverdue?: boolean; // overdue items get speed buff
+  isMinion?: boolean; // minion vs main enemy
+  parentItemId?: string; // for minions, the parent item ID
   qteTriggered?: boolean; // for exam bosses
 }
 

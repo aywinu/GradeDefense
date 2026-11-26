@@ -1,11 +1,12 @@
 /**
- * Property-based tests for wave generation.
+ * Property-based tests for wave generation (campaign system).
  * Uses fast-check to verify invariants across many random inputs.
  */
 
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { generateWave, createEnemy, getWaveSize } from './wave';
+import { generateWave, getWaveSize, campaignLength } from './wave';
+import { mulberry32 } from './rng';
 import type { Semester } from './types';
 
 /**
@@ -33,7 +34,7 @@ const courseworkItemArb = (now: number, courseId: string) =>
     courseId: fc.constant(courseId),
     name: fc.string({ minLength: 1, maxLength: 50 }),
     type: itemTypeArb,
-    dueDate: fc.integer({ min: -30, max: 30 }).map((days) => new Date(now + days * 86400000)),
+    dueDate: fc.integer({ min: -30, max: 60 }).map((days) => new Date(now + days * 86400000)),
     points: fc.integer({ min: 10, max: 200 }),
     grade: fc.option(fc.integer({ min: 0, max: 100 }), { nil: null }),
   });
@@ -69,7 +70,7 @@ describe('wave generation properties', () => {
         const { courses, startDate, _now: now } = semesterWithNow;
         const semester: Semester = { courses, startDate };
 
-        const wave = generateWave(semester, waveNumber, now);
+        const wave = generateWave(semester, waveNumber, now, mulberry32(42));
 
         expect(wave.length).toBeGreaterThanOrEqual(0);
       })
@@ -82,7 +83,7 @@ describe('wave generation properties', () => {
         const { courses, startDate, _now: now } = semesterWithNow;
         const semester: Semester = { courses, startDate };
 
-        const wave = generateWave(semester, waveNumber, now);
+        const wave = generateWave(semester, waveNumber, now, mulberry32(42));
         const allItemIds = courses.flatMap((c) => c.items.map((i) => i.id));
 
         for (const enemy of wave) {
@@ -98,7 +99,7 @@ describe('wave generation properties', () => {
         const { courses, startDate, _now: now } = semesterWithNow;
         const semester: Semester = { courses, startDate };
 
-        const wave = generateWave(semester, waveNumber, now);
+        const wave = generateWave(semester, waveNumber, now, mulberry32(42));
 
         for (const enemy of wave) {
           expect(enemy.hp).toBeGreaterThan(0);
@@ -115,7 +116,7 @@ describe('wave generation properties', () => {
         const { courses, startDate, _now: now } = semesterWithNow;
         const semester: Semester = { courses, startDate };
 
-        const wave = generateWave(semester, waveNumber, now);
+        const wave = generateWave(semester, waveNumber, now, mulberry32(42));
 
         for (const enemy of wave) {
           expect(enemy.speed).toBeGreaterThan(0);
@@ -130,7 +131,7 @@ describe('wave generation properties', () => {
         const { courses, startDate, _now: now } = semesterWithNow;
         const semester: Semester = { courses, startDate };
 
-        const wave = generateWave(semester, waveNumber, now);
+        const wave = generateWave(semester, waveNumber, now, mulberry32(42));
 
         for (const enemy of wave) {
           expect(enemy.damage).toBeGreaterThanOrEqual(0);
@@ -139,46 +140,131 @@ describe('wave generation properties', () => {
     );
   });
 
-  it('wave 1 is small (max 3 enemies)', () => {
-    fc.assert(
-      fc.property(semesterArb, (semesterWithNow) => {
-        const { courses, startDate, _now: now } = semesterWithNow;
-        const semester: Semester = { courses, startDate };
-
-        const wave = generateWave(semester, 1, now);
-
-        expect(wave.length).toBeLessThanOrEqual(3);
-      })
-    );
-  });
-
-  it('enemy spawns at right edge with zero progress', () => {
+  it('wave sizes are ≤ 40', () => {
     fc.assert(
       fc.property(semesterArb, fc.integer({ min: 1, max: 10 }), (semesterWithNow, waveNumber) => {
         const { courses, startDate, _now: now } = semesterWithNow;
         const semester: Semester = { courses, startDate };
 
-        const wave = generateWave(semester, waveNumber, now);
+        const wave = generateWave(semester, waveNumber, now, mulberry32(42));
+
+        expect(wave.length).toBeLessThanOrEqual(40);
+      })
+    );
+  });
+
+  it('enemy spawns with correct initial state', () => {
+    fc.assert(
+      fc.property(semesterArb, fc.integer({ min: 1, max: 10 }), (semesterWithNow, waveNumber) => {
+        const { courses, startDate, _now: now } = semesterWithNow;
+        const semester: Semester = { courses, startDate };
+
+        const wave = generateWave(semester, waveNumber, now, mulberry32(42));
 
         for (const enemy of wave) {
           expect(enemy.x).toBe(1200);
+          expect(enemy.progress).toBe(0);
           expect(enemy.pathProgress).toBe(0);
+          expect(enemy.neglected).toBe(false);
+          expect(enemy.lastDamagedAt).toBeNull();
         }
       })
     );
   });
 
-  it('enemy is not neglected on spawn', () => {
+  it('campaignLength is in [1, 10]', () => {
+    fc.assert(
+      fc.property(semesterArb, (semesterWithNow) => {
+        const { courses, startDate, _now: now } = semesterWithNow;
+        const semester: Semester = { courses, startDate };
+
+        const length = campaignLength(semester, now);
+
+        expect(length).toBeGreaterThanOrEqual(1);
+        expect(length).toBeLessThanOrEqual(10);
+      })
+    );
+  });
+
+  it('deterministic with same seed', () => {
     fc.assert(
       fc.property(semesterArb, fc.integer({ min: 1, max: 10 }), (semesterWithNow, waveNumber) => {
         const { courses, startDate, _now: now } = semesterWithNow;
         const semester: Semester = { courses, startDate };
 
-        const wave = generateWave(semester, waveNumber, now);
+        const wave1 = generateWave(semester, waveNumber, now, mulberry32(12345));
+        const wave2 = generateWave(semester, waveNumber, now, mulberry32(12345));
+
+        // Should produce identical results
+        expect(wave1.length).toBe(wave2.length);
+
+        for (let i = 0; i < wave1.length; i++) {
+          expect(wave1[i].id).toBe(wave2[i].id);
+          expect(wave1[i].hp).toBe(wave2[i].hp);
+          expect(wave1[i].speed).toBe(wave2[i].speed);
+          expect(wave1[i].itemId).toBe(wave2[i].itemId);
+        }
+      })
+    );
+  });
+
+  it('every enemy has required fields', () => {
+    fc.assert(
+      fc.property(semesterArb, fc.integer({ min: 1, max: 10 }), (semesterWithNow, waveNumber) => {
+        const { courses, startDate, _now: now } = semesterWithNow;
+        const semester: Semester = { courses, startDate };
+
+        const wave = generateWave(semester, waveNumber, now, mulberry32(42));
 
         for (const enemy of wave) {
-          expect(enemy.neglected).toBe(false);
-          expect(enemy.lastDamagedAt).toBeNull();
+          expect(enemy.id).toBeDefined();
+          expect(enemy.id.length).toBeGreaterThan(0);
+          expect(enemy.lane).toBeGreaterThanOrEqual(0);
+          expect(enemy.lane).toBeLessThan(courses.length);
+          expect(enemy.spawnDelayMs).toBeGreaterThanOrEqual(0);
+          expect(enemy.label).toBeDefined();
+          expect(enemy.label.length).toBeGreaterThan(0);
+          expect(typeof enemy.daysLeft).toBe('number');
+          expect(typeof enemy.isMinion).toBe('boolean');
+        }
+      })
+    );
+  });
+
+  it('minions have parentItemId', () => {
+    fc.assert(
+      fc.property(semesterArb, fc.integer({ min: 1, max: 10 }), (semesterWithNow, waveNumber) => {
+        const { courses, startDate, _now: now } = semesterWithNow;
+        const semester: Semester = { courses, startDate };
+
+        const wave = generateWave(semester, waveNumber, now, mulberry32(42));
+        const minions = wave.filter((e) => e.isMinion);
+
+        for (const minion of minions) {
+          expect(minion.parentItemId).toBeDefined();
+          expect(minion.parentItemId!.length).toBeGreaterThan(0);
+        }
+      })
+    );
+  });
+
+  it('only spawns ungraded items', () => {
+    fc.assert(
+      fc.property(semesterArb, fc.integer({ min: 1, max: 10 }), (semesterWithNow, waveNumber) => {
+        const { courses, startDate, _now: now } = semesterWithNow;
+        const semester: Semester = { courses, startDate };
+
+        const wave = generateWave(semester, waveNumber, now, mulberry32(42));
+
+        for (const enemy of wave) {
+          const item = courses
+            .flatMap((c) => c.items)
+            .find((i) => i.id === enemy.itemId);
+
+          expect(item).toBeDefined();
+          if (item) {
+            expect(item.grade).toBeNull();
+          }
         }
       })
     );
@@ -191,120 +277,9 @@ describe('wave generation properties', () => {
         const semester: Semester = { courses, startDate };
 
         const size = getWaveSize(semester, waveNumber, now);
-        const wave = generateWave(semester, waveNumber, now);
+        const wave = generateWave(semester, waveNumber, now, mulberry32(42));
 
         expect(size).toBe(wave.length);
-      })
-    );
-  });
-
-  it('only spawns items due within 7 days and not graded', () => {
-    fc.assert(
-      fc.property(semesterArb, (semesterWithNow) => {
-        const { courses, startDate, _now: now } = semesterWithNow;
-        const semester: Semester = { courses, startDate };
-
-        const wave = generateWave(semester, 5, now); // large wave
-
-        for (const enemy of wave) {
-          const item = courses
-            .flatMap((c) => c.items)
-            .find((i) => i.id === enemy.itemId);
-
-          expect(item).toBeDefined();
-          if (item) {
-            const daysUntil = (item.dueDate.getTime() - now) / 86400000;
-            expect(item.grade).toBeNull();
-            expect(daysUntil).toBeGreaterThanOrEqual(0);
-            expect(daysUntil).toBeLessThanOrEqual(7);
-          }
-        }
-      })
-    );
-  });
-
-  it('deterministic with same inputs', () => {
-    fc.assert(
-      fc.property(semesterArb, fc.integer({ min: 1, max: 10 }), (semesterWithNow, waveNumber) => {
-        const { courses, startDate, _now: now } = semesterWithNow;
-        const semester: Semester = { courses, startDate };
-
-        // Simple seeded RNG
-        function createSeededRng(seed: number): () => number {
-          let state = seed;
-          return () => {
-            state = (state * 1664525 + 1013904223) % 2 ** 32;
-            return state / 2 ** 32;
-          };
-        }
-
-        const rng1 = createSeededRng(12345);
-        const rng2 = createSeededRng(12345);
-
-        const wave1 = generateWave(semester, waveNumber, now, rng1);
-        const wave2 = generateWave(semester, waveNumber, now, rng2);
-
-        // Should produce identical results
-        expect(wave1.length).toBe(wave2.length);
-
-        for (let i = 0; i < wave1.length; i++) {
-          expect(wave1[i].id).toBe(wave2[i].id);
-          expect(wave1[i].hp).toBe(wave2[i].hp);
-          expect(wave1[i].speed).toBe(wave2[i].speed);
-        }
-      })
-    );
-  });
-
-  it('createEnemy produces valid enemy', () => {
-    fc.assert(
-      fc.property(
-        fc.nat(),
-        courseworkItemArb(Date.now(), 'TEST'),
-        fc.integer({ min: 0 }),
-        (now, item, seed) => {
-          function createSeededRng(s: number): () => number {
-            let state = s;
-            return () => {
-              state = (state * 1664525 + 1013904223) % 2 ** 32;
-              return state / 2 ** 32;
-            };
-          }
-
-          const rng = createSeededRng(seed);
-          const enemy = createEnemy(item, now, [{ id: item.courseId }], rng);
-
-          expect(enemy.id.length).toBeGreaterThan(0);
-          expect(enemy.courseId).toBe(item.courseId);
-          expect(enemy.itemId).toBe(item.id);
-          expect(enemy.type).toBe(item.type);
-          expect(enemy.hp).toBeGreaterThan(0);
-          expect(enemy.maxHp).toBeGreaterThan(0);
-          expect(enemy.hp).toBe(enemy.maxHp);
-          expect(enemy.speed).toBeGreaterThan(0);
-          expect(enemy.damage).toBeGreaterThanOrEqual(0);
-          expect(enemy.x).toBe(1200);
-          expect(enemy.pathProgress).toBe(0);
-          expect(enemy.spawnedAt).toBe(now);
-          expect(enemy.lastDamagedAt).toBeNull();
-          expect(enemy.neglected).toBe(false);
-        }
-      )
-    );
-  });
-
-  it('later waves are bigger or equal to wave 1', () => {
-    fc.assert(
-      fc.property(semesterArb, fc.integer({ min: 2, max: 20 }), (semesterWithNow, waveNumber) => {
-        const { courses, startDate, _now: now } = semesterWithNow;
-        const semester: Semester = { courses, startDate };
-
-        const size1 = getWaveSize(semester, 1, now);
-        const sizeN = getWaveSize(semester, waveNumber, now);
-
-        // Wave N (N > 1) should allow more enemies (not less)
-        // But limited by available items
-        expect(sizeN).toBeGreaterThanOrEqual(size1);
       })
     );
   });

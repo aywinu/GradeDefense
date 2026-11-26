@@ -18,3 +18,5 @@ The hackathon requires Kiro, and Kiro did a large part of the work (see `KIRO_US
 | 2026-11-26 | Task 1.1 project setup | Kiro |
 | 2026-11-26 | Tasks 1.2–1.3 core types, scoring, unit and property tests | Kiro (run cut off by service throttling) + Claude Code (fixed fast-check import and two type errors) |
 | 2026-11-26 | Tasks 1.4–1.6 wave generation, targeting, neglect + tests | Kiro |
+| 2026-11-26 | Task 2.2 questions | Kiro + Claude Code (fact-check fixes) |
+| 2026-11-26 | Task 1.7 semester campaign waves (redesign) | Kiro |

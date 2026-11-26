@@ -1,10 +1,11 @@
 /**
- * Unit tests for wave generation.
+ * Unit tests for wave generation (campaign system).
  */
 
 import { describe, it, expect } from 'vitest';
-import { generateWave, createEnemy, getWaveSize } from './wave';
-import type { Semester, CourseworkItem, Course } from './types';
+import { generateWave, getWaveItemIds, campaignLength } from './wave';
+import { mulberry32 } from './rng';
+import type { Semester, Course } from './types';
 
 /**
  * Create a test semester with predictable data.
@@ -21,7 +22,7 @@ function createTestSemester(now: number): Semester {
           courseId: 'CV101',
           name: 'Assignment 1',
           type: 'assignment',
-          dueDate: new Date(now + 2 * 86400000), // 2 days out
+          dueDate: new Date(now + 2 * 86400000), // 2 days out (wave 1)
           points: 50,
           grade: null,
         },
@@ -30,7 +31,7 @@ function createTestSemester(now: number): Semester {
           courseId: 'CV101',
           name: 'Quiz 1',
           type: 'quiz',
-          dueDate: new Date(now + 5 * 86400000), // 5 days out
+          dueDate: new Date(now + 5 * 86400000), // 5 days out (wave 1)
           points: 20,
           grade: null,
         },
@@ -39,8 +40,17 @@ function createTestSemester(now: number): Semester {
           courseId: 'CV101',
           name: 'Midterm Exam',
           type: 'exam',
-          dueDate: new Date(now + 1 * 86400000), // 1 day out (urgent!)
+          dueDate: new Date(now + 1 * 86400000), // 1 day out (wave 1, urgent!)
           points: 100,
+          grade: null,
+        },
+        {
+          id: 'CV101-assignment2',
+          courseId: 'CV101',
+          name: 'Assignment 2',
+          type: 'assignment',
+          dueDate: new Date(now + 10 * 86400000), // 10 days out (wave 2)
+          points: 50,
           grade: null,
         },
       ],
@@ -55,7 +65,7 @@ function createTestSemester(now: number): Semester {
           courseId: 'PHO101',
           name: 'Assignment 1',
           type: 'assignment',
-          dueDate: new Date(now + 3 * 86400000), // 3 days out
+          dueDate: new Date(now + 3 * 86400000), // 3 days out (wave 1)
           points: 50,
           grade: null,
         },
@@ -67,6 +77,15 @@ function createTestSemester(now: number): Semester {
           dueDate: new Date(now - 10 * 86400000), // 10 days ago
           points: 50,
           grade: 85, // graded, should not spawn
+        },
+        {
+          id: 'PHO101-overdue',
+          courseId: 'PHO101',
+          name: 'Overdue Assignment',
+          type: 'assignment',
+          dueDate: new Date(now - 2 * 86400000), // 2 days ago (overdue, wave 1)
+          points: 30,
+          grade: null, // not graded yet!
         },
       ],
     },
@@ -80,7 +99,7 @@ function createTestSemester(now: number): Semester {
           courseId: 'MGT101',
           name: 'Project 1',
           type: 'project',
-          dueDate: new Date(now + 14 * 86400000), // 14 days out (too far)
+          dueDate: new Date(now + 20 * 86400000), // 20 days out (wave 3)
           points: 100,
           grade: null,
         },
@@ -94,113 +113,284 @@ function createTestSemester(now: number): Semester {
   };
 }
 
-describe('wave generation', () => {
-  it('wave 1 is small and gentle (max 3 enemies)', () => {
+describe('campaign system', () => {
+  it('campaignLength returns weeks until last item', () => {
     const now = Date.now();
     const semester = createTestSemester(now);
-    const wave = generateWave(semester, 1, now);
 
-    expect(wave.length).toBeGreaterThan(0);
-    expect(wave.length).toBeLessThanOrEqual(3);
+    const length = campaignLength(semester, now);
+
+    // Last item is at 20 days = 3 weeks
+    expect(length).toBe(3);
   });
 
-  it('later waves are bigger', () => {
+  it('campaignLength is clamped to [1, 10]', () => {
     const now = Date.now();
-    const semester = createTestSemester(now);
-    
-    const wave1 = generateWave(semester, 1, now);
-    const wave2 = generateWave(semester, 2, now);
 
-    // Wave 2 should allow more enemies (5 + 1 = 6)
-    // But limited by available items (4 upcoming in test semester)
-    expect(wave2.length).toBeGreaterThanOrEqual(wave1.length);
+    // Empty semester
+    const emptySemester: Semester = {
+      courses: [],
+      startDate: new Date(now),
+    };
+    expect(campaignLength(emptySemester, now)).toBe(1);
+
+    // Very long semester (100 days = 15 weeks)
+    const longSemester: Semester = {
+      courses: [
+        {
+          id: 'TEST',
+          title: 'Test',
+          color: '#fff',
+          items: [
+            {
+              id: 'TEST-1',
+              courseId: 'TEST',
+              name: 'Far Item',
+              type: 'assignment',
+              dueDate: new Date(now + 100 * 86400000),
+              points: 10,
+              grade: null,
+            },
+          ],
+        },
+      ],
+      startDate: new Date(now),
+    };
+    expect(campaignLength(longSemester, now)).toBe(10); // capped at 10
   });
 
-  it('only spawns items due within 7 days', () => {
+  it('wave 1 covers items due in [0, 7) days', () => {
     const now = Date.now();
     const semester = createTestSemester(now);
-    const wave = generateWave(semester, 1, now);
 
-    // Should NOT include MGT101-project1 (14 days out)
-    expect(wave.find((e) => e.itemId === 'MGT101-project1')).toBeUndefined();
+    const itemIds = getWaveItemIds(semester, 1, now);
 
-    // Should include CV101 and PHO101 items (all within 7 days)
-    expect(wave.some((e) => e.courseId === 'CV101' || e.courseId === 'PHO101')).toBe(true);
+    // Should include items in the [0,7) day range
+    expect(itemIds.length).toBeGreaterThan(0);
+
+    // Should NOT include CV101-assignment2 (10 days, wave 2)
+    expect(itemIds).not.toContain('CV101-assignment2');
+
+    // Should NOT include MGT101-project1 (20 days, wave 3)
+    expect(itemIds).not.toContain('MGT101-project1');
+  });
+
+  it('wave 1 includes overdue ungraded items', () => {
+    const now = Date.now();
+    const semester = createTestSemester(now);
+
+    const itemIds = getWaveItemIds(semester, 1, now);
+
+    // Should include PHO101-overdue (2 days overdue, ungraded)
+    expect(itemIds).toContain('PHO101-overdue');
+  });
+
+  it('wave 2 covers items due in [7, 14) days', () => {
+    const now = Date.now();
+    const semester = createTestSemester(now);
+
+    const itemIds = getWaveItemIds(semester, 2, now);
+
+    // Should include CV101-assignment2 (10 days)
+    expect(itemIds).toContain('CV101-assignment2');
+
+    // Should NOT include wave 1 items
+    expect(itemIds).not.toContain('CV101-exam1');
+  });
+
+  it('wave 3 covers items due in [14, 21) days', () => {
+    const now = Date.now();
+    const semester = createTestSemester(now);
+
+    const itemIds = getWaveItemIds(semester, 3, now);
+
+    // Should include MGT101-project1 (20 days)
+    expect(itemIds).toContain('MGT101-project1');
   });
 
   it('does not spawn past graded items', () => {
     const now = Date.now();
     const semester = createTestSemester(now);
+
     const wave = generateWave(semester, 1, now);
 
     // Should NOT include PHO101-past (graded)
     expect(wave.find((e) => e.itemId === 'PHO101-past')).toBeUndefined();
   });
 
-  it('sorts by priority (highest first)', () => {
+  it('every ungraded item appears in exactly one wave', () => {
     const now = Date.now();
     const semester = createTestSemester(now);
-    const wave = generateWave(semester, 5, now); // large wave to get all items
+    const length = campaignLength(semester, now);
 
-    // CV101-exam1 (1 day out, 100 points) should be highest priority
-    // Should appear first or early in the wave
-    const examIndex = wave.findIndex((e) => e.itemId === 'CV101-exam1');
-    expect(examIndex).toBeGreaterThanOrEqual(0);
-    expect(examIndex).toBeLessThan(wave.length / 2); // in top half
-  });
+    // Collect all items across all waves
+    const allWaveItemIds = new Set<string>();
+    for (let wave = 1; wave <= length; wave++) {
+      const itemIds = getWaveItemIds(semester, wave, now);
+      for (const id of itemIds) {
+        allWaveItemIds.add(id);
+      }
+    }
 
-  it('enemy HP scales with urgency and points', () => {
-    const now = Date.now();
-    const semester = createTestSemester(now);
-    const wave = generateWave(semester, 5, now);
+    // Check all ungraded items are covered
+    const ungradedItemIds = semester.courses
+      .flatMap((c) => c.items)
+      .filter((item) => item.grade === null)
+      .map((item) => item.id);
 
-    const exam = wave.find((e) => e.type === 'exam');
-    const quiz = wave.find((e) => e.type === 'quiz');
-
-    // Exam should have significantly more HP than quiz
-    expect(exam).toBeDefined();
-    expect(quiz).toBeDefined();
-    if (exam && quiz) {
-      expect(exam.maxHp).toBeGreaterThan(quiz.maxHp);
+    for (const id of ungradedItemIds) {
+      expect(allWaveItemIds.has(id)).toBe(true);
     }
   });
+});
 
-  it('enemy type determines base stats', () => {
+describe('spawn groups', () => {
+  it('assignment spawns 1 shambler + 2 minions', () => {
     const now = Date.now();
-    const item: CourseworkItem = {
-      id: 'TEST-1',
-      courseId: 'TEST',
-      name: 'Test Quiz',
-      type: 'quiz',
-      dueDate: new Date(now + 86400000),
-      points: 20,
-      grade: null,
-    };
-
-    const enemy = createEnemy(item, now, [{ id: 'TEST' }]);
-
-    // Quiz should be fast
-    expect(enemy.speed).toBeGreaterThan(30); // faster than assignment base of 30
-  });
-
-  it('enemy count is never negative', () => {
-    const now = Date.now();
-    
-    // Empty semester
-    const emptySemester: Semester = {
-      courses: [],
+    const semester: Semester = {
+      courses: [
+        {
+          id: 'TEST',
+          title: 'Test',
+          color: '#fff',
+          items: [
+            {
+              id: 'TEST-assignment',
+              courseId: 'TEST',
+              name: 'Test Assignment',
+              type: 'assignment',
+              dueDate: new Date(now + 86400000),
+              points: 50,
+              grade: null,
+            },
+          ],
+        },
+      ],
       startDate: new Date(now),
     };
 
-    const wave = generateWave(emptySemester, 1, now);
-    expect(wave.length).toBe(0);
-    expect(wave.length).toBeGreaterThanOrEqual(0);
+    const wave = generateWave(semester, 1, now, mulberry32(42));
+
+    // Should have 3 enemies: 1 main + 2 minions
+    expect(wave.length).toBe(3);
+
+    const mainEnemies = wave.filter((e) => !e.isMinion);
+    const minions = wave.filter((e) => e.isMinion);
+
+    expect(mainEnemies.length).toBe(1);
+    expect(minions.length).toBe(2);
   });
 
-  it('every enemy maps to a real item', () => {
+  it('quiz spawns 4-6 swarmers (no main enemy)', () => {
+    const now = Date.now();
+    const semester: Semester = {
+      courses: [
+        {
+          id: 'TEST',
+          title: 'Test',
+          color: '#fff',
+          items: [
+            {
+              id: 'TEST-quiz',
+              courseId: 'TEST',
+              name: 'Test Quiz',
+              type: 'quiz',
+              dueDate: new Date(now + 86400000),
+              points: 20,
+              grade: null,
+            },
+          ],
+        },
+      ],
+      startDate: new Date(now),
+    };
+
+    const wave = generateWave(semester, 1, now, mulberry32(42));
+
+    // Quiz has no main enemy, only swarmers
+    expect(wave.length).toBeGreaterThanOrEqual(4);
+    expect(wave.length).toBeLessThanOrEqual(6);
+
+    const mainEnemies = wave.filter((e) => !e.isMinion);
+    expect(mainEnemies.length).toBe(0); // no main enemy for quiz
+  });
+
+  it('exam spawns 1 boss + 6 minions', () => {
+    const now = Date.now();
+    const semester: Semester = {
+      courses: [
+        {
+          id: 'TEST',
+          title: 'Test',
+          color: '#fff',
+          items: [
+            {
+              id: 'TEST-exam',
+              courseId: 'TEST',
+              name: 'Test Exam',
+              type: 'exam',
+              dueDate: new Date(now + 86400000),
+              points: 100,
+              grade: null,
+            },
+          ],
+        },
+      ],
+      startDate: new Date(now),
+    };
+
+    const wave = generateWave(semester, 1, now, mulberry32(42));
+
+    // Should have 7 enemies: 1 boss + 6 minions
+    expect(wave.length).toBe(7);
+
+    const mainEnemies = wave.filter((e) => !e.isMinion);
+    const minions = wave.filter((e) => e.isMinion);
+
+    expect(mainEnemies.length).toBe(1);
+    expect(minions.length).toBe(6);
+  });
+
+  it('project spawns 1 multi-phase + 3 minions', () => {
+    const now = Date.now();
+    const semester: Semester = {
+      courses: [
+        {
+          id: 'TEST',
+          title: 'Test',
+          color: '#fff',
+          items: [
+            {
+              id: 'TEST-project',
+              courseId: 'TEST',
+              name: 'Test Project',
+              type: 'project',
+              dueDate: new Date(now + 86400000),
+              points: 100,
+              grade: null,
+            },
+          ],
+        },
+      ],
+      startDate: new Date(now),
+    };
+
+    const wave = generateWave(semester, 1, now, mulberry32(42));
+
+    // Should have 4 enemies: 1 main + 3 minions
+    expect(wave.length).toBe(4);
+
+    const mainEnemies = wave.filter((e) => !e.isMinion);
+    const minions = wave.filter((e) => e.isMinion);
+
+    expect(mainEnemies.length).toBe(1);
+    expect(minions.length).toBe(3);
+  });
+
+  it('every spawned creature references a real item', () => {
     const now = Date.now();
     const semester = createTestSemester(now);
-    const wave = generateWave(semester, 5, now);
+    const wave = generateWave(semester, 1, now);
 
     // Collect all item IDs
     const allItemIds = semester.courses.flatMap((c) => c.items.map((i) => i.id));
@@ -212,87 +402,166 @@ describe('wave generation', () => {
       expect(enemy.maxHp).toBeGreaterThan(0);
       expect(enemy.speed).toBeGreaterThan(0);
       expect(enemy.damage).toBeGreaterThanOrEqual(0);
+      expect(enemy.label.length).toBeGreaterThan(0);
+      expect(enemy.lane).toBeGreaterThanOrEqual(0);
+      expect(enemy.lane).toBeLessThan(semester.courses.length);
     }
   });
 
+  it('wave sizes are ≤ 40', () => {
+    const now = Date.now();
+
+    // Create a huge semester with many items
+    const hugeSemester: Semester = {
+      courses: Array.from({ length: 6 }, (_, i) => ({
+        id: `COURSE${i}`,
+        title: `Course ${i}`,
+        color: '#fff',
+        items: Array.from({ length: 10 }, (_, j) => ({
+          id: `COURSE${i}-item${j}`,
+          courseId: `COURSE${i}`,
+          name: `Item ${j}`,
+          type: 'assignment' as const,
+          dueDate: new Date(now + (j + 1) * 86400000),
+          points: 50,
+          grade: null,
+        })),
+      })),
+      startDate: new Date(now),
+    };
+
+    const wave = generateWave(hugeSemester, 1, now);
+
+    expect(wave.length).toBeLessThanOrEqual(40);
+  });
+
+  it('overdue items have +25% speed', () => {
+    const now = Date.now();
+    const semester: Semester = {
+      courses: [
+        {
+          id: 'TEST',
+          title: 'Test',
+          color: '#fff',
+          items: [
+            {
+              id: 'TEST-overdue',
+              courseId: 'TEST',
+              name: 'Overdue Assignment',
+              type: 'assignment',
+              dueDate: new Date(now - 2 * 86400000), // overdue
+              points: 50,
+              grade: null,
+            },
+            {
+              id: 'TEST-normal',
+              courseId: 'TEST',
+              name: 'Normal Assignment',
+              type: 'assignment',
+              dueDate: new Date(now + 2 * 86400000), // not overdue
+              points: 50,
+              grade: null,
+            },
+          ],
+        },
+      ],
+      startDate: new Date(now),
+    };
+
+    const wave = generateWave(semester, 1, now, mulberry32(42));
+
+    const overdueMain = wave.find((e) => e.itemId === 'TEST-overdue' && !e.isMinion);
+    const normalMain = wave.find((e) => e.itemId === 'TEST-normal' && !e.isMinion);
+
+    expect(overdueMain).toBeDefined();
+    expect(normalMain).toBeDefined();
+
+    if (overdueMain && normalMain) {
+      // Overdue should be faster
+      expect(overdueMain.speed).toBeGreaterThan(normalMain.speed);
+      expect(overdueMain.isOverdue).toBe(true);
+      expect(normalMain.isOverdue).toBe(false);
+    }
+  });
+});
+
+describe('determinism', () => {
   it('is deterministic with seeded RNG', () => {
     const now = Date.now();
     const semester = createTestSemester(now);
 
-    // Simple seeded RNG (Linear Congruential Generator)
-    function createSeededRng(seed: number): () => number {
-      let state = seed;
-      return () => {
-        state = (state * 1664525 + 1013904223) % 2 ** 32;
-        return state / 2 ** 32;
-      };
-    }
-
-    const rng1 = createSeededRng(42);
-    const rng2 = createSeededRng(42);
-
-    const wave1 = generateWave(semester, 1, now, rng1);
-    const wave2 = generateWave(semester, 1, now, rng2);
+    const wave1 = generateWave(semester, 1, now, mulberry32(42));
+    const wave2 = generateWave(semester, 1, now, mulberry32(42));
 
     expect(wave1.length).toBe(wave2.length);
+
     // IDs should match (since they use RNG)
     for (let i = 0; i < wave1.length; i++) {
       expect(wave1[i].id).toBe(wave2[i].id);
       expect(wave1[i].hp).toBe(wave2[i].hp);
       expect(wave1[i].speed).toBe(wave2[i].speed);
+      expect(wave1[i].itemId).toBe(wave2[i].itemId);
     }
   });
+});
 
-  it('getWaveSize returns correct count', () => {
-    const now = Date.now();
-    const semester = createTestSemester(now);
-
-    const size1 = getWaveSize(semester, 1, now);
-    const size2 = getWaveSize(semester, 2, now);
-
-    expect(size1).toBeGreaterThanOrEqual(0);
-    expect(size1).toBeLessThanOrEqual(3); // wave 1 max
-
-    expect(size2).toBeGreaterThanOrEqual(size1);
-  });
-
-  it('enemy fortress damage scales with points', () => {
-    const now = Date.now();
-    const semester = createTestSemester(now);
-    const wave = generateWave(semester, 5, now);
-
-    const exam = wave.find((e) => e.type === 'exam' && e.itemId === 'CV101-exam1');
-    const quiz = wave.find((e) => e.type === 'quiz');
-
-    expect(exam).toBeDefined();
-    expect(quiz).toBeDefined();
-
-    if (exam && quiz) {
-      // Exam (100 points) should deal more damage than quiz (20 points)
-      expect(exam.damage).toBeGreaterThan(quiz.damage);
-    }
-  });
-
-  it('enemy spawns at right edge', () => {
+describe('enemy properties', () => {
+  it('enemies have correct lane index', () => {
     const now = Date.now();
     const semester = createTestSemester(now);
     const wave = generateWave(semester, 1, now);
 
     for (const enemy of wave) {
-      expect(enemy.x).toBe(1200); // right edge spawn position
-      expect(enemy.pathProgress).toBe(0);
+      // Lane should correspond to course index
+      const courseIndex = semester.courses.findIndex((c) => c.id === enemy.courseId);
+      expect(enemy.lane).toBe(courseIndex);
     }
   });
 
-  it('enemy is not neglected on spawn', () => {
+  it('enemies have spawn delay for staggered waves', () => {
+    const now = Date.now();
+    const semester = createTestSemester(now);
+    const wave = generateWave(semester, 1, now);
+
+    // Not all enemies should spawn at once
+    const delays = wave.map((e) => e.spawnDelayMs);
+    const uniqueDelays = new Set(delays);
+
+    expect(uniqueDelays.size).toBeGreaterThan(1); // multiple different delays
+  });
+
+  it('enemies have label and daysLeft', () => {
     const now = Date.now();
     const semester = createTestSemester(now);
     const wave = generateWave(semester, 1, now);
 
     for (const enemy of wave) {
-      expect(enemy.neglected).toBe(false);
-      expect(enemy.lastDamagedAt).toBeNull();
-      expect(enemy.spawnedAt).toBe(now);
+      expect(enemy.label).toBeDefined();
+      expect(enemy.label.length).toBeGreaterThan(0);
+      expect(typeof enemy.daysLeft).toBe('number');
+    }
+  });
+
+  it('minions carry parent item name', () => {
+    const now = Date.now();
+    const semester = createTestSemester(now);
+    const wave = generateWave(semester, 1, now);
+
+    const minions = wave.filter((e) => e.isMinion);
+
+    for (const minion of minions) {
+      expect(minion.parentItemId).toBeDefined();
+      expect(minion.label.length).toBeGreaterThan(0);
+
+      // Find the parent item
+      const parentItem = semester.courses
+        .flatMap((c) => c.items)
+        .find((item) => item.id === minion.parentItemId);
+
+      expect(parentItem).toBeDefined();
+      if (parentItem) {
+        expect(minion.label).toBe(parentItem.name);
+      }
     }
   });
 });

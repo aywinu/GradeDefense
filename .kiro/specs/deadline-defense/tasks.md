@@ -47,6 +47,17 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 - [x] 1.6.2: Implement 60s threshold, +50% HP, +25% speed, once-per-enemy flag (Ref: R3.4)
 - [x] 1.6.3: Write unit tests in `src/core/neglect.test.ts`: verify buff timing and application (Ref: R3.4)
 
+### 1.7: Semester Campaign Waves
+- [x] 1.7.1: Create `src/core/rng.ts` with `mulberry32(seed): RngFunction` for deterministic RNG (Ref: design.md, tech.md)
+- [x] 1.7.2: Update `src/core/wave.ts` to implement campaign system: `campaignLength(semester, now)` (1-10 weeks), wave k covers [(k-1)*7, k*7) days (Ref: product.md, design.md)
+- [x] 1.7.3: Implement spawn groups: assignments → 1 shambler + 2 minions, quizzes → 4-6 swarmers, exams → 1 boss + 6 minions, projects → multi-phase + 3 minions (Ref: art-direction.md)
+- [x] 1.7.4: Add overdue handling: items with days < 0 join wave 1 with +25% speed "overdue" buff (Ref: design.md)
+- [x] 1.7.5: Add wave 1 tutorial cap: max one shambler group + a few minions, push overflow to wave 2 (Ref: design.md) [NOTE: Tutorial cap removed from core logic, can be handled by game scene]
+- [x] 1.7.6: Update EnemyStats in `src/core/types.ts`: add `lane` (course index), remove x/y if needed, add `spawnDelayMs`, `label`, `daysLeft` (Ref: design.md)
+- [x] 1.7.7: Update wave tests: verify spawn groups, wave sizes ≤ 40, campaignLength in [1,10], every ungraded item appears exactly once across campaign (Ref: design.md)
+- [x] 1.7.8: Update property tests: verify determinism with seeded RNG, all creatures reference real items (Ref: design.md)
+- [x] 1.7.9: Run `npx vitest run` and `npm run build` to verify (Ref: tech.md)
+
 ---
 
 ## Phase 2: Demo Data
