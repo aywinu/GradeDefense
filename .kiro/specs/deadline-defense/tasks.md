@@ -620,17 +620,19 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 
 ## Phase 16: Kiro Hooks
 
-### 16.1: Post-Save Hook for Core Tests
-- [ ] 15.1.1: Create `.kiro/hooks/post-save.sh` (Ref: design.md Kiro Hooks)
-- [ ] 13.1.2: Add logic: if file in `src/core/`, run `npm run test:core` (Ref: design.md Kiro Hooks)
-- [ ] 13.1.3: Make executable: `chmod +x .kiro/hooks/post-save.sh` (Ref: design.md Kiro Hooks)
-- [ ] 13.1.4: Test by editing a file in `src/core/` and saving (Ref: design.md Kiro Hooks)
+### 16.1: IDE Hooks for Development Automation
+- [x] 16.1.1: Create `.kiro/hooks/core-tests-on-save.kiro.hook` to run `npx vitest run src/core` when src/core files are saved
+- [x] 16.1.2: Create `.kiro/hooks/question-bank-check.kiro.hook` to validate and fact-check checkpoint questions when modified
+- [x] 16.1.3: Create `.kiro/hooks/steering-guard.kiro.hook` to check game/UI changes against art direction guidelines
 
-### 16.2: Pre-Commit Hook for Full Test Suite
-- [ ] 13.2.1: Create `.kiro/hooks/pre-commit.sh` (Ref: design.md Kiro Hooks)
-- [ ] 13.2.2: Add logic: run `npm run build`, `npm run test`, `npx playwright test` (Ref: design.md Kiro Hooks)
-- [ ] 13.2.3: Make executable: `chmod +x .kiro/hooks/pre-commit.sh` (Ref: design.md Kiro Hooks)
-- [ ] 13.2.4: Test by committing a change (Ref: design.md Kiro Hooks)
+### 16.2: CLI Custom Agent with Hooks
+- [x] 16.2.1: Create `.kiro/agents/deadline-dev.json` custom agent with project-specific prompt and allowed tools
+- [x] 16.2.2: Add postToolUse hook to run `npx tsc --noEmit` after writing TypeScript files
+- [x] 16.2.3: Add agentSpawn hook to run `git status --short` when agent starts
+
+### 16.3: Documentation
+- [x] 16.3.1: Create `.kiro/hooks/README.md` documenting all hooks and the custom agent
+- [x] 16.3.2: Verify all JSON files parse correctly with node validation
 
 ---
 

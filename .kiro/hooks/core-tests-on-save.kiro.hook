@@ -1,0 +1,12 @@
+{
+  "name": "Core Tests on Save",
+  "description": "Run core unit tests when any file in src/core/ is edited",
+  "trigger": {
+    "type": "file_save",
+    "patterns": ["src/core/**/*.ts"]
+  },
+  "action": {
+    "type": "runCommand",
+    "command": "npx vitest run src/core"
+  }
+}
