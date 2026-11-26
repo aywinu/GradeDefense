@@ -10,8 +10,8 @@ import type { ItemType } from '../../core/types';
 
 const SHAPE: Record<ItemType, { key: string; size: number; minion: number }> = {
   assignment: { key: 'ghost', size: 0.62, minion: 0.36 },
-  quiz: { key: 'imp', size: 0.7, minion: 0.55 },
-  exam: { key: 'wraith', size: 0.62, minion: 0.26 },
+  quiz: { key: 'imp', size: 0.7, minion: 0.5 },
+  exam: { key: 'wraith', size: 0.6, minion: 0.24 },
   project: { key: 'golem', size: 0.6, minion: 0.3 },
   presentation: { key: 'golem', size: 0.6, minion: 0.3 },
 };
@@ -49,17 +49,17 @@ export class EnemyView extends Phaser.GameObjects.Container {
     this.baseScale = isMinion ? shape.minion : shape.size;
 
     this.aura = scene.add.image(0, 8, 'glow').setTint(this.color).setBlendMode(Phaser.BlendModes.ADD);
-    this.aura.setScale(this.baseScale * (this.isBoss ? 3.2 : 1.9)).setAlpha(isMinion ? 0.35 : 0.55);
+    this.aura.setScale(this.baseScale * (this.isBoss ? 3 : 1.7)).setAlpha(isMinion ? 0.12 : 0.22);
     this.body_ = scene.add.image(0, 0, shape.key).setScale(this.baseScale);
     // Pale core tinted toward the course colour, so silhouettes read on dark stone.
     const tint = Phaser.Display.Color.Interpolate.ColorWithColor(
-      Phaser.Display.Color.ValueToColor(0xeae6ff),
+      Phaser.Display.Color.ValueToColor(0xb9b4c9),
       Phaser.Display.Color.ValueToColor(this.color),
       100,
-      isMinion ? 70 : 55,
+      isMinion ? 35 : 25,
     ).color;
     this.baseTint = tint;
-    this.body_.setTint(tint).setAlpha(isMinion ? 0.78 : 0.92);
+    this.body_.setTint(tint).setAlpha(isMinion ? 0.7 : 0.88);
     this.add([this.aura, this.body_]);
 
     const h = this.body_.displayHeight;
@@ -67,6 +67,10 @@ export class EnemyView extends Phaser.GameObjects.Container {
     this.hpBack = scene.add.rectangle(0, h / 2 + 6, this.hpW, 4, 0x07060b, 0.85).setStrokeStyle(1, 0x000000, 0.6);
     this.hpFill = scene.add.rectangle(-this.hpW / 2, h / 2 + 6, this.hpW, 4, 0xe9dcc0).setOrigin(0, 0.5);
     this.add([this.hpBack, this.hpFill]);
+    if (isMinion) {
+      this.hpBack.setVisible(false);
+      this.hpFill.setVisible(false);
+    }
 
     if (!isMinion) {
       const scrollY = -h / 2 - 22;
@@ -123,8 +127,12 @@ export class EnemyView extends Phaser.GameObjects.Container {
 
   updateHpBar(hp: number, maxHp: number): void {
     const f = Phaser.Math.Clamp(hp / maxHp, 0, 1);
+    if (this.isMinion && f < 1) {
+      this.hpBack.setVisible(true);
+      this.hpFill.setVisible(true);
+    }
     this.hpFill.width = this.hpW * f;
-    this.hpFill.fillColor = f > 0.5 ? 0xe9dcc0 : f > 0.25 ? 0xf2b45a : 0xff6b74;
+    this.hpFill.fillColor = f > 0.5 ? 0xcfc3a8 : f > 0.25 ? 0xc9a060 : 0xc9636b;
   }
 
   applyOverdueEffect(): void {

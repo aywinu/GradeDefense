@@ -304,20 +304,28 @@ export class BattleScene extends Phaser.Scene {
     const color = getCourseColor(courseId);
     const c = this.add.container(x, y).setDepth(9);
     const g = this.add.graphics();
-    g.lineStyle(1.5, color, 0.45);
+    g.lineStyle(1.2, 0xcfc3a8, 0.22);
     g.strokeEllipse(0, 26, 56, 16);
-    g.lineStyle(1, color, 0.25);
+    g.lineStyle(1, color, 0.2);
     g.strokeEllipse(0, 26, 40, 10);
     const cost = this.add
       .text(0, 2, `${SOCKET_COST[socket]}`, { fontFamily: 'Inter, system-ui, sans-serif', fontStyle: '700', fontSize: '13px', color: '#f2b45a' })
       .setOrigin(0.5)
-      .setAlpha(0.8);
-    const coin = this.add.circle(-16, 2, 5, 0xf2b45a, 0.9);
+      .setAlpha(0);
+    const coin = this.add.circle(-16, 2, 5, 0xf2b45a, 0.9).setAlpha(0);
     c.add([g, coin, cost]);
     c.setSize(70, 70);
     c.setInteractive({ useHandCursor: true });
-    c.on('pointerover', () => c.setAlpha(1).setScale(1.08));
-    c.on('pointerout', () => c.setScale(1));
+    c.on('pointerover', () => {
+      c.setScale(1.08);
+      cost.setAlpha(0.95);
+      coin.setAlpha(0.9);
+    });
+    c.on('pointerout', () => {
+      c.setScale(1);
+      cost.setAlpha(0);
+      coin.setAlpha(0);
+    });
     c.on('pointerup', () => {
       if (this.phase === 'fight' || this.phase === 'scout' || this.phase === 'intro') this.buildTower(courseId, lane, socket);
     });

@@ -105,98 +105,164 @@ export function createTextures(scene: Phaser.Scene): void {
     }
   });
 
-  // Ghost body: hooded silhouette with tattered hem; tinted per course.
-  canvasTex(scene, 'ghost', 96, 120, (ctx) => {
-    const g = ctx.createLinearGradient(0, 0, 0, 120);
+  // Shambler: a tall hooded mourner, leaning forward, faceless but for two
+  // pinpoint eyes, robe dissolving into tatters.
+  canvasTex(scene, 'ghost', 96, 140, (ctx) => {
+    const g = ctx.createLinearGradient(0, 0, 0, 140);
     g.addColorStop(0, 'rgba(255,255,255,0.95)');
-    g.addColorStop(0.6, 'rgba(255,255,255,0.7)');
-    g.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(48, 6);
-    ctx.bezierCurveTo(84, 6, 90, 40, 88, 70);
-    ctx.lineTo(90, 112);
-    ctx.lineTo(78, 98);
-    ctx.lineTo(68, 116);
-    ctx.lineTo(56, 100);
-    ctx.lineTo(46, 118);
-    ctx.lineTo(36, 100);
-    ctx.lineTo(24, 116);
-    ctx.lineTo(16, 98);
-    ctx.lineTo(6, 112);
-    ctx.lineTo(8, 70);
-    ctx.bezierCurveTo(6, 40, 12, 6, 48, 6);
-    ctx.fill();
-    // Hollow eyes
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.beginPath();
-    ctx.ellipse(36, 44, 6, 9, -0.15, 0, Math.PI * 2);
-    ctx.ellipse(60, 44, 6, 9, 0.15, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(48, 68, 7, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  // Swarmer: small wisp-bat shape.
-  canvasTex(scene, 'imp', 64, 48, (ctx) => {
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.beginPath();
-    ctx.moveTo(32, 14);
-    ctx.quadraticCurveTo(18, 2, 2, 10);
-    ctx.quadraticCurveTo(12, 18, 10, 28);
-    ctx.quadraticCurveTo(20, 22, 26, 30);
-    ctx.quadraticCurveTo(32, 40, 38, 30);
-    ctx.quadraticCurveTo(44, 22, 54, 28);
-    ctx.quadraticCurveTo(52, 18, 62, 10);
-    ctx.quadraticCurveTo(46, 2, 32, 14);
-    ctx.fill();
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.beginPath();
-    ctx.arc(28, 20, 2.5, 0, Math.PI * 2);
-    ctx.arc(36, 20, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  // Boss: horned, crowned wraith (tinted crimson/course).
-  canvasTex(scene, 'wraith', 200, 220, (ctx) => {
-    const g = ctx.createLinearGradient(0, 0, 0, 220);
-    g.addColorStop(0, 'rgba(255,255,255,1)');
     g.addColorStop(0.55, 'rgba(255,255,255,0.75)');
     g.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.moveTo(100, 30);
-    ctx.lineTo(70, 6);
-    ctx.lineTo(76, 40);
-    ctx.bezierCurveTo(30, 50, 20, 100, 24, 140);
-    ctx.lineTo(4, 214);
-    ctx.lineTo(40, 180);
-    ctx.lineTo(60, 216);
-    ctx.lineTo(80, 184);
-    ctx.lineTo(100, 220);
-    ctx.lineTo(120, 184);
-    ctx.lineTo(140, 216);
-    ctx.lineTo(160, 180);
-    ctx.lineTo(196, 214);
-    ctx.lineTo(176, 140);
-    ctx.bezierCurveTo(180, 100, 170, 50, 124, 40);
-    ctx.lineTo(130, 6);
-    ctx.lineTo(100, 30);
+    ctx.moveTo(40, 4); // hood peak, tilted forward
+    ctx.bezierCurveTo(62, 6, 70, 22, 68, 40); // back of hood
+    ctx.bezierCurveTo(80, 48, 86, 70, 84, 96); // shoulder to robe
+    ctx.lineTo(90, 134);
+    ctx.lineTo(80, 118);
+    ctx.lineTo(72, 138);
+    ctx.lineTo(62, 116);
+    ctx.lineTo(52, 136);
+    ctx.lineTo(44, 114);
+    ctx.lineTo(34, 132);
+    ctx.lineTo(28, 112);
+    ctx.lineTo(16, 126);
+    ctx.lineTo(18, 92);
+    // reaching arm
+    ctx.bezierCurveTo(8, 84, 2, 78, 4, 70);
+    ctx.bezierCurveTo(12, 70, 18, 74, 22, 72);
+    ctx.bezierCurveTo(18, 56, 20, 40, 22, 30);
+    ctx.bezierCurveTo(24, 16, 30, 6, 40, 4);
     ctx.fill();
+    // Face void inside the hood
     ctx.globalCompositeOperation = 'destination-out';
     ctx.beginPath();
-    ctx.moveTo(70, 82);
-    ctx.lineTo(94, 92);
-    ctx.lineTo(72, 100);
-    ctx.closePath();
-    ctx.moveTo(130, 82);
-    ctx.lineTo(106, 92);
-    ctx.lineTo(128, 100);
+    ctx.ellipse(36, 30, 10, 14, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    // Pinpoint eyes
+    ctx.fillStyle = 'rgba(255,255,255,1)';
+    ctx.beginPath();
+    ctx.arc(32, 28, 1.6, 0, Math.PI * 2);
+    ctx.arc(39, 27, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Swarmer (quizzes): a cursed torn page, folded like wings, with an ink eye.
+  canvasTex(scene, 'imp', 64, 56, (ctx) => {
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    // left half-page (wing)
+    ctx.beginPath();
+    ctx.moveTo(32, 18);
+    ctx.lineTo(6, 8);
+    ctx.lineTo(9, 16);
+    ctx.lineTo(4, 22);
+    ctx.lineTo(10, 30);
+    ctx.lineTo(6, 38);
+    ctx.lineTo(32, 42);
     ctx.closePath();
     ctx.fill();
+    // right half-page
+    ctx.fillStyle = 'rgba(255,255,255,0.78)';
     ctx.beginPath();
-    ctx.ellipse(100, 130, 22, 10, 0, 0, Math.PI);
+    ctx.moveTo(32, 18);
+    ctx.lineTo(58, 6);
+    ctx.lineTo(55, 15);
+    ctx.lineTo(61, 22);
+    ctx.lineTo(55, 29);
+    ctx.lineTo(59, 37);
+    ctx.lineTo(32, 42);
+    ctx.closePath();
+    ctx.fill();
+    // ruled lines and an eye, cut out
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black';
+    for (let y = 16; y < 40; y += 5) {
+      ctx.beginPath();
+      ctx.moveTo(10, y);
+      ctx.lineTo(29, y + 2);
+      ctx.moveTo(35, y + 2);
+      ctx.lineTo(54, y);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.ellipse(32, 30, 5, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(255,255,255,1)';
+    ctx.beginPath();
+    ctx.arc(32, 30, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Boss (exams): a tall crowned wraith in a long shroud, skeletal hands, eye slits.
+  canvasTex(scene, 'wraith', 200, 240, (ctx) => {
+    const g = ctx.createLinearGradient(0, 0, 0, 240);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.6, 'rgba(255,255,255,0.8)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    // crown of thorns
+    ctx.beginPath();
+    ctx.moveTo(70, 48);
+    const spikes = [62, 74, 86, 100, 114, 126, 138];
+    spikes.forEach((x, i) => {
+      ctx.lineTo(x, i % 2 ? 22 : 6 + Math.abs(3 - i) * 4);
+      ctx.lineTo(x + 6, 40);
+    });
+    ctx.lineTo(132, 48);
+    ctx.closePath();
+    ctx.fill();
+    // hood + shroud
+    ctx.beginPath();
+    ctx.moveTo(100, 30);
+    ctx.bezierCurveTo(136, 32, 146, 60, 142, 86);
+    ctx.bezierCurveTo(166, 100, 176, 150, 172, 196);
+    ctx.lineTo(184, 238);
+    ctx.lineTo(160, 214);
+    ctx.lineTo(146, 240);
+    ctx.lineTo(128, 212);
+    ctx.lineTo(112, 240);
+    ctx.lineTo(96, 210);
+    ctx.lineTo(80, 238);
+    ctx.lineTo(66, 210);
+    ctx.lineTo(50, 236);
+    ctx.lineTo(38, 206);
+    ctx.lineTo(18, 232);
+    ctx.lineTo(28, 190);
+    ctx.bezierCurveTo(24, 150, 34, 104, 58, 86);
+    ctx.bezierCurveTo(54, 60, 64, 32, 100, 30);
+    ctx.fill();
+    // skeletal hands reaching forward (left side)
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 3;
+    [[40, 128], [46, 146]].forEach(([hx, hy]) => {
+      ctx.beginPath();
+      ctx.moveTo(62, hy - 6);
+      ctx.lineTo(hx, hy);
+      for (let f = -2; f <= 2; f++) {
+        ctx.moveTo(hx, hy);
+        ctx.lineTo(hx - 14, hy + f * 4 - 2);
+      }
+      ctx.stroke();
+    });
+    // face void and burning eye slits
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.ellipse(98, 70, 22, 28, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(255,255,255,1)';
+    ctx.beginPath();
+    ctx.moveTo(84, 66);
+    ctx.lineTo(96, 70);
+    ctx.lineTo(85, 72);
+    ctx.closePath();
+    ctx.moveTo(112, 66);
+    ctx.lineTo(100, 70);
+    ctx.lineTo(111, 72);
+    ctx.closePath();
     ctx.fill();
   });
 

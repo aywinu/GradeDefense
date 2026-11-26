@@ -49,7 +49,7 @@ export class TowerView extends Phaser.GameObjects.Container {
     base.lineBetween(0, -18, 0, 8);
 
     this.runes = scene.add.graphics();
-    this.glow = scene.add.image(0, -40, 'glow').setTint(this.color).setScale(1.3).setAlpha(0.7);
+    this.glow = scene.add.image(0, -40, 'glow').setTint(this.color).setScale(1.1).setAlpha(0.45);
     this.glow.setBlendMode(Phaser.BlendModes.ADD);
     this.crystal = scene.add.image(0, -40, 'wisp').setTint(0xffffff).setScale(0.32, 0.42).setAngle(90);
     this.crystal.setBlendMode(Phaser.BlendModes.ADD);
@@ -80,13 +80,13 @@ export class TowerView extends Phaser.GameObjects.Container {
 
   fire(timeMs: number): void {
     this.recoilUntil = timeMs + 120;
-    this.glow.setAlpha(1).setScale(1.7);
+    this.glow.setAlpha(0.85).setScale(1.5);
   }
 
   tick(timeMs: number, reduced: boolean): void {
     const pulse = reduced ? 0 : Math.sin(timeMs / 500 + this.phase);
     if (timeMs > this.recoilUntil) {
-      this.glow.setAlpha(0.6 + pulse * 0.1).setScale(1.3 + pulse * 0.08);
+      this.glow.setAlpha(0.38 + pulse * 0.07).setScale(1.1 + pulse * 0.06);
     }
     if (!reduced) this.crystal.y = -40 + pulse * 2;
   }
