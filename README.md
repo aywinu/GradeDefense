@@ -16,7 +16,7 @@ Students procrastinate on deadlines they can't see until it's too late, and stud
   - each course shows its readiness as a row of candles, its threat level and its next big deadline;
   - selecting a course shows its full battle plan: great enemies with real dates and points, how many trials to do before each, and the topics you keep missing;
   - every deadline sits on a tombstone timeline.
-- **Practice trials**: five questions per course in a grimoire. Correct answers raise readiness and **forge** that course's sentinels; wrong answers show the explanation and cost nothing. Questions you got wrong or never saw come back first.
+- **Practice trials**: five questions per course in a grimoire. Correct answers raise readiness and **pre-weaken** that course's deadlines before the battle; wrong answers show the explanation and cost nothing. Questions you got wrong or never saw come back first.
 - **The siege** (3D, Three.js): each wave is one real week, and your deadlines crawl slowly toward your semester.
   - Assignments are zombies, quizzes are cursed pages, exams are crowned wraiths, and projects are stone golems. Each carries its coursework name and the days left on a scroll.
   - **You pick which deadline to fight** (click it, or Tab and Space) and duel it with **questions from its own course**. Each correct answer breaks one of its seals; a wrong answer lets it creep closer but shows the explanation. An exam has 8–10 seals, so beating it means you actually studied for it.

@@ -3,7 +3,7 @@
 Every visual, sound and question in Deadline Defense is original work made for this project, or comes from an openly licensed library listed below.
 
 ## Art and sound
-- **3D battlefield, creatures, sentinels, graveyard**: built procedurally in code with Three.js primitives and canvas textures (src/game3d). No external models or textures.
+- **3D battlefield, creatures, graveyard**: built procedurally in code with Three.js primitives and canvas textures (src/game3d). No external models or textures.
 - **2D scenes (title, War Room)**: procedural canvas textures and Phaser 4 simplex-noise fog (src/game/fx).
 - **Sound**: synthesised at runtime with the Web Audio API (src/audio/sfx.ts). No recorded or copyrighted music.
 - **Illustrations in the guided tour**: inline SVG drawn for this project.
