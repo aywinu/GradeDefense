@@ -63,6 +63,7 @@ export class BattleScene extends Phaser.Scene {
   private reduced = false;
   private rng = mulberry32(Date.now() & 0xffff);
   private timeScale = 1;
+  private clearing = false;
 
   private view!: Battlefield3D;
   private labels?: HTMLDivElement;
@@ -307,6 +308,7 @@ export class BattleScene extends Phaser.Scene {
 
   private async startWave(enemies: EnemyStats[]): Promise<void> {
     this.phase = 'intro';
+    this.clearing = false;
     this.stats = this.freshStats();
     this.waveTotal = enemies.length;
     const wave = this.gameState.wave;
@@ -533,6 +535,12 @@ export class BattleScene extends Phaser.Scene {
     this.gameState.enemies = this.gameState.enemies.filter((x) => x.id !== e.id);
     this.gameState.gold += e.isMinion ? 4 : 12;
     this.onKillFx(e.id, e.x, e.y, e.courseId);
+    // Kills outside the simulation (Lantern, QTE crit) can empty the field; the
+    // sim only reports waveCleared for its own kills, so check here too.
+    if (!this.gameState.enemies.length && !this.gameState.pending.length && !this.clearing) {
+      this.clearing = true;
+      this.time.delayedCall(700, () => this.onWaveCleared());
+    }
   }
 
   private maybeQTE(e: EnemyStats, before: number, after: number): void {
@@ -752,7 +760,10 @@ export class BattleScene extends Phaser.Scene {
           break;
         }
         case 'waveCleared':
-          this.time.delayedCall(700, () => this.onWaveCleared());
+          if (!this.clearing) {
+            this.clearing = true;
+            this.time.delayedCall(700, () => this.onWaveCleared());
+          }
           break;
       }
     }

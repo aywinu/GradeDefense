@@ -626,7 +626,7 @@ export class Battlefield3D {
     for (const m of this.mistMats) {
       m.uniforms.uTime.value = this.reduced ? 0 : t;
       m.uniforms.uLantern.value.copy(this.lanternPos);
-      (m.uniforms.uPush.value as THREE.Vector2).sub(this.push.clone().multiplyScalar(dt * 6));
+
     }
     this.lantern.position.lerp(new THREE.Vector3(this.lanternPos.x, 1.2, this.lanternPos.z), this.reduced ? 1 : 0.2);
     this.lantern.intensity = this.lanternPos.z > 50 ? 0 : 2.2 + Math.sin(t * 6) * 0.15;

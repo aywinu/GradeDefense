@@ -191,11 +191,11 @@ export class Atmosphere {
     this.fogs.forEach((f, i) => {
       const speed = (i === 0 ? 0.012 : 0.02) * drift;
       const base = [this.t * speed * (i === 0 ? 1 : 1.6), Math.sin(this.t * 0.05) * 0.05];
-      const stir = i === 0 ? 0.6 : 1;
-      f.setData('px', ((f.getData('px') as number) ?? 0) - this.push.x * stir);
-      f.setData('py', ((f.getData('py') as number) ?? 0) - this.push.y * stir);
-      f.noiseOffset = [base[0] + (f.getData('px') as number), base[1] + (f.getData('py') as number)];
-      f.noiseFlow = this.t * 0.04 * drift + Math.hypot(this.push.x, this.push.y) * 40;
+      // The cursor only quickens the fog's own evolution a little (no sliding layer).
+      const stir = Math.min(0.15, Math.hypot(this.push.x, this.push.y) * 6);
+      f.setData('flow', ((f.getData('flow') as number) ?? 0) + stir * (dtMs / 1000));
+      f.noiseOffset = base;
+      f.noiseFlow = this.t * 0.04 * drift + (f.getData('flow') as number);
     });
     if (this.reduced) return;
     for (const c of this.candles) {

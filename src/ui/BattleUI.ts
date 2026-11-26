@@ -228,8 +228,30 @@ export function debrief(d: DebriefData, onPrimary: () => void, onSecondary?: () 
     </div>`,
   );
   const p = el.querySelector<HTMLButtonElement>('[data-p]')!;
-  p.addEventListener('click', onPrimary);
-  el.querySelector('[data-s]')?.addEventListener('click', () => onSecondary?.());
+  const onKey = (e: KeyboardEvent) => {
+    if (!el.isConnected) return window.removeEventListener('keydown', onKey, true);
+    if (e.key === 'Escape' && d.secondary) {
+      e.preventDefault();
+      e.stopPropagation();
+      cleanup();
+      onSecondary?.();
+    } else if (e.key === 'Enter' && document.activeElement?.tagName !== 'BUTTON') {
+      e.preventDefault();
+      e.stopPropagation();
+      cleanup();
+      onPrimary();
+    }
+  };
+  const cleanup = () => window.removeEventListener('keydown', onKey, true);
+  window.addEventListener('keydown', onKey, true);
+  p.addEventListener('click', () => {
+    cleanup();
+    onPrimary();
+  });
+  el.querySelector('[data-s]')?.addEventListener('click', () => {
+    cleanup();
+    onSecondary?.();
+  });
   setTimeout(() => p.focus(), 30);
   if (!R()) gsap.from(el.querySelector('.grimoire'), { y: 30, opacity: 0, duration: 0.5, ease: 'power3.out' });
   return el;
