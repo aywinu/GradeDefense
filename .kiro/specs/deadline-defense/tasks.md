@@ -557,26 +557,26 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 ## Phase 14: Moodle Block & LMS Showcase
 
 ### 14.1: Moodle Block Plugin Structure
-- [ ] 13.1.1: Create `moodle/block_gradedefense/version.php` with plugin metadata (Ref: R14.1)
-- [ ] 13.1.2: Create `moodle/block_gradedefense/block_gradedefense.php` extending `block_base` (Ref: R14.1)
-- [ ] 13.1.3: Create `moodle/block_gradedefense/lang/en/block_gradedefense.php` with strings (Ref: R14.1)
-- [ ] 13.1.4: Create `moodle/block_gradedefense/styles.css` for iframe styling (Ref: R14.1)
-- [ ] 13.1.5: Verify plugin structure matches Moodle 4.5 standards (Ref: R14.1)
+- [x] 13.1.1: Create `moodle/block_gradedefense/version.php` with plugin metadata (Ref: R14.1)
+- [x] 13.1.2: Create `moodle/block_gradedefense/block_gradedefense.php` extending `block_base` (Ref: R14.1)
+- [x] 13.1.3: Create `moodle/block_gradedefense/lang/en/block_gradedefense.php` with strings (Ref: R14.1)
+- [x] 13.1.4: Create `moodle/block_gradedefense/styles.css` for iframe styling (Ref: R14.1)
+- [x] 13.1.5: Verify plugin structure matches Moodle 4.5 standards (Ref: R14.1)
 
 ### 14.2: Moodle Calendar Data Integration
-- [ ] 13.2.1: In `block_gradedefense.php`, fetch user calendar events via `core_calendar_get_calendar_upcoming_view` (Ref: R14.2)
-- [ ] 13.2.2: Transform Moodle events to game JSON schema (name, courseId, dueDate, points, type) (Ref: R14.2)
-- [ ] 13.2.3: Embed game iframe with deployed URL (Ref: R14.2)
-- [ ] 13.2.4: Send JSON payload via postMessage after iframe load (Ref: R14.2)
-- [ ] 13.2.5: Document postMessage contract in `docs/moodle-integration.md` (Ref: R14.2)
+- [x] 13.2.1: In `block_gradedefense.php`, fetch user calendar events via `core_calendar_get_calendar_upcoming_view` (Ref: R14.2)
+- [x] 13.2.2: Transform Moodle events to game JSON schema (name, courseId, dueDate, points, type) (Ref: R14.2)
+- [x] 13.2.3: Embed game iframe with deployed URL (Ref: R14.2)
+- [x] 13.2.4: Send JSON payload via postMessage after iframe load (Ref: R14.2)
+- [x] 13.2.5: Document postMessage contract in `docs/moodle-integration.md` (Ref: R14.2)
 
 ### 14.3: Game postMessage Handler
-- [ ] 13.3.1: Create `src/import/postmessage.ts` with message handler (Ref: R14.2)
-- [ ] 13.3.2: Implement schema validation (TypeScript type guard) (Ref: R14.2)
-- [ ] 13.3.3: Implement origin check with configurable allowlist (Ref: R14.2, R14.4)
-- [ ] 13.3.4: On valid message, replace demo data with Moodle data (Ref: R14.2)
-- [ ] 13.3.5: On invalid message, log error and fall back to demo (Ref: R14.2)
-- [ ] 13.3.6: Write unit tests in `src/import/postmessage.test.ts`: verify validation, origin check (Ref: R14.2)
+- [x] 13.3.1: Create `src/import/postmessage.ts` with message handler (Ref: R14.2)
+- [x] 13.3.2: Implement schema validation (TypeScript type guard) (Ref: R14.2)
+- [x] 13.3.3: Implement origin check with configurable allowlist (Ref: R14.2, R14.4)
+- [x] 13.3.4: On valid message, replace demo data with Moodle data (Ref: R14.2)
+- [x] 13.3.5: On invalid message, log error and fall back to demo (Ref: R14.2)
+- [x] 13.3.6: Write unit tests in `src/import/postmessage.test.ts`: verify validation, origin check (Ref: R14.2)
 
 ### 14.4: LMS Showcase Page
 - [ ] 13.4.1: Create `showcase/lms.html` with generic LMS dashboard layout (Ref: R14.3)
