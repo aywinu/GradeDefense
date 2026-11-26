@@ -35,6 +35,12 @@
       .frame { position: relative; aspect-ratio: 16 / 9; background: #07060b; }
       .frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
       .note { font-size: 12px; color: var(--muted); padding: 10px 16px; }
+      .enter { font: inherit; font-size: 13px; font-weight: 600; color: var(--brand); background: #eef2f7; border: 1px solid #cfd8e3; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+      .enter:hover { background: #e2e9f2; }
+      /* The takeover: fog escapes the block and swallows the portal */
+      #fog { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+      .frame.full { position: fixed; inset: 0; aspect-ratio: auto; z-index: 40; transition: opacity 600ms; }
+      body.taken main, body.taken header { filter: grayscale(0.6) brightness(0.6); transition: filter 2.5s; }
     </style>
   </head>
   <body>
@@ -57,12 +63,13 @@
       </section>
       <aside>
         <div class="card block">
-          <div class="bh">Deadline Defense <small>block</small></div>
+          <div class="bh">Deadline Defense <button class="enter" id="enter" title="Open the full game">Enter →</button></div>
           <div class="frame"><iframe id="dd" title="Deadline Defense" allow="autoplay"></iframe></div>
           <div class="note">Your upcoming deadlines, defended. Data is sent from this page to the block with postMessage; no tokens leave the portal.</div>
         </div>
       </aside>
     </main>
+    <canvas id="fog"></canvas>
     <script type="module">
       import demo from '../src/data/demo.json';
       // Same contract as the real Moodle block (docs/moodle-integration.md).
@@ -93,6 +100,55 @@
       const frame = document.getElementById('dd');
       const target = new URL('../?embed=showcase', location.href);
       frame.src = target.href;
+      // Fog takeover (used in the demo video): wisps leak from the block, then fill the screen.
+      document.getElementById('enter').addEventListener('click', () => {
+        const cv = document.getElementById('fog');
+        const ctx = cv.getContext('2d');
+        const dpr = Math.min(2, devicePixelRatio || 1);
+        cv.width = innerWidth * dpr;
+        cv.height = innerHeight * dpr;
+        ctx.scale(dpr, dpr);
+        const r = frame.getBoundingClientRect();
+        const ox = r.left + r.width / 2, oy = r.top + r.height / 2;
+        const puffs = Array.from({ length: 220 }, () => ({ a: Math.random() * Math.PI * 2, d: Math.random() * 30, s: 30 + Math.random() * 90, v: 120 + Math.random() * 420, delay: Math.random() * 1.6, hue: 255 + Math.random() * 20, curl: (Math.random() - 0.5) * 1.4 }));
+        const t0 = performance.now();
+        document.body.classList.add('taken');
+        let swapped = false;
+        const step = (now) => {
+          const t = (now - t0) / 1000;
+          ctx.clearRect(0, 0, innerWidth, innerHeight);
+          // darkness that grows with the fog
+          ctx.fillStyle = `rgba(7,6,11,${Math.min(1, Math.max(0, (t - 0.5) / 1.5))})`;
+          ctx.fillRect(0, 0, innerWidth, innerHeight);
+          for (const p of puffs) {
+            const k = Math.max(0, t - p.delay);
+            if (!k) continue;
+            const dist = p.d + p.v * k;
+            const ang = p.a + p.curl * k; const x = ox + Math.cos(ang) * dist, y = oy + Math.sin(ang) * dist * 0.7;
+            const size = p.s * (1 + k * 0.9);
+            const g = ctx.createRadialGradient(x, y, 0, x, y, size);
+            const alpha = Math.min(0.14, k * 0.2) * (t > 3.2 ? Math.max(0, 1 - (t - 3.2) / 1.3) : 1);
+            g.addColorStop(0, `hsla(${p.hue},16%,46%,${alpha})`);
+            g.addColorStop(0.5, `hsla(${p.hue},16%,32%,${alpha * 0.5})`);
+            g.addColorStop(1, `hsla(${p.hue},16%,20%,0)`);
+            ctx.fillStyle = g;
+            ctx.fillRect(x - size, y - size, size * 2, size * 2);
+          }
+          if (t > 2.4 && !swapped) {
+            swapped = true;
+            // Lift the block out of the (filtered) page so it can truly fill the screen.
+            const wrap = frame.parentElement;
+            document.body.appendChild(wrap);
+            wrap.classList.add('full');
+            const intro = new URL('../?embed=showcase&intro=1', location.href);
+            frame.src = intro.href;
+          }
+          if (t > 3.2) cv.style.opacity = String(Math.max(0, 1 - (t - 3.2) / 1.3));
+          if (t < 4.6) requestAnimationFrame(step);
+          else cv.remove();
+        };
+        requestAnimationFrame(step);
+      });
       window.addEventListener('message', (ev) => {
         if (ev.origin !== target.origin || ev.source !== frame.contentWindow) return;
         if (ev.data?.type === 'gradedefense:ready') frame.contentWindow.postMessage({ type: 'gradedefense:semester', version: 1, events }, target.origin);

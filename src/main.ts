@@ -33,6 +33,7 @@ if (app) {
   listenForEmbeddedSemester(window, (semester) => {
     save((d) => (d.semester = { source: 'moodle', json: JSON.stringify(semester), importedAt: Date.now() }));
     invalidateSemester();
+    if (new URLSearchParams(location.search).has('intro')) return; // full-screen intro keeps its title screen
     const active = game.scene.getScenes(true)[0]?.scene.key;
     if (active === 'TitleScene' || active === 'WarRoomScene') game.scene.getScene(active).scene.start('WarRoomScene');
   });
