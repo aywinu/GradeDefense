@@ -512,7 +512,7 @@ export class Battlefield3D {
   /** Screen position (stage px) for the far end of a lane, for its name plate. */
   laneScreen(lane: number): { x: number; y: number } {
     const laneH = (SIM.yMax - SIM.yMin) / SIM.lanes;
-    const p = toWorld(SIM.xMax - 60, SIM.yMin + (lane + 0.5) * laneH);
+    const p = toWorld(SIM.xMax + 170, SIM.yMin + (lane + 0.5) * laneH);
     this.camera.updateMatrixWorld();
     return this.project(p);
   }
