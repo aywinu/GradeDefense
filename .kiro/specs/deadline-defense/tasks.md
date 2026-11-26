@@ -463,11 +463,11 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 ## Phase 10: Moodle Calendar Import
 
 ### 10.1: ICS Parser
-- [ ] 9.1.1: Install `ical.js` (npm package) (Ref: design.md Import Modules)
-- [ ] 8.1.2: Create `src/import/ics.ts` with `parseICS(icsText): ICSEvent[]` (Ref: design.md ICS Parser, R6.1)
-- [ ] 8.1.3: Implement `inferItemType(summary): ItemType` with regex (Ref: design.md ICS Parser, R6.2)
-- [ ] 8.1.4: Implement `extractCourseId(summary, categories): CourseId` (Ref: design.md ICS Parser, R6.2)
-- [ ] 8.1.5: Write unit tests in `src/import/ics.test.ts`: verify parsing with sample .ics file (Ref: R6.1)
+- [x] 9.1.1: Install `ical.js` (npm package) (Ref: design.md Import Modules) [SKIPPED: wrote parser directly per task constraints]
+- [x] 8.1.2: Create `src/import/ics.ts` with `parseICS(icsText): ICSEvent[]` (Ref: design.md ICS Parser, R6.1)
+- [x] 8.1.3: Implement `inferItemType(summary): ItemType` with regex (Ref: design.md ICS Parser, R6.2)
+- [x] 8.1.4: Implement `extractCourseId(summary, categories): CourseId` (Ref: design.md ICS Parser, R6.2)
+- [x] 8.1.5: Write unit tests in `src/import/ics.test.ts`: verify parsing with sample .ics file (Ref: R6.1)
 
 ### 10.2: Import UI
 - [ ] 8.2.1: Add "Import Moodle Calendar" button to TitleScene (Ref: R6.1)

@@ -34,3 +34,6 @@ The hackathon requires Kiro, and Kiro did a large part of the work (see `KIRO_US
 | 2026-11-26 | War Room scene, TrialPanel, study model glue, versioned save + tests, WebAudio synth | Claude Code |
 | 2026-11-26 | Task 5.1 QTE core | Kiro (+ Claude flaky-test fix) |
 | 2026-11-26 | BattleScene rebuild, BattleUI (HUD, scout, debrief, checkpoint, QTE card, coach), entity views | Claude Code |
+| 2026-11-26 | War Room redesign (muted ledger, candles, epitaph, graveyard + skeleton walk cycle) after user feedback | Claude Code |
+| 2026-11-26 | Task 10.1 ICS parser (src/import) | Kiro (accidentally committed together with Claude's creature commit c80c9ab) |
+| 2026-11-26 | Balance constants + headless campaign balance test (idle loses, studying holds) | Claude Code |

@@ -18,6 +18,7 @@ import {
 } from '../core/readiness';
 import type { Course, CourseworkItem, DemoSemester, Semester } from '../core/types';
 import { load, save, type TrialSession } from '../save/save';
+import { forgeMultipliers } from '../core/balance';
 
 export interface Question {
   id: string;
@@ -207,7 +208,7 @@ export function recordSession(
 
 /** Tower bonuses from forge level (studying = weapons). */
 export function forgeBonus(level: number): { damage: number; fireRate: number; range: number } {
-  return { damage: 1 + level * 0.25, fireRate: 1 + level * 0.12, range: 1 + level * 0.05 };
+  return forgeMultipliers(level);
 }
 
 export function formatDue(d: Date): string {

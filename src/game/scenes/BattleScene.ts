@@ -21,6 +21,7 @@ import { generateWave, campaignWeeks, tutorialWave } from '../../core/wave';
 import { stepSimulation, type SimConfig, type SimEvent } from '../../core/sim';
 import { shouldTriggerQTE, resolveQTE } from '../../core/qte';
 import { mulberry32 } from '../../core/rng';
+import { BALANCE } from '../../core/balance';
 import type { Semester, GameState, EnemyStats, TowerStats } from '../../core/types';
 import { getSemester, questionsFor, recordSession, forgeLevel, forgeBonus, readinessFor, courseView, type Question } from '../../study/model';
 import { load, save } from '../../save/save';
@@ -31,10 +32,10 @@ import { sfx, startDrone, stopDrone } from '../../audio/sfx';
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
-/** Sentinel sockets per lane (x positions). Socket 0 starts built. */
-const SOCKETS = [300, 640, 980];
-const SOCKET_COST = [0, 60, 110];
-const BASE_TOWER = { damage: 14, fireRate: 1.1, range: 290 };
+/** Sentinel sockets per lane (x positions). Socket 0 starts built. Tuned in src/core/balance.ts. */
+const SOCKETS = BALANCE.sockets;
+const SOCKET_COST = BALANCE.socketCost;
+const BASE_TOWER = BALANCE.tower;
 const SPECIAL_DAMAGE = 140;
 const CHECK_CHARGE = 34;
 
@@ -374,7 +375,9 @@ export class BattleScene extends Phaser.Scene {
     return list.map((e) => {
       const lane = Math.min(Layout.LANE_COUNT - 1, Math.max(0, e.lane));
       const y = laneY(lane) + (e.isMinion ? Phaser.Math.Between(-26, 26) : 0);
-      return { ...e, lane, x: Layout.ENEMY_SPAWN_X, y, pathProgress: 0, progress: 0 };
+      const hpK = wave === 0 ? 1 : BALANCE.enemyHpScale;
+      const dmgK = wave === 0 ? 1 : BALANCE.enemyDamageScale;
+      return { ...e, lane, x: Layout.ENEMY_SPAWN_X, y, pathProgress: 0, progress: 0, hp: e.hp * hpK, maxHp: e.maxHp * hpK, damage: Math.round(e.damage * dmgK) };
     });
   }
 
