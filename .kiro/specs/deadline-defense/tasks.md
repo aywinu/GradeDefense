@@ -63,14 +63,14 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 ## Phase 2: Demo Data
 
 ### 2.1: Demo Semester Conversion
-- [ ] 2.1.1: Create `scripts/convert-demo.ts` to read `reference/coursepilot/course_plan.json` (Ref: R2.1)
-- [ ] 2.1.2: Convert `days` offset to `daysOffset` (keep as relative integers, NOT absolute dates) (Ref: R2.1, R2.2)
-- [ ] 2.1.3: Infer `type` from `name` via regex (quiz/exam/project/presentation/assignment) (Ref: R2.2, R3.1)
-- [ ] 2.1.4: Assign 6 course colors from palette (Ref: design.md Art Direction)
-- [ ] 2.1.5: Output to `src/data/demo.json` with schema: items have `daysOffset: number`, NOT `dueDate` (Ref: R2.2)
-- [ ] 2.1.6: Create `src/core/semester.ts` with `resolveSemester(demo, now): Semester` to compute absolute due dates at runtime (Ref: R2.2)
-- [ ] 2.1.7: Write unit tests in `src/core/semester.test.ts`: verify date resolution for past/future offsets (Ref: R2.2)
-- [ ] 2.1.6: Run script and verify 6 courses, 30+ items, valid JSON (Ref: R2.1)
+- [x] 2.1.1: Create `scripts/convert-demo.ts` to read `reference/coursepilot/course_plan.json` (Ref: R2.1) [SKIPPED: wrote demo.json directly]
+- [x] 2.1.2: Convert `days` offset to `daysOffset` (keep as relative integers, NOT absolute dates) (Ref: R2.1, R2.2)
+- [x] 2.1.3: Infer `type` from `name` via regex (quiz/exam/project/presentation/assignment) (Ref: R2.2, R3.1)
+- [x] 2.1.4: Assign 6 course colors from palette (Ref: design.md Art Direction)
+- [x] 2.1.5: Output to `src/data/demo.json` with schema: items have `daysOffset: number`, NOT `dueDate` (Ref: R2.2)
+- [x] 2.1.6: Create `src/core/semester.ts` with `resolveSemester(demo, now): Semester` to compute absolute due dates at runtime (Ref: R2.2)
+- [x] 2.1.7: Write unit tests in `src/core/semester.test.ts`: verify date resolution for past/future offsets (Ref: R2.2)
+- [x] 2.1.8: Run script and verify 6 courses, 30+ items, valid JSON (Ref: R2.1) [verified via tests]
 
 ### 2.2: Checkpoint Questions
 - [ ] 2.2.1: Create `src/data/checkpoints.json` with 8 questions per course (48 total) (Ref: R5.1, design.md Data Generation)

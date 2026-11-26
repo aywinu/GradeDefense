@@ -235,6 +235,9 @@ describe('scoring (property-based tests)', () => {
         fc.property(
           fc.date({ min: new Date('2026-01-02'), max: new Date('2100-01-01') }),
           (dueDate: Date) => {
+            // Skip invalid dates
+            if (isNaN(dueDate.getTime())) return true;
+            
             const now = new Date('2026-01-01').getTime();
             const days = daysUntilDue(dueDate, now);
             expect(days).toBeGreaterThan(0);

@@ -1,0 +1,352 @@
+{
+  "courses": [
+    {
+      "id": "CV101",
+      "title": "Computer Vision",
+      "color": "#5b8def",
+      "items": [
+        {
+          "id": "CV101-lab1",
+          "courseId": "CV101",
+          "name": "Lab 1 - Convolution from Scratch",
+          "daysOffset": -21,
+          "points": 10,
+          "grade": 90,
+          "type": "assignment"
+        },
+        {
+          "id": "CV101-lab2",
+          "courseId": "CV101",
+          "name": "Lab 2 - Feature Matching",
+          "daysOffset": -10,
+          "points": 10,
+          "grade": 80,
+          "type": "assignment"
+        },
+        {
+          "id": "CV101-midterm",
+          "courseId": "CV101",
+          "name": "Midterm Examination",
+          "daysOffset": 4,
+          "points": 100,
+          "grade": null,
+          "type": "exam"
+        },
+        {
+          "id": "CV101-proposal",
+          "courseId": "CV101",
+          "name": "Project Proposal",
+          "daysOffset": 16,
+          "points": 20,
+          "grade": null,
+          "type": "project"
+        },
+        {
+          "id": "CV101-lab3",
+          "courseId": "CV101",
+          "name": "Lab 3 - Object Detection",
+          "daysOffset": 20,
+          "points": 10,
+          "grade": null,
+          "type": "assignment"
+        },
+        {
+          "id": "CV101-final",
+          "courseId": "CV101",
+          "name": "Final Project Presentation",
+          "daysOffset": 45,
+          "points": 100,
+          "grade": null,
+          "type": "presentation"
+        }
+      ]
+    },
+    {
+      "id": "PHO101",
+      "title": "Photonics",
+      "color": "#a274f0",
+      "items": [
+        {
+          "id": "PHO101-lab1",
+          "courseId": "PHO101",
+          "name": "Lab 1 - Two-Slit Interference",
+          "daysOffset": -24,
+          "points": 10,
+          "grade": 90,
+          "type": "assignment"
+        },
+        {
+          "id": "PHO101-lab2",
+          "courseId": "PHO101",
+          "name": "Lab 2 - Diffraction Grating",
+          "daysOffset": -12,
+          "points": 10,
+          "grade": 80,
+          "type": "assignment"
+        },
+        {
+          "id": "PHO101-quiz",
+          "courseId": "PHO101",
+          "name": "Quiz",
+          "daysOffset": 5,
+          "points": 100,
+          "grade": null,
+          "type": "quiz"
+        },
+        {
+          "id": "PHO101-lab3",
+          "courseId": "PHO101",
+          "name": "Lab 3 - Fiber Coupling",
+          "daysOffset": 19,
+          "points": 10,
+          "grade": null,
+          "type": "assignment"
+        },
+        {
+          "id": "PHO101-pset3",
+          "courseId": "PHO101",
+          "name": "Problem Set 3 - Waveguides",
+          "daysOffset": 28,
+          "points": 20,
+          "grade": null,
+          "type": "assignment"
+        },
+        {
+          "id": "PHO101-final",
+          "courseId": "PHO101",
+          "name": "Final Examination",
+          "daysOffset": 48,
+          "points": 100,
+          "grade": null,
+          "type": "exam"
+        }
+      ]
+    },
+    {
+      "id": "MGT101",
+      "title": "Management",
+      "color": "#e0874a",
+      "items": [
+        {
+          "id": "MGT101-reading1",
+          "courseId": "MGT101",
+          "name": "Reading Reflection 1",
+          "daysOffset": -18,
+          "points": 10,
+          "grade": 90,
+          "type": "assignment"
+        },
+        {
+          "id": "MGT101-charter",
+          "courseId": "MGT101",
+          "name": "Team Charter",
+          "daysOffset": -7,
+          "points": 10,
+          "grade": 100,
+          "type": "assignment"
+        },
+        {
+          "id": "MGT101-casestudy",
+          "courseId": "MGT101",
+          "name": "Case Study Report",
+          "daysOffset": 18,
+          "points": 100,
+          "grade": null,
+          "type": "assignment"
+        },
+        {
+          "id": "MGT101-essay",
+          "courseId": "MGT101",
+          "name": "Leadership Essay",
+          "daysOffset": 26,
+          "points": 20,
+          "grade": null,
+          "type": "assignment"
+        },
+        {
+          "id": "MGT101-final",
+          "courseId": "MGT101",
+          "name": "Final Examination",
+          "daysOffset": 50,
+          "points": 100,
+          "grade": null,
+          "type": "exam"
+        }
+      ]
+    },
+    {
+      "id": "DSA101",
+      "title": "Data Structures & Algorithms",
+      "color": "#d9b54a",
+      "items": [
+        {
+          "id": "DSA101-pa0",
+          "courseId": "DSA101",
+          "name": "Programming Assignment 0 - Setup",
+          "daysOffset": -20,
+          "points": 10,
+          "grade": 100,
+          "type": "assignment"
+        },
+        {
+          "id": "DSA101-quiz1",
+          "courseId": "DSA101",
+          "name": "Quiz 1 - Complexity",
+          "daysOffset": -9,
+          "points": 20,
+          "grade": 85,
+          "type": "quiz"
+        },
+        {
+          "id": "DSA101-pa1",
+          "courseId": "DSA101",
+          "name": "Programming Assignment 1",
+          "daysOffset": 12,
+          "points": 100,
+          "grade": null,
+          "type": "assignment"
+        },
+        {
+          "id": "DSA101-pa2",
+          "courseId": "DSA101",
+          "name": "Programming Assignment 2",
+          "daysOffset": 26,
+          "points": 100,
+          "grade": null,
+          "type": "assignment"
+        },
+        {
+          "id": "DSA101-midterm",
+          "courseId": "DSA101",
+          "name": "Midterm Examination",
+          "daysOffset": 33,
+          "points": 100,
+          "grade": null,
+          "type": "exam"
+        },
+        {
+          "id": "DSA101-final",
+          "courseId": "DSA101",
+          "name": "Final Examination",
+          "daysOffset": 55,
+          "points": 100,
+          "grade": null,
+          "type": "exam"
+        }
+      ]
+    },
+    {
+      "id": "MKT101",
+      "title": "Digital Marketing",
+      "color": "#d85a8e",
+      "items": [
+        {
+          "id": "MKT101-brief",
+          "courseId": "MKT101",
+          "name": "Market Research Brief",
+          "daysOffset": -15,
+          "points": 20,
+          "grade": 85,
+          "type": "assignment"
+        },
+        {
+          "id": "MKT101-persona",
+          "courseId": "MKT101",
+          "name": "Consumer Persona Exercise",
+          "daysOffset": -6,
+          "points": 10,
+          "grade": 90,
+          "type": "assignment"
+        },
+        {
+          "id": "MKT101-proposal",
+          "courseId": "MKT101",
+          "name": "Campaign Proposal",
+          "daysOffset": 25,
+          "points": 100,
+          "grade": null,
+          "type": "assignment"
+        },
+        {
+          "id": "MKT101-audit",
+          "courseId": "MKT101",
+          "name": "Social Media Audit",
+          "daysOffset": 32,
+          "points": 20,
+          "grade": null,
+          "type": "assignment"
+        },
+        {
+          "id": "MKT101-final",
+          "courseId": "MKT101",
+          "name": "Final Campaign Presentation",
+          "daysOffset": 52,
+          "points": 100,
+          "grade": null,
+          "type": "presentation"
+        }
+      ]
+    },
+    {
+      "id": "MATH101",
+      "title": "Linear Algebra",
+      "color": "#4fc29a",
+      "items": [
+        {
+          "id": "MATH101-pset1",
+          "courseId": "MATH101",
+          "name": "Problem Set 1",
+          "daysOffset": -19,
+          "points": 20,
+          "grade": 90,
+          "type": "assignment"
+        },
+        {
+          "id": "MATH101-pset2",
+          "courseId": "MATH101",
+          "name": "Problem Set 2",
+          "daysOffset": -8,
+          "points": 20,
+          "grade": 75,
+          "type": "assignment"
+        },
+        {
+          "id": "MATH101-midterm",
+          "courseId": "MATH101",
+          "name": "Midterm Exam",
+          "daysOffset": 5,
+          "points": 100,
+          "grade": null,
+          "type": "exam"
+        },
+        {
+          "id": "MATH101-pset3",
+          "courseId": "MATH101",
+          "name": "Problem Set 3",
+          "daysOffset": 17,
+          "points": 20,
+          "grade": null,
+          "type": "assignment"
+        },
+        {
+          "id": "MATH101-quiz",
+          "courseId": "MATH101",
+          "name": "Quiz - Eigenvalues",
+          "daysOffset": 23,
+          "points": 20,
+          "grade": null,
+          "type": "quiz"
+        },
+        {
+          "id": "MATH101-final",
+          "courseId": "MATH101",
+          "name": "Final Examination",
+          "daysOffset": 49,
+          "points": 100,
+          "grade": null,
+          "type": "exam"
+        }
+      ]
+    }
+  ]
+}
