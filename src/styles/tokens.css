@@ -1,0 +1,28 @@
+/* Design tokens: see .kiro/steering/art-direction.md */
+:root {
+  --void: #07060b;
+  --ink: #120f1a;
+  --stone: #1d1828;
+  --mist: #2b2440;
+  --parchment: #e9dcc0;
+  --faded-ink: #a89f8c;
+  --candle: #f2b45a;
+  --spectral: #6ee7d0;
+  --crimson: #b3202c;
+
+  --course-cv: #5b8def;
+  --course-pho: #a274f0;
+  --course-mgt: #e0874a;
+  --course-dsa: #d9b54a;
+  --course-mkt: #d85a8e;
+  --course-math: #4fc29a;
+
+  --font-display: 'Cinzel Decorative', 'Cinzel', Georgia, serif;
+  --font-heading: 'Cinzel', Georgia, serif;
+  --font-body: 'Spectral', Georgia, serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --radius: 6px;
+  --focus-ring: 0 0 0 2px var(--void), 0 0 0 4px var(--candle);
+}
