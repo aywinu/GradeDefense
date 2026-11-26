@@ -671,3 +671,45 @@ html, body, canvas, .ui-layer {
 button, [data-interactive], .wr-row, .tl-stone, .choice, a {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M3 2 L3 21 L8 16.5 L11.5 25 L15 23.5 L11.6 15.2 L18 15 Z' fill='%233a2410' stroke='%23ffd27a' stroke-width='1.6' stroke-linejoin='round'/%3E%3Ccircle cx='3' cy='2' r='2.4' fill='%23fff3d6'/%3E%3Ccircle cx='3' cy='2' r='4.5' fill='%23f2b45a' fill-opacity='.35'/%3E%3C/svg%3E") 3 2, pointer !important;
 }
+
+/* 3D battle overlays */
+.lane-names .lane-name {
+  position: absolute;
+  right: 26px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 55%, #a89f8c);
+  opacity: 0.65;
+  text-shadow: 0 1px 6px #000;
+}
+.enemy-labels { overflow: hidden; }
+.enemy-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 12px 5px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #e9dcbc, #cdb88e);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(90, 55, 20, 0.45);
+  white-space: nowrap;
+  will-change: transform;
+}
+.enemy-label::before, .enemy-label::after { content: ''; position: absolute; top: 0; bottom: 0; width: 6px; background: linear-gradient(90deg, #8a7350, #e8d6ae, #8a7350); }
+.enemy-label::before { left: -4px; border-radius: 3px 0 0 3px; }
+.enemy-label::after { right: -4px; border-radius: 0 3px 3px 0; }
+.enemy-label .n { font-family: var(--font-body); font-weight: 600; font-size: 13.5px; color: #2a1f12; line-height: 1.2; }
+.enemy-label .d { font-family: var(--font-ui); font-weight: 700; font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #5a4630; }
+.enemy-label .d.soon { color: #8a2a22; }
+.enemy-label .hp { display: block; width: 100%; height: 3px; margin-top: 3px; background: rgba(42, 31, 18, 0.25); border-radius: 2px; overflow: hidden; }
+.enemy-label .hp > i { display: block; height: 100%; width: 100%; background: #8a2a22; transition: width 120ms; }
+.enemy-label.boss { padding: 5px 16px 7px; background: linear-gradient(180deg, #e2cfa6, #b89a66); }
+.enemy-label.boss .n { font-family: var(--font-heading); font-weight: 700; font-size: 16px; letter-spacing: 0.04em; }
+.float-text { position: absolute; transform: translate(-50%, -100%); font-family: var(--font-ui); font-weight: 700; text-shadow: 0 0 4px #000, 0 2px 0 #000; pointer-events: none; }
+.coin-fly { position: absolute; left: 0; top: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe7b0, #f2b45a 50%, #8a5a1c); box-shadow: 0 0 10px rgba(242, 180, 90, 0.8); }
+canvas.dd-3d { display: block; }

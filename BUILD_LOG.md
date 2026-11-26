@@ -37,3 +37,7 @@ The hackathon requires Kiro, and Kiro did a large part of the work (see `KIRO_US
 | 2026-11-26 | War Room redesign (muted ledger, candles, epitaph, graveyard + skeleton walk cycle) after user feedback | Claude Code |
 | 2026-11-26 | Task 10.1 ICS parser (src/import) | Kiro (accidentally committed together with Claude's creature commit c80c9ab) |
 | 2026-11-26 | Balance constants + headless campaign balance test (idle loses, studying holds) | Claude Code |
+| 2026-11-26 | War Room v3 progressive disclosure (counsel, list + detail) | Claude Code |
+| 2026-11-26 | Lantern cursor (fog parting + stirring), custom cursor | Claude Code |
+| 2026-11-26 | Moodle block + postMessage handler | Kiro (+ Claude security hardening) |
+| 2026-11-27 | Kiro hooks + custom agent | Kiro |

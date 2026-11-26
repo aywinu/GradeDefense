@@ -179,7 +179,18 @@ export function scoutReport(
   );
   el.querySelectorAll<HTMLButtonElement>('[data-train]').forEach((b) => b.addEventListener('click', () => onTrain(b.dataset.train!)));
   const begin = el.querySelector<HTMLButtonElement>('[data-begin]')!;
-  begin.addEventListener('click', onBegin);
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Enter' && document.activeElement?.tagName !== 'BUTTON') {
+      e.preventDefault();
+      begin.click();
+    }
+  };
+  window.addEventListener('keydown', onKey);
+  begin.addEventListener('click', () => {
+    window.removeEventListener('keydown', onKey);
+    onBegin();
+  });
+  el.querySelectorAll<HTMLButtonElement>('[data-train]').forEach((b) => b.addEventListener('click', () => window.removeEventListener('keydown', onKey)));
   setTimeout(() => begin.focus(), 30);
   if (!R()) gsap.from(el.querySelector('.grimoire'), { y: 30, opacity: 0, duration: 0.45, ease: 'power3.out' });
   return el;

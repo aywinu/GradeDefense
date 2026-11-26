@@ -14,9 +14,9 @@ import Phaser from 'phaser';
 import { gsap } from 'gsap';
 import { Palette, getCourseColor } from '../palette';
 import { Layout, laneY } from '../layout';
-import { TowerView } from '../entities/TowerView';
-import { EnemyView } from '../entities/EnemyView';
-import { Atmosphere, prefersReducedMotion } from '../fx/Atmosphere';
+import { prefersReducedMotion } from '../fx/Atmosphere';
+import { Battlefield3D } from '../../game3d/Battlefield3D';
+import { mountLayer } from '../../ui/stage';
 import { generateWave, campaignWeeks, tutorialWave } from '../../core/wave';
 import { stepSimulation, type SimConfig, type SimEvent } from '../../core/sim';
 import { shouldTriggerQTE, resolveQTE } from '../../core/qte';
@@ -63,18 +63,14 @@ export class BattleScene extends Phaser.Scene {
   private rng = mulberry32(Date.now() & 0xffff);
   private timeScale = 1;
 
-  private towerViews = new Map<string, TowerView>();
-  private enemyViews = new Map<string, EnemyView>();
-  private socketViews = new Map<string, Phaser.GameObjects.Container>();
+  private view!: Battlefield3D;
+  private labels?: HTMLDivElement;
+  private towerKeys = new Map<string, string>(); // "x,y" -> tower key
+  private socketsOpen = new Set<string>();
+  private enemyMeta = new Map<string, { courseId: string; label: string; isBoss: boolean; lane: number }>();
   private qteDone = new Map<string, number>();
   private enrageUntil = new Map<string, number>();
-  private atmosphere?: Atmosphere;
   private hud?: Hud;
-  private fortressCracks!: Phaser.GameObjects.Graphics;
-  private dangerGlow!: Phaser.GameObjects.Image;
-  private bolts!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private sparks!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private souls!: Phaser.GameObjects.Particles.ParticleEmitter;
   private stats: WaveStats = this.freshStats();
   private sessionAnswers = new Map<string, { questionId: string; correct: boolean }[]>();
   private overlay?: HTMLElement;
@@ -91,27 +87,26 @@ export class BattleScene extends Phaser.Scene {
     this.weeks = campaignWeeks(this.semester, Date.now());
     this.tutorial = data?.tutorial ?? !load().tutorialDone;
     this.tutorialStep = 0;
-    this.towerViews.clear();
-    this.enemyViews.clear();
-    this.socketViews.clear();
+    this.towerKeys.clear();
+    this.socketsOpen.clear();
+    this.enemyMeta.clear();
     this.qteDone.clear();
     this.enrageUntil.clear();
     this.sessionAnswers.clear();
     this.timeScale = 1;
+    void W;
+    void H;
 
-    const laneH = (Layout.LANE_END_Y - Layout.LANE_START_Y) / Layout.LANE_COUNT;
-    this.atmosphere = new Atmosphere(this, {
-      width: W,
-      height: H,
-      fog: 0.3,
-      frontFog: 0.07,
-      vignette: 0.35,
-      candleX: 176,
-      lanes: this.semester.courses.slice(0, Layout.LANE_COUNT).map((c, i) => ({ y: laneY(i), color: getCourseColor(c.id), height: laneH })),
-    });
+    // The 3D battlefield renders over the Phaser canvas; DOM labels float above it.
+    this.labels = mountLayer('enemy-labels');
+    this.view = new Battlefield3D(document.getElementById('game-container')!, this.labels, this.reduced);
+    this.view.onSocketClick = (key) => {
+      if (!(this.phase === 'fight' || this.phase === 'scout' || this.phase === 'intro')) return;
+      const [courseId, socketStr] = key.split('#');
+      const lane = this.semester.courses.findIndex((c) => c.id === courseId);
+      this.buildTower(courseId, lane, Number(socketStr));
+    };
     this.drawLaneLabels();
-    this.drawFortress();
-    this.createEmitters();
 
     this.initializeGameState();
     this.spawnSentinels();
@@ -154,93 +149,16 @@ export class BattleScene extends Phaser.Scene {
     };
   }
 
+  /** Course names along the far end of each lane (DOM, crisp at any scale). */
   private drawLaneLabels(): void {
-    this.semester.courses.slice(0, Layout.LANE_COUNT).forEach((c, i) => {
-      const y = laneY(i);
-      const color = getCourseColor(c.id);
-      this.add
-        .text(1580, y - 48, c.title.toUpperCase(), {
-          fontFamily: 'Cinzel, Georgia, serif',
-          fontStyle: '700',
-          fontSize: '13px',
-          color: hex(color),
-        })
-        .setOrigin(1, 0.5)
-        .setAlpha(0.55)
-        .setLetterSpacing(3)
-        .setDepth(-50);
-    });
-  }
-
-  private drawFortress(): void {
-    const x = 76;
-    const y = Layout.CANVAS_HEIGHT / 2 + 20;
-    const c = this.add.container(x, y).setDepth(12);
-    const g = this.add.graphics();
-    // Desk slab running the full height of the lanes
-    g.fillGradientStyle(0x2b2033, 0x1d1828, 0x15101d, 0x0d0a14, 1);
-    g.fillRect(-76, -(Layout.LANE_END_Y - Layout.LANE_START_Y) / 2 - 20, 128, Layout.LANE_END_Y - Layout.LANE_START_Y + 40);
-    g.lineStyle(2, 0xf2b45a, 0.35);
-    g.lineBetween(52, -400, 52, 400);
-    // Open grimoire
-    g.fillStyle(0x07060b, 0.6);
-    g.fillEllipse(-10, 96, 150, 26);
-    g.fillGradientStyle(0xefe2c4, 0xdcc79c, 0xcbb88f, 0xb8a27a, 1);
-    g.fillRoundedRect(-70, -60, 64, 150, 4);
-    g.fillRoundedRect(-4, -60, 64, 150, 4);
-    g.lineStyle(1, 0x5a4630, 0.6);
-    for (let i = 0; i < 9; i++) {
-      g.lineBetween(-62, -44 + i * 14, -14, -44 + i * 14);
-      g.lineBetween(4, -44 + i * 14, 52, -44 + i * 14);
-    }
-    g.lineStyle(2, 0x3b2a17, 1);
-    g.lineBetween(-5, -60, -5, 90);
-    this.fortressCracks = this.add.graphics();
-    const glow = this.add.image(-5, 10, 'glow-soft').setTint(0xf2b45a).setScale(1.5, 1.8).setAlpha(0.35).setBlendMode(Phaser.BlendModes.ADD);
-    const label = this.add
-      .text(-5, 118, 'YOUR SEMESTER', { fontFamily: 'Cinzel, Georgia, serif', fontStyle: '700', fontSize: '12px', color: '#f2b45a' })
-      .setOrigin(0.5)
-      .setLetterSpacing(2);
-    c.add([g, glow, this.fortressCracks, label]);
-    this.dangerGlow = this.add.image(0, Layout.CANVAS_HEIGHT / 2, 'glow-soft').setTint(0xb3202c).setScale(2.5, 7).setAlpha(0).setDepth(11);
-    this.dangerGlow.setBlendMode(Phaser.BlendModes.ADD);
-  }
-
-  private createEmitters(): void {
-    this.bolts = this.add
-      .particles(0, 0, 'wisp', {
-        lifespan: 260,
-        speed: 0,
-        scale: { start: 0.32, end: 0.05 },
-        alpha: { start: 0.85, end: 0 },
-        blendMode: Phaser.BlendModes.ADD,
-        emitting: false,
+    const html = this.semester.courses
+      .slice(0, Layout.LANE_COUNT)
+      .map((c, i) => {
+        const y = 112 + i * 118;
+        return `<div class="lane-name" style="top:${y}px;--c:${hex(getCourseColor(c.id))}">${c.title}</div>`;
       })
-      .setDepth(30);
-    this.sparks = this.add
-      .particles(0, 0, 'spark', {
-        lifespan: { min: 220, max: 420 },
-        speed: { min: 80, max: 260 },
-        angle: { min: 0, max: 360 },
-        rotate: { onEmit: () => 0, onUpdate: (p: Phaser.GameObjects.Particles.Particle) => Phaser.Math.RadToDeg(Math.atan2(p.velocityY, p.velocityX)) },
-        scale: { start: 0.7, end: 0 },
-        alpha: { start: 1, end: 0 },
-        blendMode: Phaser.BlendModes.ADD,
-        emitting: false,
-      })
-      .setDepth(31);
-    this.souls = this.add
-      .particles(0, 0, 'glow', {
-        lifespan: { min: 500, max: 900 },
-        speed: { min: 30, max: 140 },
-        angle: { min: 200, max: 340 },
-        gravityY: -60,
-        scale: { start: 0.35, end: 0 },
-        alpha: { start: 0.9, end: 0 },
-        blendMode: Phaser.BlendModes.ADD,
-        emitting: false,
-      })
-      .setDepth(31);
+      .join('');
+    mountLayer('lane-names', html);
   }
 
   private towerKey(courseId: string, socket: number) {
@@ -283,55 +201,22 @@ export class BattleScene extends Phaser.Scene {
     const y = laneY(lane) + 8;
     const stats = this.towerStats(courseId, x, y);
     this.gameState.towers.push(stats);
-    const view = new TowerView(this, x, y, courseId, stats.range, forgeLevel(courseId));
-    this.towerViews.set(this.towerKey(courseId, socket), view);
-    const sock = this.socketViews.get(this.towerKey(courseId, socket));
-    sock?.destroy();
-    this.socketViews.delete(this.towerKey(courseId, socket));
+    const key = this.towerKey(courseId, socket);
+    this.view.addTower(key, x, y, getCourseColor(courseId), forgeLevel(courseId));
+    this.towerKeys.set(`${x},${y}`, key);
+    this.view.removeSocket(key);
+    this.socketsOpen.delete(key);
     if (!free) {
       sfx('forge');
       this.hud?.caption('A sentinel rises', 'good');
-      if (!this.reduced) {
-        view.setScale(0.2).setAlpha(0);
-        this.tweens.add({ targets: view, scale: 1, alpha: 1, duration: 420, ease: 'Back.easeOut' });
-      }
-      this.souls.explode(14, x, y - 20);
     }
     return true;
   }
 
   private addSocket(courseId: string, lane: number, socket: number, x: number): void {
-    const y = laneY(lane) + 8;
-    const color = getCourseColor(courseId);
-    const c = this.add.container(x, y).setDepth(9);
-    const g = this.add.graphics();
-    g.lineStyle(1.2, 0xcfc3a8, 0.22);
-    g.strokeEllipse(0, 26, 56, 16);
-    g.lineStyle(1, color, 0.2);
-    g.strokeEllipse(0, 26, 40, 10);
-    const cost = this.add
-      .text(0, 2, `${SOCKET_COST[socket]}`, { fontFamily: 'Inter, system-ui, sans-serif', fontStyle: '700', fontSize: '13px', color: '#f2b45a' })
-      .setOrigin(0.5)
-      .setAlpha(0);
-    const coin = this.add.circle(-16, 2, 5, 0xf2b45a, 0.9).setAlpha(0);
-    c.add([g, coin, cost]);
-    c.setSize(70, 70);
-    c.setInteractive({ useHandCursor: true });
-    c.on('pointerover', () => {
-      c.setScale(1.08);
-      cost.setAlpha(0.95);
-      coin.setAlpha(0.9);
-    });
-    c.on('pointerout', () => {
-      c.setScale(1);
-      cost.setAlpha(0);
-      coin.setAlpha(0);
-    });
-    c.on('pointerup', () => {
-      if (this.phase === 'fight' || this.phase === 'scout' || this.phase === 'intro') this.buildTower(courseId, lane, socket);
-    });
-    this.socketViews.set(this.towerKey(courseId, socket), c);
-    if (!this.reduced) this.tweens.add({ targets: g, alpha: { from: 0.6, to: 1 }, yoyo: true, repeat: -1, duration: 1400 + socket * 200 });
+    const key = this.towerKey(courseId, socket);
+    this.view.addSocket(key, x, laneY(lane) + 8, getCourseColor(courseId));
+    this.socketsOpen.add(key);
   }
 
   private setupInput(): void {
@@ -355,7 +240,7 @@ export class BattleScene extends Phaser.Scene {
       const course = this.semester.courses[lane];
       if (!course) return;
       for (let s = 1; s < SOCKETS.length; s++) {
-        if (this.socketViews.has(this.towerKey(course.id, s))) {
+        if (this.socketsOpen.has(this.towerKey(course.id, s))) {
           this.buildTower(course.id, lane, s);
           break;
         }
@@ -488,7 +373,7 @@ export class BattleScene extends Phaser.Scene {
     this.phase = 'over';
     sfx('defeat');
     this.flushSessions();
-    this.cameras.main.shake(this.reduced ? 0 : 400, 0.01);
+    this.view.breach(1);
     const breached = Object.entries(this.stats.breaches).sort((a, b) => b[1] - a[1]);
     const lines = [
       `The fog swallowed the grimoire in week ${this.weekOf(this.gameState.wave)}.`,
@@ -594,10 +479,7 @@ export class BattleScene extends Phaser.Scene {
     sfx('special');
     this.hud?.caption('Lantern of Knowledge: every creature burns', 'good');
     const W = Layout.CANVAS_WIDTH;
-    const beam = this.add.image(0, Layout.CANVAS_HEIGHT / 2, 'glow-soft').setTint(0x6ee7d0).setScale(1.5, 8).setAlpha(0.9).setDepth(40);
-    beam.setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({ targets: beam, x: W + 200, scaleX: 3, duration: this.reduced ? 1 : 700, ease: 'Sine.easeIn', onComplete: () => beam.destroy() });
-    if (!this.reduced) this.cameras.main.flash(250, 110, 231, 208);
+    this.view.lanternSweep(0x6ee7d0);
     for (const e of [...this.gameState.enemies]) {
       const delay = this.reduced ? 0 : (e.x / W) * 700;
       this.time.delayedCall(delay, () => {
@@ -613,16 +495,14 @@ export class BattleScene extends Phaser.Scene {
   private damageEnemy(e: EnemyStats, amount: number, color: number): void {
     const before = e.hp / e.maxHp;
     e.hp -= amount;
-    const view = this.enemyViews.get(e.id);
-    view?.hitFlash(this.time.now);
-    this.sparks.setParticleTint(color);
-    this.sparks.explode(10, e.x, e.y);
-    this.floatNumber(e.x, e.y - 30, Math.round(amount), color);
+    this.view.hitEnemy(e.id);
+    this.view.hitSpark(e.x, e.y, color);
+    this.floatNumber(e.id, Math.round(amount), color);
     if (e.hp <= 0) {
       this.killEnemy(e);
       return;
     }
-    view?.updateHpBar(e.hp, e.maxHp);
+    this.view.moveEnemy(e.id, e.x, e.y, e.hp / e.maxHp);
     this.maybeQTE(e, before, e.hp / e.maxHp);
   }
 
@@ -648,17 +528,10 @@ export class BattleScene extends Phaser.Scene {
     const course = this.semester.courses.find((c) => c.id === e.courseId)!;
     const q = this.pickQuestion(e.courseId);
     const extra = load().settings.extraTime || this.reduced;
-    let gray: { active: boolean } | null = null;
-    try {
-      const cm = this.cameras.main.filters.internal.addColorMatrix();
-      cm.colorMatrix.saturate(-0.7);
-      gray = cm;
-    } catch {
-      /* filters unavailable */
-    }
+    this.view.setSlowmo(true);
     this.hud?.caption('Heartbeat: a quick-time exam', 'bad');
     const ok = await qteCard(q, course.title, hex(getCourseColor(e.courseId)), extra ? 16000 : 8000, extra);
-    if (gray) this.cameras.main.filters.internal.remove(gray as never);
+    this.view.setSlowmo(false);
     this.timeScale = 1;
     if (this.phase !== 'qte') return;
     this.phase = 'fight';
@@ -670,7 +543,6 @@ export class BattleScene extends Phaser.Scene {
       this.stats.qte.ok++;
       sfx('crit');
       this.hud?.caption('Critical strike: knowledge cuts deep', 'good');
-      if (!this.reduced) this.cameras.main.flash(180, 255, 255, 255);
       if (live) this.damageEnemy(live, Math.max(outcome.damage ?? 0, live.maxHp * 0.35), 0xffffff);
     } else if (live && outcome.enrage) {
       sfx('enrage');
@@ -678,8 +550,8 @@ export class BattleScene extends Phaser.Scene {
       live.speed *= outcome.enrage.speedMult;
       live.damage = Math.round(live.damage * outcome.enrage.damageMult);
       this.enrageUntil.set(live.id, this.gameState.timeMs + outcome.enrage.durationMs);
-      this.enemyViews.get(live.id)?.setEnraged(true);
-      this.floatText(live.x, live.y - 70, 'ENRAGED', 0xff6b74);
+      this.view.setEnraged(live.id, true);
+      this.floatLabel(live.id, 'ENRAGED', 0xff6b74);
     }
   }
 
@@ -751,10 +623,6 @@ export class BattleScene extends Phaser.Scene {
   // ───────────────────────── frame loop ─────────────────────────
 
   update(_time: number, deltaRaw: number): void {
-    const now = this.time.now;
-    this.atmosphere?.update(deltaRaw);
-    for (const v of this.towerViews.values()) v.tick(now, this.reduced);
-    for (const v of this.enemyViews.values()) v.tick(now, this.reduced);
 
     if (this.phase === 'fight' || this.phase === 'qte' || this.phase === 'check') {
       const dt = this.phase === 'check' ? 0 : Math.min(50, deltaRaw) * this.timeScale;
@@ -772,7 +640,8 @@ export class BattleScene extends Phaser.Scene {
       charge: this.gameState.special,
       progress: this.waveTotal ? Math.min(1, defeated / this.waveTotal) : 0,
     });
-    this.dangerGlow.setAlpha(Phaser.Math.Clamp((0.5 - hp / this.gameState.maxFortressHp) * 1.2, 0, 0.6));
+    this.view.setDanger(Phaser.Math.Clamp((0.5 - hp / this.gameState.maxFortressHp) * 1.6, 0, 0.8));
+    this.view.update(deltaRaw);
 
     if (this.phase === 'fight' && hp <= 0) this.onDefeat();
   }
@@ -786,20 +655,19 @@ export class BattleScene extends Phaser.Scene {
     for (const [id, until] of this.enrageUntil) {
       if (this.gameState.timeMs > until) {
         this.enrageUntil.delete(id);
-        this.enemyViews.get(id)?.setEnraged(false);
+        this.view.setEnraged(id, false);
       }
     }
     this.handleEvents(res.events, hpBefore);
     for (const e of this.gameState.enemies) {
-      const v = this.enemyViews.get(e.id);
-      if (!v) continue;
-      v.setPosition(e.x, e.y);
-      v.updateHpBar(e.hp, e.maxHp);
-      if (e.neglected && !v.getData('neglected')) {
-        v.setData('neglected', true);
-        v.setNeglected();
-        this.floatText(e.x, e.y - 60, 'NEGLECTED', 0xff9a5a);
-        this.hud?.caption(`${e.label} grows stronger while neglected`, 'bad');
+      this.view.moveEnemy(e.id, e.x, e.y, e.hp / e.maxHp);
+      const meta = this.enemyMeta.get(e.id);
+      if (e.neglected && meta && !meta.label.startsWith('!')) {
+        meta.label = `!${meta.label}`;
+        if (!e.isMinion) {
+          this.floatLabel(e.id, 'NEGLECTED', 0xff9a5a);
+          this.hud?.caption(`${e.label} grows stronger while neglected`, 'bad');
+        }
       }
     }
   }
@@ -809,40 +677,37 @@ export class BattleScene extends Phaser.Scene {
       switch (ev.type) {
         case 'spawn': {
           const e = ev.enemy;
-          const v = new EnemyView(this, e.x, e.y, e.courseId, e.type, e.label, e.daysLeft, !!e.isMinion);
-          if (e.isOverdue) v.applyOverdueEffect();
-          this.enemyViews.set(e.id, v);
-          if (!this.reduced) {
-            v.setAlpha(0);
-            this.tweens.add({ targets: v, alpha: 1, duration: 600 });
-          }
+          this.enemyMeta.set(e.id, { courseId: e.courseId, label: e.label, isBoss: e.type === 'exam' && !e.isMinion, lane: e.lane });
+          this.view.addEnemy(e.id, e.type, !!e.isMinion, e.x, e.y, getCourseColor(e.courseId), e.isMinion ? null : e.label, e.daysLeft);
+          if (e.isOverdue) this.view.setEnraged(e.id, true);
           break;
         }
         case 'projectile': {
-          const tv = [...this.towerViews.values()].find((t) => Math.abs(t.x - ev.fromX) < 1 && Math.abs(t.y - ev.fromY) < 1);
-          tv?.fire(this.time.now);
-          this.boltFx(ev.fromX, ev.fromY - 40, ev.toX, ev.toY, getCourseColor(tv?.courseId ?? ''));
+          const key = this.towerKeys.get(`${ev.fromX},${ev.fromY}`);
+          if (!key) break;
+          this.view.towerFire(key);
+          this.view.bolt(key, ev.toX, ev.toY, getCourseColor(key.split('#')[0]));
           break;
         }
         case 'hit': {
           sfx('hit');
-          this.enemyViews.get(ev.enemyId)?.hitFlash(this.time.now);
+          this.view.hitEnemy(ev.enemyId);
           const e = this.gameState.enemies.find((x) => x.id === ev.enemyId);
           if (e) this.maybeQTE(e, hpBefore.get(e.id) ?? 1, e.hp / e.maxHp);
           break;
         }
         case 'kill': {
-          const e = this.gameState.enemies.find((x) => x.id === ev.enemyId);
-          this.onKillFx(ev.enemyId, ev.x, ev.y, e?.courseId ?? '');
+          const meta = this.enemyMeta.get(ev.enemyId);
+          this.onKillFx(ev.enemyId, ev.x, ev.y, meta?.courseId ?? '');
           break;
         }
         case 'fortressHit': {
           sfx('fortress');
-          const view = this.enemyViews.get(ev.enemyId);
-          const courseId = view ? [...this.semester.courses].find((c) => c.id === (view.getData('course') as string))?.id : undefined;
-          this.stats.breaches[courseId ?? this.laneCourse(view?.y)] = (this.stats.breaches[courseId ?? this.laneCourse(view?.y)] ?? 0) + 1;
-          view?.destroy();
-          this.enemyViews.delete(ev.enemyId);
+          const meta = this.enemyMeta.get(ev.enemyId);
+          const courseId = meta?.courseId ?? '?';
+          this.stats.breaches[courseId] = (this.stats.breaches[courseId] ?? 0) + 1;
+          this.view.removeEnemy(ev.enemyId);
+          this.enemyMeta.delete(ev.enemyId);
           this.stats.kills++; // it leaves the field either way; progress counts it
           this.onBreach(ev.damage);
           break;
@@ -854,64 +719,34 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  private laneCourse(y?: number): string {
-    if (y === undefined) return '?';
-    const lane = Math.round((y - Layout.LANE_START_Y) / ((Layout.LANE_END_Y - Layout.LANE_START_Y) / Layout.LANE_COUNT) - 0.5);
-    return this.semester.courses[Phaser.Math.Clamp(lane, 0, this.semester.courses.length - 1)]?.id ?? '?';
-  }
+
 
   // ───────────────────────── effects ─────────────────────────
 
-  private boltFx(x0: number, y0: number, x1: number, y1: number, color: number): void {
-    const head = this.add.image(x0, y0, 'wisp').setTint(color).setBlendMode(Phaser.BlendModes.ADD).setScale(0.45, 0.3).setDepth(30);
-    head.rotation = Math.atan2(y1 - y0, x1 - x0);
-    this.bolts.setParticleTint(color);
-    const dur = Phaser.Math.Clamp(Phaser.Math.Distance.Between(x0, y0, x1, y1) / 1.6, 80, 220);
-    this.tweens.add({
-      targets: head,
-      x: x1,
-      y: y1,
-      duration: dur,
-      ease: 'Quad.easeIn',
-      onUpdate: () => {
-        if (!this.reduced) this.bolts.emitParticleAt(head.x, head.y, 1);
-      },
-      onComplete: () => {
-        this.sparks.setParticleTint(color);
-        this.sparks.explode(this.reduced ? 2 : 5, x1, y1);
-        head.destroy();
-      },
-    });
-  }
-
-  private onKillFx(id: string, x: number, y: number, courseId: string): void {
-    const v = this.enemyViews.get(id);
-    const color = getCourseColor(courseId);
+  private onKillFx(id: string, _x: number, _y: number, courseId: string): void {
+    const meta = this.enemyMeta.get(id);
     this.stats.kills++;
     sfx('kill');
-    if (v) {
-      if (v.isBoss) {
-        this.stats.bossesSlain.push((v.list.find((o) => o instanceof Phaser.GameObjects.Text) as Phaser.GameObjects.Text | undefined)?.text ?? 'a boss');
-        if (!this.reduced) this.cameras.main.shake(250, 0.006);
-        this.hud?.caption('A great enemy falls', 'good');
-      }
-      this.enemyViews.delete(id);
-      if (this.reduced) v.destroy();
-      else this.tweens.add({ targets: v, alpha: 0, scale: 1.25, y: v.y - 20, duration: 320, onComplete: () => v.destroy() });
+    if (meta?.isBoss) {
+      this.stats.bossesSlain.push(meta.label.replace(/^!/, ''));
+      this.hud?.caption('A great enemy falls', 'good');
     }
-    this.souls.setParticleTint(color);
-    this.souls.explode(this.reduced ? 4 : v?.isBoss ? 40 : 12, x, y);
-    // Coin arcs to the HUD gold counter
-    if (!this.reduced) {
-      const coin = this.add.circle(x, y, 5, 0xf2b45a).setDepth(45);
-      this.tweens.add({
-        targets: coin,
-        x: 1080,
-        y: 40,
-        duration: 650,
-        ease: 'Cubic.easeIn',
+    const screen = this.view.enemyScreen(id);
+    this.view.killEnemy(id, getCourseColor(courseId));
+    this.enemyMeta.delete(id);
+    // A gold coin arcs to the HUD counter
+    if (screen && !this.reduced && this.labels) {
+      const coin = document.createElement('div');
+      coin.className = 'coin-fly';
+      coin.style.transform = `translate(${screen.x}px, ${screen.y}px)`;
+      this.labels.appendChild(coin);
+      gsap.to(coin, {
+        x: 1062 - screen.x,
+        y: 40 - screen.y,
+        duration: 0.7,
+        ease: 'power2.in',
         onComplete: () => {
-          coin.destroy();
+          coin.remove();
           this.hud?.goldPulse();
         },
       });
@@ -920,41 +755,23 @@ export class BattleScene extends Phaser.Scene {
 
   private onBreach(damage: number): void {
     this.hud?.caption(`A deadline breaks through: −${damage}`, 'bad');
-    if (!this.reduced) {
-      this.cameras.main.shake(220, 0.006);
-      this.tweens.add({ targets: this.dangerGlow, alpha: { from: 0.8, to: this.dangerGlow.alpha }, duration: 500 });
-    }
-    // Cracks on the grimoire grow as integrity drops
-    const f = 1 - this.gameState.fortressHp / this.gameState.maxFortressHp;
-    const g = this.fortressCracks;
-    g.clear();
-    g.lineStyle(2, 0x07060b, 0.9);
-    const n = Math.floor(f * 10);
-    const r = mulberry32(7);
-    for (let i = 0; i < n; i++) {
-      let x = -70 + r() * 130;
-      let y = -60 + r() * 150;
-      g.beginPath();
-      g.moveTo(x, y);
-      for (let k = 0; k < 4; k++) {
-        x += (r() - 0.5) * 30;
-        y += (r() - 0.5) * 30;
-        g.lineTo(x, y);
-      }
-      g.strokePath();
-    }
+    this.view.breach(1 - this.gameState.fortressHp / this.gameState.maxFortressHp);
   }
 
-  private floatNumber(x: number, y: number, n: number, color: number): void {
-    this.floatText(x, y, String(n), color, 18);
+  private floatNumber(id: string, n: number, color: number): void {
+    this.floatLabel(id, String(n), color, 20);
   }
 
-  private floatText(x: number, y: number, s: string, color: number, size = 16): void {
-    const t = this.add
-      .text(x, y, s, { fontFamily: 'Inter, system-ui, sans-serif', fontStyle: '700', fontSize: `${size}px`, color: hex(color), stroke: '#07060b', strokeThickness: 4 })
-      .setOrigin(0.5)
-      .setDepth(50);
-    this.tweens.add({ targets: t, y: y - 36, alpha: 0, duration: this.reduced ? 600 : 900, ease: 'Cubic.easeOut', onComplete: () => t.destroy() });
+  /** Floating combat text above a creature (DOM, projected from 3D). */
+  private floatLabel(id: string, s: string, color: number, size = 15): void {
+    const at = this.view.enemyScreen(id);
+    if (!at || !this.labels) return;
+    const el = document.createElement('div');
+    el.className = 'float-text';
+    el.textContent = s;
+    el.style.cssText = `left:${at.x}px;top:${at.y}px;color:${hex(color)};font-size:${size}px`;
+    this.labels.appendChild(el);
+    gsap.to(el, { y: -40, opacity: 0, duration: this.reduced ? 0.6 : 1, ease: 'power2.out', onComplete: () => el.remove() });
   }
 
   private refreshForge(courseId: string): void {
@@ -966,7 +783,7 @@ export class BattleScene extends Phaser.Scene {
       t.fireRate = BASE_TOWER.fireRate * b.fireRate;
       t.range = BASE_TOWER.range * b.range;
     }
-    for (const [k, v] of this.towerViews) if (k.startsWith(`${courseId}#`)) v.setForge(lvl);
+    for (const k of this.towerKeys.values()) if (k.startsWith(`${courseId}#`)) this.view.setForge(k, lvl);
   }
 
   // ───────────────────────── pause / exit ─────────────────────────
@@ -1006,6 +823,9 @@ export class BattleScene extends Phaser.Scene {
 
   private teardown(): void {
     stopDrone();
+    this.view?.dispose();
+    this.labels?.remove();
+    clearLayers('.lane-names, .enemy-labels');
     this.hud?.destroy();
     this.hud = undefined;
     this.overlay?.remove();
