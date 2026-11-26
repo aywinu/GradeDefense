@@ -209,12 +209,12 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 ## Phase 5: Quick-Time Exam Events (QTE)
 
 ### 5.1: QTE Core Rules
-- [ ] 5.1.1: Create `src/core/qte.ts` with `QTEState`, `QTESettings`, `QTEOutcome` types (Ref: R13.5, design.md QTE)
-- [ ] 5.1.2: Implement `startQTE(enemy, question, settings): QTEState` with time based on extraTime setting (Ref: R13.1, R13.2)
-- [ ] 5.1.3: Implement `updateQTE(state, deltaTime): QTEState` with clamped timer (Ref: R13.5)
-- [ ] 5.1.4: Implement `resolveQTE(state, answerIndex | null, baseDamage): QTEOutcome` (Ref: R13.3, R13.5)
-- [ ] 5.1.5: Write unit tests in `src/core/qte.test.ts`: correct/wrong/timeout outcomes, extraTime doubling (Ref: R13.5)
-- [ ] 5.1.6: Write property-based tests in `src/core/qte.prop.test.ts`: timer bounds, determinism, non-negative time (Ref: R13.5, design.md QTE)
+- [x] 5.1.1: Create `src/core/qte.ts` with `QTEState`, `QTESettings`, `QTEOutcome` types (Ref: R13.5, design.md QTE)
+- [x] 5.1.2: Implement `startQTE(enemy, question, settings): QTEState` with time based on extraTime setting (Ref: R13.1, R13.2)
+- [x] 5.1.3: Implement `updateQTE(state, deltaTime): QTEState` with clamped timer (Ref: R13.5)
+- [x] 5.1.4: Implement `resolveQTE(state, answerIndex | null, baseDamage): QTEOutcome` (Ref: R13.3, R13.5)
+- [x] 5.1.5: Write unit tests in `src/core/qte.test.ts`: correct/wrong/timeout outcomes, extraTime doubling (Ref: R13.5)
+- [x] 5.1.6: Write property-based tests in `src/core/qte.prop.test.ts`: timer bounds, determinism, non-negative time (Ref: R13.5, design.md QTE)
 
 ### 5.2: QTE Trigger Logic
 - [ ] 5.2.1: In BattleScene.update(), detect exam enemy at 50% HP (Ref: R13.1)
