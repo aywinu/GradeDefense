@@ -1,0 +1,153 @@
+/* DOM UI layer styles: "The Haunted Study" */
+#ui-stage {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 1600px;
+  height: 900px;
+  transform-origin: 0 0;
+  pointer-events: none;
+  z-index: 10;
+  color: var(--parchment);
+  font-family: var(--font-body);
+}
+.ui-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ui-layer button,
+.ui-layer a,
+.ui-layer [data-interactive] {
+  pointer-events: auto;
+}
+
+/* Buttons: tactile, candle-lit */
+.dd-btn {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  color: var(--parchment);
+  background:
+    linear-gradient(180deg, rgba(242, 180, 90, 0.10), rgba(242, 180, 90, 0) 60%),
+    linear-gradient(180deg, #241d33, #15111f);
+  border: 1px solid rgba(242, 180, 90, 0.45);
+  border-radius: 4px;
+  padding: 16px 34px;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 0 0 1px #07060b, 0 10px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 230, 180, 0.12);
+  transition: transform 160ms var(--ease-out), box-shadow 220ms var(--ease-out), color 160ms, border-color 160ms;
+}
+.dd-btn::before,
+.dd-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  background: var(--candle);
+  transform: translateY(-50%) rotate(45deg);
+  opacity: 0.7;
+}
+.dd-btn::before { left: 12px; }
+.dd-btn::after { right: 12px; }
+.dd-btn:hover {
+  color: #fff4dc;
+  border-color: var(--candle);
+  box-shadow: 0 0 0 1px #07060b, 0 0 28px rgba(242, 180, 90, 0.35), 0 10px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 230, 180, 0.2);
+  transform: translateY(-2px);
+}
+.dd-btn:active { transform: translateY(1px); }
+.dd-btn:focus-visible { outline: none; box-shadow: var(--focus-ring), 0 0 28px rgba(242, 180, 90, 0.35); }
+.dd-btn.secondary {
+  font-size: 17px;
+  padding: 12px 26px;
+  border-color: rgba(233, 220, 192, 0.18);
+  color: var(--faded-ink);
+}
+.dd-btn.secondary:hover { color: var(--parchment); border-color: rgba(233, 220, 192, 0.5); }
+.dd-btn.secondary::before, .dd-btn.secondary::after { display: none; }
+
+.dd-kbd {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--faded-ink);
+  border: 1px solid rgba(233, 220, 192, 0.25);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+/* Title screen */
+.title-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.title-screen .eyebrow {
+  margin-top: 150px;
+  font-family: var(--font-heading);
+  letter-spacing: 0.5em;
+  font-size: 15px;
+  color: var(--candle);
+  opacity: 0.85;
+  text-transform: uppercase;
+}
+.title-screen h1 {
+  margin-top: 18px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 118px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-align: center;
+  background: linear-gradient(180deg, #fff6e2 0%, #e9dcc0 42%, #b99a63 78%, #7a5a2e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 22px rgba(242, 180, 90, 0.28)) drop-shadow(0 6px 0 rgba(7, 6, 11, 0.9));
+}
+.title-screen h1 .line2 { display: block; font-size: 0.62em; letter-spacing: 0.32em; margin-top: 8px; }
+.title-screen .tagline {
+  margin-top: 26px;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 30px;
+  color: var(--parchment);
+  opacity: 0.85;
+}
+.title-screen .tagline em { color: var(--crimson); font-style: italic; text-shadow: 0 0 18px rgba(179, 32, 44, 0.6); }
+.title-screen .menu {
+  margin-top: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+.title-screen .footer {
+  position: absolute;
+  bottom: 26px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--faded-ink);
+  opacity: 0.8;
+}
+.ornament {
+  width: 360px;
+  height: 18px;
+  margin-top: 22px;
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dd-btn { transition: none; }
+}

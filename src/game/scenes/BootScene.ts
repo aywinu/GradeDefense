@@ -5,6 +5,7 @@
 
 import Phaser from 'phaser';
 import { loadFonts } from '../fonts';
+import { createTextures } from '../fx/textures';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -12,6 +13,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   async create() {
+    createTextures(this);
     await loadFonts(3000);
     this.scene.start('TitleScene');
   }

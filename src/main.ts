@@ -6,6 +6,7 @@
 import './styles/fonts.css';
 import './style.css';
 import './styles/tokens.css';
+import './styles/ui.css';
 import Phaser from 'phaser';
 import { gameConfig } from './game/config';
 
