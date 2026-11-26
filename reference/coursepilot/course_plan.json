@@ -1,0 +1,276 @@
+{
+ "CV101": {
+  "title": "Computer Vision",
+  "teacher": "professortest",
+  "items": [
+   {
+    "name": "Lab 1 - Convolution from Scratch",
+    "days": -21,
+    "points": 10,
+    "grade": 90,
+    "where": "moodle"
+   },
+   {
+    "name": "Lab 2 - Feature Matching",
+    "days": -10,
+    "points": 10,
+    "grade": 80,
+    "where": "moodle"
+   },
+   {
+    "name": "Midterm Examination",
+    "days": 4,
+    "points": 100,
+    "grade": null,
+    "where": "KEY"
+   },
+   {
+    "name": "Project Proposal",
+    "days": 16,
+    "points": 20,
+    "grade": null,
+    "where": "moodle"
+   },
+   {
+    "name": "Lab 3 - Object Detection",
+    "days": 20,
+    "points": 10,
+    "grade": null,
+    "where": "moodle"
+   },
+   {
+    "name": "Final Project Presentation",
+    "days": 45,
+    "points": 100,
+    "grade": null,
+    "where": "syllabus"
+   }
+  ]
+ },
+ "PHO101": {
+  "title": "Photonics",
+  "teacher": "professorreyes",
+  "items": [
+   {
+    "name": "Lab 1 - Two-Slit Interference",
+    "days": -24,
+    "points": 10,
+    "grade": 90,
+    "where": "moodle"
+   },
+   {
+    "name": "Lab 2 - Diffraction Grating",
+    "days": -12,
+    "points": 10,
+    "grade": 80,
+    "where": "moodle"
+   },
+   {
+    "name": "Quiz",
+    "days": 5,
+    "points": 100,
+    "grade": null,
+    "where": "KEY"
+   },
+   {
+    "name": "Lab 3 - Fiber Coupling",
+    "days": 19,
+    "points": 10,
+    "grade": null,
+    "where": "moodle"
+   },
+   {
+    "name": "Problem Set 3 - Waveguides",
+    "days": 28,
+    "points": 20,
+    "grade": null,
+    "where": "moodle"
+   },
+   {
+    "name": "Final Examination",
+    "days": 48,
+    "points": 100,
+    "grade": null,
+    "where": "syllabus"
+   }
+  ]
+ },
+ "MGT101": {
+  "title": "Management",
+  "teacher": "professortest",
+  "items": [
+   {
+    "name": "Reading Reflection 1",
+    "days": -18,
+    "points": 10,
+    "grade": 90,
+    "where": "moodle"
+   },
+   {
+    "name": "Team Charter",
+    "days": -7,
+    "points": 10,
+    "grade": 100,
+    "where": "moodle"
+   },
+   {
+    "name": "Case Study Report",
+    "days": 18,
+    "points": 100,
+    "grade": null,
+    "where": "KEY"
+   },
+   {
+    "name": "Leadership Essay",
+    "days": 26,
+    "points": 20,
+    "grade": null,
+    "where": "moodle"
+   },
+   {
+    "name": "Final Examination",
+    "days": 50,
+    "points": 100,
+    "grade": null,
+    "where": "syllabus"
+   }
+  ]
+ },
+ "DSA101": {
+  "title": "Data Structures & Algorithms",
+  "teacher": "professorreyes",
+  "items": [
+   {
+    "name": "Programming Assignment 0 - Setup",
+    "days": -20,
+    "points": 10,
+    "grade": 100,
+    "where": "moodle"
+   },
+   {
+    "name": "Quiz 1 - Complexity",
+    "days": -9,
+    "points": 20,
+    "grade": 85,
+    "where": "moodle"
+   },
+   {
+    "name": "Programming Assignment 1",
+    "days": 12,
+    "points": 100,
+    "grade": null,
+    "where": "KEY"
+   },
+   {
+    "name": "Programming Assignment 2",
+    "days": 26,
+    "points": 100,
+    "grade": null,
+    "where": "moodle"
+   },
+   {
+    "name": "Midterm Examination",
+    "days": 33,
+    "points": 100,
+    "grade": null,
+    "where": "syllabus"
+   },
+   {
+    "name": "Final Examination",
+    "days": 55,
+    "points": 100,
+    "grade": null,
+    "where": "syllabus"
+   }
+  ]
+ },
+ "MKT101": {
+  "title": "Digital Marketing",
+  "teacher": "professortest",
+  "items": [
+   {
+    "name": "Market Research Brief",
+    "days": -15,
+    "points": 20,
+    "grade": 85,
+    "where": "moodle"
+   },
+   {
+    "name": "Consumer Persona Exercise",
+    "days": -6,
+    "points": 10,
+    "grade": 90,
+    "where": "moodle"
+   },
+   {
+    "name": "Campaign Proposal",
+    "days": 25,
+    "points": 100,
+    "grade": null,
+    "where": "KEY"
+   },
+   {
+    "name": "Social Media Audit",
+    "days": 32,
+    "points": 20,
+    "grade": null,
+    "where": "moodle"
+   },
+   {
+    "name": "Final Campaign Presentation",
+    "days": 52,
+    "points": 100,
+    "grade": null,
+    "where": "syllabus"
+   }
+  ]
+ },
+ "MATH101": {
+  "title": "Linear Algebra",
+  "teacher": "professorreyes",
+  "items": [
+   {
+    "name": "Problem Set 1",
+    "days": -19,
+    "points": 20,
+    "grade": 90,
+    "where": "moodle"
+   },
+   {
+    "name": "Problem Set 2",
+    "days": -8,
+    "points": 20,
+    "grade": 75,
+    "where": "moodle"
+   },
+   {
+    "name": "Midterm Exam",
+    "days": 5,
+    "points": 100,
+    "grade": null,
+    "where": "KEY"
+   },
+   {
+    "name": "Problem Set 3",
+    "days": 17,
+    "points": 20,
+    "grade": null,
+    "where": "moodle"
+   },
+   {
+    "name": "Quiz - Eigenvalues",
+    "days": 23,
+    "points": 20,
+    "grade": null,
+    "where": "moodle"
+   },
+   {
+    "name": "Final Examination",
+    "days": 49,
+    "points": 100,
+    "grade": null,
+    "where": "syllabus"
+   }
+  ]
+ }
+}

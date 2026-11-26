@@ -9,9 +9,12 @@
 ## Kiro contributions
 - None yet (not logged in / no credits). Game code will be written by Kiro, not pre-built by Claude.
 
+## Update 2026-11-26
+- Logged in with Builder ID. Headless `kiro-cli chat --no-interactive` WORKS with this login (no API key needed).
+- `/usage` shows KIRO FREE, 50 credits/month (resets 2026-12-01). The 4,000 promo credits are NOT on this account yet.
+
 ## Blockers
-1. Kiro login + 4,000-credit request (user action)
-2. Headless `--no-interactive` officially requires `KIRO_API_KEY` (paid plans). To test after login: whether a browser-login session works headlessly; otherwise use the interactive CLI/IDE.
+1. Redeem the 4,000-credit code on the Builder ID account (or log in with the account that has them). Redeem by Dec 4.
 3. Moodle migration needs MacBook-side info
 
 ## Next
