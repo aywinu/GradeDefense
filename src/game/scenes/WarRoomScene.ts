@@ -13,6 +13,7 @@ import { getCourseColor } from '../palette';
 import { campaignLength } from '../../core/wave';
 import { load } from '../../save/save';
 import { Graveyard } from '../fx/Graveyard';
+import { runTour, hasSeen } from '../../ui/Tour';
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
@@ -42,6 +43,7 @@ export class WarRoomScene extends Phaser.Scene {
     this.atmosphere = new Atmosphere(this, { width: W, height: H, fog: 0.35 });
     this.graveyard = new Graveyard(this, W, H);
     this.render();
+    if (!hasSeen('warroom')) this.time.delayedCall(prefersReducedMotion() ? 50 : 1400, () => this.tour());
     this.cameras.main.fadeIn(prefersReducedMotion() ? 0 : 600, 7, 6, 11);
     this.events.once('shutdown', () => clearLayers('.warroom'));
   }
@@ -130,6 +132,27 @@ export class WarRoomScene extends Phaser.Scene {
       gsap.from(layer.querySelector('.wr-detail'), { opacity: 0, duration: 0.6, delay: 0.3 });
       gsap.from(layer.querySelectorAll('.tl-stone'), { opacity: 0, y: 14, duration: 0.5, stagger: 0.02, ease: 'power2.out', delay: 0.5 });
     }
+  }
+
+  /** First-visit guided tour of every control on this screen. */
+  tour() {
+    this.busy = true;
+    runTour(
+      'warroom',
+      [
+        { target: null, art: 'deadline', title: 'Your semester is under siege', body: 'Every real deadline from your courses becomes a creature. Exams are bosses, quizzes are swarms. You defend by <b>studying</b>.' },
+        { target: '.wr-counsel', art: 'epitaph', title: "Tonight's counsel", body: 'One sentence that tells you the single most useful thing to do right now, based on dates, weights and how ready you are.' },
+        { target: '.wr-cta [data-train]', art: 'train', title: 'Train', body: 'A five-question practice trial for one course. Correct answers raise your readiness and <b>forge</b> that lane\'s sentinels. Key <span class="dd-kbd">T</span>.' },
+        { target: '.wr-list', art: 'candles', title: 'Your courses', body: 'Each lit candle is 10% readiness. The word on the right is the threat level. Use <span class="dd-kbd">↑</span><span class="dd-kbd">↓</span> or click a course to see its details.' },
+        { target: '.wr-detail', art: 'train', title: 'Battle plan', body: 'The great enemies of the selected course with real dates and weights, how many trials to do before each, and the topics you missed.' },
+        { target: '.epitaph', art: 'epitaph', title: 'Here waits…', body: 'The next big deadline across all courses, carved in stone so you never lose sight of it.' },
+        { target: '.timeline', art: 'timeline', title: 'The graveyard of deadlines', body: 'Your whole semester as tombstones. Bigger stones weigh more. Hover one to read it.' },
+        { target: '[data-action="battle"]', art: 'lantern', title: 'Face the siege', body: 'Fight this week\'s deadlines. Study checkpoints charge your Lantern; exams trigger quick-time questions. Key <span class="dd-kbd">Enter</span>.' },
+      ],
+      () => {
+        this.busy = false;
+      },
+    );
   }
 
   private urgency(v: CourseView): number {

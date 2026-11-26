@@ -24,6 +24,8 @@ export interface SaveData {
   /** Semester source: 'demo' or an imported semester (ics / Moodle block). */
   semester: { source: 'demo' } | { source: 'ics' | 'moodle'; json: string; importedAt: number };
   campaign: { wave: number; bestWave: number };
+  /** Guided tours already seen (closing one counts as seen). */
+  tours: Record<string, boolean>;
 }
 
 const KEY = 'deadline-defense.save';
@@ -38,6 +40,7 @@ export function defaultSave(): SaveData {
     sparks: {},
     semester: { source: 'demo' },
     campaign: { wave: 1, bestWave: 0 },
+    tours: {},
   };
 }
 
@@ -78,6 +81,10 @@ export function migrate(raw: unknown): SaveData {
       wave: Math.max(1, Number(r.campaign?.wave) || 1),
       bestWave: Math.max(0, Number(r.campaign?.bestWave) || 0),
     },
+    tours:
+      r.tours && typeof r.tours === 'object'
+        ? Object.fromEntries(Object.entries(r.tours).filter(([, v]) => typeof v === 'boolean'))
+        : {},
   };
 }
 

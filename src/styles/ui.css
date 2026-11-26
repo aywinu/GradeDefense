@@ -713,3 +713,67 @@ button, [data-interactive], .wr-row, .tl-stone, .choice, a {
 .float-text { position: absolute; transform: translate(-50%, -100%); font-family: var(--font-ui); font-weight: 700; text-shadow: 0 0 4px #000, 0 2px 0 #000; pointer-events: none; }
 .coin-fly { position: absolute; left: 0; top: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe7b0, #f2b45a 50%, #8a5a1c); box-shadow: 0 0 10px rgba(242, 180, 90, 0.8); }
 canvas.dd-3d { display: block; }
+
+/* Guided tour */
+.tour { pointer-events: auto; z-index: 30; }
+.tour-spot {
+  position: absolute;
+  border-radius: 8px;
+  box-shadow: 0 0 0 4000px rgba(5, 4, 9, 0.72), 0 0 0 2px rgba(242, 180, 90, 0.85), 0 0 30px 6px rgba(242, 180, 90, 0.35);
+  pointer-events: none;
+}
+.tour:not(.reduced) .tour-spot { animation: tour-breathe 2.4s ease-in-out infinite; }
+@keyframes tour-breathe { 50% { box-shadow: 0 0 0 4000px rgba(5, 4, 9, 0.72), 0 0 0 2px rgba(242, 180, 90, 0.5), 0 0 44px 10px rgba(242, 180, 90, 0.22); } }
+.tour-card {
+  position: absolute;
+  width: 400px;
+  padding: 22px 24px 18px;
+  border-radius: 8px;
+  color: #2a1f12;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 250, 235, 0.55), transparent 60%), linear-gradient(180deg, #efe2c4, #d9c497);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), 0 0 0 1px #07060b, inset 0 0 40px rgba(110, 70, 20, 0.3);
+}
+.tour-card .tour-art { height: 84px; display: grid; place-items: center; border-radius: 6px; background: radial-gradient(ellipse at center, #241d33, #120f1a); box-shadow: inset 0 0 0 1px rgba(90, 55, 20, 0.4); }
+.tour-card .art { width: 150px; height: 84px; }
+.tour-step { margin-top: 14px; font-family: var(--font-heading); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: #8a2a22; }
+.tour-title { font-family: var(--font-heading); font-weight: 700; font-size: 22px; margin-top: 4px; }
+.tour-body { font-family: var(--font-body); font-size: 16.5px; line-height: 1.45; margin-top: 6px; color: #3a2a17; }
+.tour-body .dd-kbd { color: #4a3820; border-color: rgba(90, 55, 20, 0.5); }
+.tour-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+.tour-dots { display: flex; gap: 6px; }
+.tour-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(90, 55, 20, 0.3); transition: background 200ms, transform 200ms; }
+.tour-dots i.on { background: #8a2a22; transform: scale(1.3); }
+.tour-btns { display: flex; gap: 8px; }
+.tour-btns .dd-btn { color: var(--parchment); }
+.tour-btns .dd-btn::before, .tour-btns .dd-btn::after { display: none; }
+.tour-btns [disabled] { opacity: 0.35; pointer-events: none; }
+.tour-x { top: 10px; right: 12px; width: 30px; height: 30px; font-size: 18px; }
+/* illustration animations */
+.tour:not(.reduced) .a-bob { animation: a-bob 1.6s ease-in-out infinite; }
+.tour:not(.reduced) .a-morph { animation: a-morph 2.4s ease-in-out infinite; transform-origin: 27px 36px; }
+.tour:not(.reduced) .a-dash { animation: a-dash 1s linear infinite; }
+.tour:not(.reduced) .a-flame { animation: a-flame 0.9s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+.tour:not(.reduced) .a-pop { animation: a-pop 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.tour:not(.reduced) .a-rise { animation: a-rise 1.8s ease-in-out infinite; }
+.tour:not(.reduced) .a-crack { animation: a-crack 2.2s ease-in-out infinite; stroke-dasharray: 40; }
+.tour:not(.reduced) .a-stone { animation: a-stone 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+.tour:not(.reduced) .a-glow { animation: a-glow 1.2s ease-in-out infinite; }
+.tour:not(.reduced) .a-pulse { animation: a-pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.tour:not(.reduced) .a-spin { animation: a-spin 4s linear infinite; transform-box: fill-box; transform-origin: center; }
+.tour:not(.reduced) .a-burn { animation: a-burn 3s linear infinite; }
+.tour:not(.reduced) .a-key { animation: a-key 1.6s ease-in-out infinite; }
+.tour:not(.reduced) .a-drain { animation: a-drain 3s ease-in-out infinite; }
+@keyframes a-bob { 50% { transform: translateY(-4px); } }
+@keyframes a-morph { 50% { transform: scale(0.9) rotate(-4deg); opacity: 0.7; } }
+@keyframes a-dash { to { stroke-dashoffset: -12; } }
+@keyframes a-flame { 50% { transform: scaleY(0.8) skewX(5deg); } }
+@keyframes a-pop { 0%, 40% { transform: scale(0); } 55% { transform: scale(1.25); } 70%, 100% { transform: scale(1); } }
+@keyframes a-rise { 0%, 30% { transform: translateY(14px); opacity: 0; } 60%, 100% { transform: translateY(0); opacity: 1; } }
+@keyframes a-crack { 0% { stroke-dashoffset: 40; } 60%, 100% { stroke-dashoffset: 0; } }
+@keyframes a-stone { 0%, 20% { transform: scaleY(0); } 50%, 100% { transform: scaleY(1); } }
+@keyframes a-glow { 50% { opacity: 0.4; } }
+@keyframes a-pulse { 50% { transform: scale(1.2); opacity: 0.3; } }
+@keyframes a-spin { to { transform: rotate(360deg); } }
+@keyframes a-burn { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 151; } }
+@keyframes a-key { 0%, 70%, 100% { transform: translateY(0); } 80% { transform: translateY(3px); } }
+@keyframes a-drain { 0%, 20% { width: 92px; } 70%, 100% { width: 30px; } }

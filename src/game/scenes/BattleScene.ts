@@ -28,6 +28,7 @@ import { load, save } from '../../save/save';
 import { Hud, titleCard, scoutReport, debrief, quickCheck, qteCard, pauseMenu, coach, type ScoutGroup } from '../../ui/BattleUI';
 import { clearLayers } from '../../ui/stage';
 import { openTrial } from '../../ui/TrialPanel';
+import { runTour, hasSeen } from '../../ui/Tour';
 import { sfx, startDrone, stopDrone } from '../../audio/sfx';
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
@@ -321,6 +322,28 @@ export class BattleScene extends Phaser.Scene {
     this.waveStartTimeMs = this.gameState.timeMs;
     this.phase = 'fight';
     if (this.tutorial) this.advanceTutorial(1);
+    else if (!hasSeen('battle')) this.battleTour();
+  }
+
+  /** First real battle: a guided tour of every control, with the siege paused. */
+  private battleTour(): void {
+    this.phase = 'check';
+    runTour(
+      'battle',
+      [
+        { target: '.hud-wave', art: 'timeline', title: 'This week of your semester', body: 'Each wave is one real week. The creatures are what is due in it.' },
+        { target: '.hud-hp', art: 'hp', title: 'Your semester', body: 'The grimoire on the altar. Every deadline that reaches it costs integrity. At zero, the semester falls.' },
+        { target: { x: 380, y: 150, w: 760, h: 560 }, art: 'deadline', title: 'The horde', body: 'Every creature carries its coursework on a scroll: name and days left. Exams are crowned wraiths; quizzes are swarms of cursed pages.' },
+        { target: '.hud-btn.check', art: 'study', title: 'Study checkpoint', body: 'Pauses the siege and asks a question from the course under most pressure. Correct answers charge the Lantern. Key <span class="dd-kbd">C</span>.' },
+        { target: '.hud-btn.special', art: 'lantern', title: 'Lantern of Knowledge', body: 'When fully charged, a wave of light burns every creature on the field. Key <span class="dd-kbd">Space</span>.' },
+        { target: '.hud-gold', art: 'sentinel', title: 'Gold and sentinels', body: 'Banished creatures drop gold. Click a glowing rune on a lane to raise another sentinel there (or <span class="dd-kbd">Shift</span> + lane number).' },
+        { target: null, art: 'qte', title: 'Quick-time exams', body: 'When a boss breaks, time slows and a question appears with a burning timer. Answer with <span class="dd-kbd">1</span>–<span class="dd-kbd">4</span>: a correct answer is a critical strike, a wrong one enrages it.' },
+        { target: '.hud-right', art: 'keys', title: 'Controls', body: '<span class="dd-kbd">P</span> pause, <span class="dd-kbd">M</span> sound. Reduced motion lives in the pause menu. Every sound also appears as a caption.' },
+      ],
+      () => {
+        if (this.phase === 'check') this.phase = 'fight';
+      },
+    );
   }
 
   private onWaveCleared(): void {
