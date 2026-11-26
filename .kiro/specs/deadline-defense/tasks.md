@@ -7,11 +7,11 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 ## Phase 1: Core Rules & Testing Infrastructure
 
 ### 1.1: Project Setup
-- [ ] 1.1.1: Verify Vite 8, TypeScript strict, Phaser 4, GSAP, Howler, pdf.js, Vitest, fast-check, Playwright in `package.json` (Ref: tech.md)
-- [ ] 1.1.2: Configure `vite.config.ts` with base path for sub-path deployment (Ref: R11.2)
-- [ ] 1.1.3: Configure `vitest.config.ts` for `src/core/` coverage target 90% (Ref: design.md Testing Strategy)
-- [ ] 1.1.4: Configure `playwright.config.ts` for Chromium only (Ref: NFR1)
-- [ ] 1.1.5: Create `tsconfig.json` with strict mode, paths aliases (`@core`, `@game`, `@ui`, `@data`) (Ref: tech.md)
+- [x] 1.1.1: Verify Vite 8, TypeScript strict, Phaser 4, GSAP, Howler, pdf.js, Vitest, fast-check, Playwright in `package.json` (Ref: tech.md)
+- [x] 1.1.2: Configure `vite.config.ts` with base path for sub-path deployment (Ref: R11.2)
+- [x] 1.1.3: Configure `vitest.config.ts` for `src/core/` coverage target 90% (Ref: design.md Testing Strategy)
+- [x] 1.1.4: Configure `playwright.config.ts` for Chromium only (Ref: NFR1)
+- [x] 1.1.5: Create `tsconfig.json` with strict mode, paths aliases (`@core`, `@game`, `@ui`, `@data`) (Ref: tech.md)
 
 ### 1.2: Core Type Definitions
 - [ ] 1.2.1: Create `src/core/types.ts` with `CourseworkItem`, `Course`, `Semester`, `EnemyStats`, `TowerStats`, `GameState`, `CheckpointQuestion` (Ref: design.md Data Models)

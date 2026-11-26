@@ -11,13 +11,15 @@
 
 ## Update 2026-11-26
 - Logged in with Builder ID. Headless `kiro-cli chat --no-interactive` WORKS with this login (no API key needed).
-- `/usage` shows KIRO FREE, 50 credits/month (resets 2026-12-01). The 4,000 promo credits are NOT on this account yet.
+- `/usage` shows the 50 monthly plan credits. The 4,000 promo credits show on the web as "Additional credits" and are used after the plan's 50 run out.
 
 ## Blockers
-1. Redeem the 4,000-credit code on the Builder ID account (or log in with the account that has them). Redeem by Dec 4.
-3. Moodle migration needs MacBook-side info
+- None. Live Moodle is skipped (LMS showcase page instead).
 
 ## Next
-1. User: `kiro-cli login`, request credits
-2. Have Kiro generate the spec (requirements → design → tasks) from `.kiro/steering`
-3. Kiro implements the vertical slice; Claude reviews and runs the tests
+- Kiro implements tasks.md phase by phase; Claude reviews, builds and tests after each run
+
+## 2026-11-26 (later)
+- Spec generated and amended by Kiro (see KIRO_USAGE.md). Remote: github.com/aywinu/GradeDefense (not pushed yet).
+- Kiro is used one small task per run (user's request).
+- Video: English, recorded last, cloned voice locally (Chatterbox, MIT).

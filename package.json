@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:core": "vitest run src/core",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.0",
