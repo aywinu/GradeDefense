@@ -26,3 +26,5 @@ The hackathon requires Kiro, and Kiro did a large part of the work (see `KIRO_US
 | 2026-11-26 | Spec amendment R15–R17 study loop | Kiro |
 | 2026-11-26 | Self-hosted fonts + font loader | Claude Code |
 | 2026-11-26 | Tasks 3.3–3.5 battlefield layout, towers, spawning | Kiro |
+| 2026-11-26 | Atmosphere (simplex fog, candles, motes, vignette), procedural textures, DOM UI stage, title screen | Claude Code |
+| 2026-11-26 | Tasks 3.6–3.8 pure simulation step + battle loop, victory/defeat | Kiro |

@@ -24,3 +24,4 @@ Honest log of what Kiro did in this project. Kiro CLI ran headless (`kiro-cli ch
 | 2026-11-26 | Tasks 1.8, 3.1-3.2 | Wave pacing fixes; Phaser 4 config, BootScene, minimal TitleScene | 151 tests pass; Claude fixed flaky fc.date invalid-date tests |
 | 2026-11-26 | Spec amendment | Added R15–R17 (War Room, trials, scout/debrief) to requirements/design/tasks | Reviewed |
 | 2026-11-26 | Tasks 3.3-3.5 | BattleScene layout, lane helpers, tower and enemy views, wave spawning | Builds; screenshot checked |
+| 2026-11-26 | Tasks 3.6-3.8 | Pure stepSimulation with events, battle loop, wave end, victory/defeat (174 tests) | Tests + typecheck pass |

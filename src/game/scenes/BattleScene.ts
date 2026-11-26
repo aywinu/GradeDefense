@@ -9,7 +9,9 @@ import { Layout, towerPosition, fortressPosition, enemySpawnPosition } from '../
 import { TowerView } from '../entities/TowerView';
 import { EnemyView } from '../entities/EnemyView';
 import { resolveSemester } from '../../core/semester';
-import { generateWave } from '../../core/wave';
+import { generateWave, campaignLength } from '../../core/wave';
+import { stepSimulation } from '../../core/sim';
+import { mulberry32 } from '../../core/rng';
 import type { DemoSemester, Semester, GameState, EnemyStats, TowerStats } from '../../core/types';
 
 // Import demo data (will be replaced with actual import at runtime)
@@ -18,6 +20,7 @@ import demoData from '../../data/demo.json';
 export class BattleScene extends Phaser.Scene {
   private semester!: Semester;
   private gameState!: GameState;
+  private gameOver = false; // Flag to prevent multiple victory/defeat triggers
   
   // Visual objects (keyed by ID)
   private towerViews: Map<string, TowerView> = new Map();
@@ -223,12 +226,237 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  update(_time: number, _delta: number): void {
-    // TODO: Enemy movement (Phase 3.6)
-    // TODO: Tower firing (Phase 3.7)
-    // TODO: Wave end detection (Phase 3.8)
+  update(_time: number, delta: number): void {
+    // Skip if game is over
+    if (this.gameOver) {
+      return;
+    }
+    
+    // Check for defeat
+    if (this.gameState.fortressHp <= 0) {
+      this.gameOver = true;
+      this.onDefeat();
+      return;
+    }
+    
+    // Run simulation step
+    const result = this.stepGameSimulation(delta);
+    
+    // Handle events from simulation
+    this.handleSimulationEvents(result.events);
+    
+    // Update visuals to match new state
+    this.syncVisualsToState();
     
     // Update HUD every frame
     this.updateHUD();
+  }
+
+  /**
+   * Run one step of the game simulation
+   */
+  private stepGameSimulation(delta: number): import('../../core/sim').SimResult {
+    const rng = mulberry32(Date.now()); // Use wall-clock seed for now
+    
+    const result = stepSimulation(this.gameState, delta, rng);
+    this.gameState = result.state;
+    
+    return result;
+  }
+
+  /**
+   * Handle events emitted by the simulation
+   */
+  private handleSimulationEvents(events: import('../../core/sim').SimEvent[]): void {
+    for (const event of events) {
+      switch (event.type) {
+        case 'projectile':
+          this.renderProjectile(event.fromX, event.fromY, event.toX, event.toY);
+          break;
+        
+        case 'hit':
+          // Update enemy HP bar
+          const enemyView = this.enemyViews.get(event.enemyId);
+          if (enemyView) {
+            const enemy = this.gameState.enemies.find(e => e.id === event.enemyId);
+            if (enemy) {
+              enemyView.updateHpBar(enemy.hp, enemy.maxHp);
+            }
+          }
+          break;
+        
+        case 'kill':
+          // Remove enemy view
+          const killedView = this.enemyViews.get(event.enemyId);
+          if (killedView) {
+            killedView.destroy();
+            this.enemyViews.delete(event.enemyId);
+          }
+          break;
+        
+        case 'fortressHit':
+          // Visual feedback for fortress damage (flash, shake, etc.)
+          this.cameras.main.shake(200, 0.005);
+          break;
+        
+        case 'waveCleared':
+          this.onWaveCleared();
+          break;
+      }
+    }
+  }
+
+  /**
+   * Sync visual positions to game state
+   */
+  private syncVisualsToState(): void {
+    for (const enemy of this.gameState.enemies) {
+      const enemyView = this.enemyViews.get(enemy.id);
+      if (enemyView) {
+        enemyView.setPosition(enemy.x, enemy.y);
+        enemyView.updateHpBar(enemy.hp, enemy.maxHp);
+      }
+    }
+  }
+
+  /**
+   * Render a projectile (simple line for now)
+   */
+  private renderProjectile(fromX: number, fromY: number, toX: number, toY: number): void {
+    const graphics = this.add.graphics();
+    graphics.lineStyle(2, Palette.Spectral, 1);
+    graphics.lineBetween(fromX, fromY, toX, toY);
+    
+    // Fade out and destroy after 100ms
+    this.tweens.add({
+      targets: graphics,
+      alpha: 0,
+      duration: 100,
+      onComplete: () => graphics.destroy(),
+    });
+  }
+
+  /**
+   * Handle wave cleared
+   */
+  private onWaveCleared(): void {
+    // Check if this was the last wave (campaign complete)
+    const totalWaves = campaignLength(this.semester, Date.now());
+    
+    if (this.gameState.wave >= totalWaves) {
+      this.onVictory();
+      return;
+    }
+    
+    // Display "Wave Cleared" message
+    const message = this.add.text(
+      Layout.CANVAS_WIDTH / 2,
+      Layout.CANVAS_HEIGHT / 2,
+      `Wave ${this.gameState.wave} Cleared!`,
+      {
+        fontFamily: 'Cinzel, Georgia, serif',
+        fontSize: '48px',
+        color: '#6ee7d0',
+        stroke: '#07060b',
+        strokeThickness: 4,
+      }
+    ).setOrigin(0.5);
+    
+    // Fade in, hold, fade out
+    this.tweens.add({
+      targets: message,
+      alpha: { from: 0, to: 1 },
+      duration: 300,
+      yoyo: true,
+      hold: 2000,
+      onComplete: () => {
+        message.destroy();
+        this.startNextWave();
+      },
+    });
+  }
+
+  /**
+   * Start the next wave after a delay
+   */
+  private startNextWave(): void {
+    this.time.delayedCall(3000, () => {
+      this.gameState.wave++;
+      this.spawnWave(this.gameState.wave);
+    });
+  }
+
+  /**
+   * Handle victory (semester saved)
+   */
+  private onVictory(): void {
+    this.gameOver = true;
+    
+    // Display victory message
+    this.add.text(
+      Layout.CANVAS_WIDTH / 2,
+      Layout.CANVAS_HEIGHT / 2 - 50,
+      'SEMESTER SAVED',
+      {
+        fontFamily: 'Cinzel, Georgia, serif',
+        fontSize: '64px',
+        color: '#6ee7d0',
+        stroke: '#07060b',
+        strokeThickness: 6,
+      }
+    ).setOrigin(0.5);
+    
+    this.add.text(
+      Layout.CANVAS_WIDTH / 2,
+      Layout.CANVAS_HEIGHT / 2 + 50,
+      'Press ENTER to restart',
+      {
+        fontFamily: 'Inter, system-ui, sans-serif',
+        fontSize: '24px',
+        color: '#e9dcc0',
+      }
+    ).setOrigin(0.5);
+    
+    // Listen for Enter key
+    this.input.keyboard?.once('keydown-ENTER', () => {
+      this.scene.start('TitleScene');
+    });
+  }
+
+  /**
+   * Handle defeat (fortress HP hit 0)
+   */
+  private onDefeat(): void {
+    this.gameOver = true;
+    
+    // Display defeat message
+    this.add.text(
+      Layout.CANVAS_WIDTH / 2,
+      Layout.CANVAS_HEIGHT / 2 - 50,
+      'THE SEMESTER HAS FALLEN',
+      {
+        fontFamily: 'Cinzel, Georgia, serif',
+        fontSize: '64px',
+        color: '#b3202c',
+        stroke: '#07060b',
+        strokeThickness: 6,
+      }
+    ).setOrigin(0.5);
+    
+    this.add.text(
+      Layout.CANVAS_WIDTH / 2,
+      Layout.CANVAS_HEIGHT / 2 + 50,
+      'Press ENTER to restart',
+      {
+        fontFamily: 'Inter, system-ui, sans-serif',
+        fontSize: '24px',
+        color: '#e9dcc0',
+      }
+    ).setOrigin(0.5);
+    
+    // Listen for Enter key
+    this.input.keyboard?.once('keydown-ENTER', () => {
+      this.scene.start('TitleScene');
+    });
   }
 }

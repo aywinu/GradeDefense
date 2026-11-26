@@ -126,23 +126,23 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 - [x] 3.5.3: Store enemy data in `gameState.enemies` array (Ref: design.md Data Models)
 
 ### 3.6: Enemy Movement
-- [ ] 3.6.1: In `update()`, move enemies left by `enemy.speed * delta` (Ref: R3.2)
-- [ ] 3.6.2: Update `pathProgress = 1 - (x / 1200)` (Ref: design.md Data Models)
-- [ ] 3.6.3: If `x < 50`, apply fortress damage and remove enemy (Ref: R3.3)
-- [ ] 3.6.4: Display fortress HP in HUD (Ref: R1.2)
+- [x] 3.6.1: In `update()`, move enemies left by `enemy.speed * delta` (Ref: R3.2)
+- [x] 3.6.2: Update `pathProgress = 1 - (x / 1200)` (Ref: design.md Data Models)
+- [x] 3.6.3: If `x < 50`, apply fortress damage and remove enemy (Ref: R3.3)
+- [x] 3.6.4: Display fortress HP in HUD (Ref: R1.2)
 
 ### 3.7: Tower Firing
-- [ ] 3.7.1: In `update()`, for each tower, call `selectTarget(tower, enemies)` (Ref: R4.3)
-- [ ] 3.7.2: If target found and fire rate allows, draw projectile (line or small circle) from tower to target (Ref: R4.1)
-- [ ] 3.7.3: Apply damage to enemy HP (Ref: R4.1)
-- [ ] 3.7.4: Update `lastFiredAt` timestamp (Ref: design.md Data Models)
-- [ ] 3.7.5: If enemy HP ≤ 0, remove sprite and grant +10 gold (Ref: R8.2)
+- [x] 3.7.1: In `update()`, for each tower, call `selectTarget(tower, enemies)` (Ref: R4.3)
+- [x] 3.7.2: If target found and fire rate allows, draw projectile (line or small circle) from tower to target (Ref: R4.1)
+- [x] 3.7.3: Apply damage to enemy HP (Ref: R4.1)
+- [x] 3.7.4: Update `lastFiredAt` timestamp (Ref: design.md Data Models)
+- [x] 3.7.5: If enemy HP ≤ 0, remove sprite and grant +10 gold (Ref: R8.2)
 
 ### 3.8: Wave End
-- [ ] 3.8.1: Detect when all enemies defeated (Ref: R8.2)
-- [ ] 3.8.2: Grant +50 gold bonus, +10% fortress HP regen (Ref: R8.2)
-- [ ] 3.8.3: Display "Wave Complete" text (GSAP fade in/out) (Ref: R8.2)
-- [ ] 3.8.4: Start next wave after 3s delay (Ref: design.md BattleScene)
+- [x] 3.8.1: Detect when all enemies defeated (Ref: R8.2)
+- [x] 3.8.2: Grant +50 gold bonus, +10% fortress HP regen (Ref: R8.2)
+- [x] 3.8.3: Display "Wave Complete" text (GSAP fade in/out) (Ref: R8.2)
+- [x] 3.8.4: Start next wave after 3s delay (Ref: design.md BattleScene)
 
 ### 3.9: First Playthrough Verification
 - [ ] 3.9.1: Run `npm run dev` and manually test: boot → title → battle → wave 1 completes (Ref: R1.1, R1.2)
