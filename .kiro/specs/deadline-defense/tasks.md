@@ -14,18 +14,18 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 - [x] 1.1.5: Create `tsconfig.json` with strict mode, paths aliases (`@core`, `@game`, `@ui`, `@data`) (Ref: tech.md)
 
 ### 1.2: Core Type Definitions
-- [ ] 1.2.1: Create `src/core/types.ts` with `CourseworkItem`, `Course`, `Semester`, `EnemyStats`, `TowerStats`, `GameState`, `CheckpointQuestion` (Ref: design.md Data Models)
-- [ ] 1.2.2: Add JSDoc comments to all exported types (Ref: NFR3)
+- [x] 1.2.1: Create `src/core/types.ts` with `CourseworkItem`, `Course`, `Semester`, `EnemyStats`, `TowerStats`, `GameState`, `CheckpointQuestion` (Ref: design.md Data Models)
+- [x] 1.2.2: Add JSDoc comments to all exported types (Ref: NFR3)
 
 ### 1.3: Scoring Logic (Pure Functions)
-- [ ] 1.3.1: Create `src/core/scoring.ts` with `calculateUrgency`, `calculateRisk`, `calculateWeight`, `priorityScore` (Ref: design.md Scoring Formulas, R3.2)
-- [ ] 1.3.2: Implement `enemyHpMultiplier`, `enemySpeedMultiplier`, `fortressDamage` (Ref: R3.2, R3.3)
-- [ ] 1.3.3: Write unit tests in `src/core/scoring.test.ts`: urgency bounds, priority monotonicity, HP/speed scaling (Ref: design.md Unit Tests)
+- [x] 1.3.1: Create `src/core/scoring.ts` with `calculateUrgency`, `calculateRisk`, `calculateWeight`, `priorityScore` (Ref: design.md Scoring Formulas, R3.2)
+- [x] 1.3.2: Implement `enemyHpMultiplier`, `enemySpeedMultiplier`, `fortressDamage` (Ref: R3.2, R3.3)
+- [x] 1.3.3: Write unit tests in `src/core/scoring.test.ts`: urgency bounds, priority monotonicity, HP/speed scaling (Ref: design.md Unit Tests)
   - [ ] Test urgency at 0, 7, 14, 21+ days
   - [ ] Test priority increases as deadline approaches (fixed grade/points)
   - [ ] Test HP multiplier ≥ 1.0
   - [ ] Test speed multiplier ≥ 1.0
-- [ ] 1.3.4: Write property-based tests in `src/core/scoring.prop.test.ts` using fast-check (Ref: design.md Property-Based Tests)
+- [x] 1.3.4: Write property-based tests in `src/core/scoring.prop.test.ts` using fast-check (Ref: design.md Property-Based Tests)
   - [ ] Urgency bounds: `0.1 ≤ urgency ≤ 1.0` for days ≥ 0
   - [ ] HP/speed multipliers always positive
   - [ ] Determinism: same inputs → same output

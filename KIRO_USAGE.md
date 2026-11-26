@@ -16,3 +16,4 @@ Honest log of what Kiro did in this project. Kiro CLI ran headless (`kiro-cli ch
 | Date | Task | What Kiro did | Review |
 |---|---|---|---|
 | 2026-11-26 | Task 1.1 | Project setup (Vite base path, aliases, Vitest/Playwright config, starter removed) | Build passes |
+| 2026-11-26 | Tasks 1.2-1.3 | Core types, scoring formulas, 44 unit/property tests | Run throttled before finishing; Claude fixed fast-check import + 2 type errors. Tests and build pass |

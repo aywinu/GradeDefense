@@ -1,0 +1,19 @@
+# Build log: who did what
+
+The hackathon requires Kiro, and Kiro did a large part of the work (see `KIRO_USAGE.md` for every Kiro run). Other tools were used too. This file records all of them honestly.
+
+## Tools
+| Tool | Role |
+|---|---|
+| **Kiro CLI** (headless `kiro-cli chat --no-interactive`) | Spec (requirements → design → tasks), steering-driven implementation of tasks, hooks |
+| **Claude Code** | Orchestration: wrote steering docs, split work into small Kiro tasks, reviewed every Kiro diff, ran build and tests, fixed small breakages, and wrote some code directly (marked below) |
+| Vite, TypeScript, Phaser 4, GSAP, Howler, pdf.js, Vitest, fast-check, Playwright | Libraries and tooling (licenses in `CREDITS.md`) |
+
+## Log
+| Date | Change | Done by |
+|---|---|---|
+| 2026-11-10 | Vite+TS scaffold, dependencies, steering `product.md`/`tech.md`, hackathon strategy | Claude Code |
+| 2026-11-26 | Spec generated and amended | Kiro |
+| 2026-11-26 | Steering `art-direction.md` | Claude Code |
+| 2026-11-26 | Task 1.1 project setup | Kiro |
+| 2026-11-26 | Tasks 1.2–1.3 core types, scoring, unit and property tests | Kiro (run cut off by service throttling) + Claude Code (fixed fast-check import and two type errors) |
