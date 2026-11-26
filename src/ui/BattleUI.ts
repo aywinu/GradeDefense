@@ -92,7 +92,15 @@ export class Hud {
   /** Visual caption for sound cues and events (a11y R9.4). */
   caption(text: string, tone: 'info' | 'good' | 'bad' = 'info'): void {
     const box = this.el.querySelector('.captions')!;
+    const last = box.lastElementChild as HTMLDivElement | null;
+    if (last && last.dataset.text === text) {
+      const n = Number(last.dataset.n ?? '1') + 1;
+      last.dataset.n = String(n);
+      last.textContent = `${text}  ×${n}`;
+      return;
+    }
     const c = document.createElement('div');
+    c.dataset.text = text;
     c.className = `cap ${tone}`;
     c.textContent = text;
     box.appendChild(c);

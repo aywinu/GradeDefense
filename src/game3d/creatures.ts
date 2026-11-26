@@ -84,14 +84,14 @@ function withFlash(root: THREE.Group, mats: THREE.Material[], rim: number) {
     tickFlash() {
       if (flashUntil && performance.now() > flashUntil) {
         flashUntil = 0;
-        for (const m of std) m.emissiveIntensity = enraged ? 0.6 : 0.05;
+        for (const m of std) m.emissiveIntensity = enraged ? 0.35 : 0.05;
       }
     },
     setEnraged(on: boolean) {
       enraged = on;
       for (const m of std) {
-        m.emissive.set(on ? 0xff2a3a : rim);
-        m.emissiveIntensity = on ? 0.6 : 0.05;
+        m.emissive.set(on ? 0x7a0a18 : rim);
+        m.emissiveIntensity = on ? 0.35 : 0.05;
       }
       root.scale.multiplyScalar(on ? 1.08 : 1 / 1.08);
     },
