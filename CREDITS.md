@@ -26,7 +26,7 @@ Every visual, sound and question in Deadline Defense is original work made for t
 
 ## Content
 - **Checkpoint questions** (src/data/checkpoints.json): 60 original multiple-choice questions written by Kiro for this project, then fact-checked by Claude Code.
-- **Demo semester**: synthetic courses and dates from the author's earlier project CoursePilot (disclosed in reference/coursepilot/README.md). They contain no real student data.
+- **Demo semester**: synthetic courses and dates from the author's earlier project CoursePilot (disclosed in README.md). They contain no real student data.
 
 ## Trademarks
 The LMS showcase page (showcase/lms.html) is a generic "My Learning Portal" mock-up. It uses no Moodle logo or branding. Moodle is a trademark of Moodle Pty Ltd. The plugin in moodle/ is an independent, unofficial integration.

@@ -1,11 +1,15 @@
 {
+  "enabled": true,
   "name": "Question Bank Validation",
   "description": "Validate and fact-check checkpoint questions when modified",
-  "trigger": {
-    "type": "file_save",
-    "patterns": ["src/data/checkpoints.json"]
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/data/checkpoints.json"
+    ]
   },
-  "action": {
+  "then": {
     "type": "askAgent",
     "prompt": "Run `npx vitest run src/data` to validate the checkpoint questions schema. Then fact-check any changed questions for accuracy in the following domains: Computer Vision (CV101), Photonics (PHO101), Management (MGT101), Data Structures & Algorithms (DSA101), Digital Marketing (MKT101), and Linear Algebra (MATH101). Report any validation failures or factual errors."
   }

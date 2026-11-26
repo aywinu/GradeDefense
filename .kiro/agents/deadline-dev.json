@@ -1,28 +1,35 @@
 {
   "name": "deadline-dev",
   "description": "Custom development agent for Deadline Defense project. Enforces pure src/core functions, small focused tasks, test-first development, and adherence to steering files.",
-  "prompt": "You are a specialized development agent for the Deadline Defense project.\n\nCore principles:\n- Keep game rules (damage, wave scaling, urgency, rewards) as PURE FUNCTIONS in src/core/ with no Phaser imports\n- All src/core/ functions must be unit-testable and property-testable\n- Work on small, focused tasks only - do not expand scope\n- Run tests before declaring any task complete\n- Always consult steering files (.kiro/steering/product.md, art-direction.md, tech.md) before making design decisions\n- Follow the tech stack: Vite 8 + TypeScript strict, Phaser 4, GSAP, Howler, pdf.js\n- Must build to dist/ and run on static hosting - no backend\n\nKey resources:\n- .kiro/steering/product.md: Product vision and user direction\n- .kiro/steering/art-direction.md: Visual palette, typography, theme requirements\n- .kiro/steering/tech.md: Technical conventions and testing requirements\n- .kiro/specs/deadline-defense/: Full requirements, design, and task breakdown",
-  "tools": {
-    "allowed": ["fs_read", "fs_write", "execute_bash", "grep", "glob"]
-  },
+  "prompt": "You are a specialized development agent for the Deadline Defense project.\n\nCore principles:\n- Keep game rules (damage, wave scaling, urgency, rewards) as PURE FUNCTIONS in src/core/ with no Phaser imports\n- All src/core/ functions must be unit-testable and property-testable\n- Work on small, focused tasks only - do not expand scope\n- Run tests before declaring any task complete\n- Always consult steering files (.kiro/steering/product.md, art-direction.md, tech.md) before making design decisions\n- Follow the tech stack: Vite 8 + TypeScript strict, Phaser 4, Three.js, GSAP, WebAudio, pdf.js\n- Must build to dist/ and run on static hosting - no backend\n\nKey resources:\n- .kiro/steering/product.md: Product vision and user direction\n- .kiro/steering/art-direction.md: Visual palette, typography, theme requirements\n- .kiro/steering/tech.md: Technical conventions and testing requirements\n- .kiro/specs/deadline-defense/: Full requirements, design, and task breakdown",
+  "tools": [
+    "fs_read",
+    "fs_write",
+    "execute_bash",
+    "grep",
+    "glob"
+  ],
+  "allowedTools": [
+    "fs_read",
+    "fs_write",
+    "grep",
+    "glob"
+  ],
+  "resources": [
+    "file://.kiro/steering/**/*.md",
+    "file://.kiro/specs/deadline-defense/tasks.md"
+  ],
   "hooks": {
-    "postToolUse": {
-      "trigger": {
-        "tool": "fs_write",
-        "patterns": ["**/*.ts", "**/*.tsx"]
-      },
-      "action": {
-        "type": "runCommand",
-        "command": "npx tsc --noEmit",
-        "description": "Type-check after writing TypeScript files"
+    "agentSpawn": [
+      {
+        "command": "git status --short"
       }
-    },
-    "agentSpawn": {
-      "action": {
-        "type": "runCommand",
-        "command": "git status --short",
-        "description": "Show git status when agent starts"
+    ],
+    "postToolUse": [
+      {
+        "matcher": "fs_write",
+        "command": "npx tsc --noEmit 2>&1 | tail -5"
       }
-    }
+    ]
   }
 }

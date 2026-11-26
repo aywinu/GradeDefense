@@ -1,11 +1,17 @@
 {
+  "enabled": true,
   "name": "Art Direction Compliance Check",
   "description": "Verify game and UI code follows art direction guidelines",
-  "trigger": {
-    "type": "file_save",
-    "patterns": ["src/game/**/*.ts", "src/ui/**/*.ts"]
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/game/**/*.ts",
+      "src/ui/**/*.ts",
+      "src/game3d/**/*.ts"
+    ]
   },
-  "action": {
+  "then": {
     "type": "askAgent",
     "prompt": "Review the changed files against `.kiro/steering/art-direction.md` and check for violations:\n1. Color palette: Only use muted jewel tones from the defined palette (Void, Ink, Stone, Mist, Parchment, Faded ink, Candle gold, Spectral teal, Wax crimson, and course colors). No neon or bright colors.\n2. Typography: Only use Cinzel Decorative, Cinzel, Spectral, or Inter fonts. No novelty fonts like Creepster or dripping blood fonts.\n3. Reduced motion: Ensure animations respect prefers-reduced-motion (no shake, no flicker, slow fog drift).\n4. Text contrast: Verify text has at least 4.5:1 contrast on its background.\n\nReport any violations found with file name and line number."
   }

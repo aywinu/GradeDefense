@@ -1,36 +1,104 @@
-# How Kiro was used
+# How Kiro built Deadline Defense
 
-Honest log of what Kiro did in this project. Kiro CLI ran headless (`kiro-cli chat --no-interactive`), one small task per run, and every run was reviewed, built and tested before the next one.
+Kiro was the engine of this project, not an add-on. Every game rule, the question bank, the importers, the Moodle plugin, the hooks and the end-to-end tests started as a **Kiro spec task**. Each one was executed by **headless Kiro CLI runs** (`kiro-cli chat --no-interactive`), one small task at a time. Claude Code orchestrated the runs: it wrote the task prompts, reviewed every diff, ran the build and tests, and fixed what didn't pass. Claude Code also built the rendering layer (the 2D/3D visuals and DOM UI). Both roles are recorded honestly below.
 
-## Steering
-- `.kiro/steering/product.md`: product rules (enemy mapping, no rewards for ticking "done", played onboarding).
-- `.kiro/steering/tech.md`: stack, the pure `src/core/` rule, testing and asset licensing.
+| | |
+|---|---|
+| Kiro runs | 26, every prompt saved in [`.kiro/runs/`](.kiro/runs) |
+| Spec | `.kiro/specs/deadline-defense/` – 17 requirement groups in EARS form (49 WHEN/IF/WHILE clauses), design, ~440 tasks |
+| Steering | 4 files, always included |
+| Hooks | 3 IDE hooks + 2 agent hooks |
+| Custom agent | `deadline-dev` (`.kiro/agents/deadline-dev.json`) |
+| Tests | 410 unit and property tests (89 fast-check properties) + 7 Playwright e2e tests |
+| Kiro credits used | ~160 of the Kiroween bonus at the time of writing |
 
-## Specs
-| Date | Run | Result |
+---
+
+## 1. Steering: the rules Kiro always reads (`.kiro/steering/`)
+| File | What it enforced, with an example of it changing the outcome |
+|---|---|
+| `product.md` | The product rules: deadlines become enemies, onboarding is played, and **only correct study answers earn rewards**. Its *"Useful first, game second"* section made Kiro add requirements **R15–R17** (War Room, practice trials, scout report and debrief) to the spec in one amendment run. |
+| `tech.md` | Pure rules in `src/core` with no rendering imports, Vitest + fast-check + Playwright, and a versioned save. A review found `src/core/sim.ts` calling `Date.now()` and importing a game file; the follow-up Kiro run (task 3.10) fixed both and added a test that **fails if any core file calls `Date.now()`**. |
+| `art-direction.md` | The Costume Contest look: palette, OFL fonts only, reduced-motion rules. It overrode the neon palette and the "Creepster" novelty font in Kiro's first design draft. |
+| `tech.md` + `product.md` | Steered every implementation run. Each prompt in `.kiro/runs/` is scoped to one task and points back at them. |
+
+## 2. Spec-driven development (`.kiro/specs/deadline-defense/`)
+1. **Generate** ([run 01](.kiro/runs/01-kiro-01-spec.md)). From the steering files, Kiro wrote `requirements.md` (EARS), `design.md` (architecture, TypeScript models, scoring formulas, correctness properties, testing strategy) and `tasks.md` (ordered vertical slices).
+2. **Amend as reviews find gaps**, always through Kiro:
+   - [run 02](.kiro/runs/02-kiro-02-amend.md): relative demo dates (never stale), no font-loader dependency, Chromium-only e2e, **R13 quick-time exam events**, and **R14 Moodle block + LMS showcase**.
+   - [run 12](.kiro/runs/12-kiro-03-amend.md): **R15–R17**, the study loop that makes this a study tool rather than a time sink.
+3. **Implement task by task.** Every run ticks the checkboxes it completed.
+4. **Reconcile** ([run 25](.kiro/runs/25-t-sync.md)). At the end, the `deadline-dev` agent re-read the code and marked every task as done, *superseded* (with what was built instead) or *deferred*, so the spec tells the truth.
+
+Examples where the spec process caught design problems before they shipped:
+- **Task 1.4 → 1.7.** Kiro's first wave generator only spawned items due within 7 days. A simulation of the demo semester showed wave 1 would be three exams and nothing else. Task 1.7 re-specified waves as **week-by-week campaign waves with spawn groups**. Task 1.8 then skipped empty weeks, spread spawns over 25–40 s, and added a gentle tutorial wave and a cap on boss HP.
+- **Task 3.10.** The pure simulation got a game clock, so a quick-time event's 20% slow-motion slows tower cooldowns too. Spawning moved into state, so `waveCleared` fires exactly once.
+
+## 3. Property-based testing (fast-check), written by Kiro
+Selected invariants (see `src/core/*.prop.test.ts`, `src/import/*.test.ts`, `src/data/*.test.ts`):
+- urgency stays in [0.1, 1]; HP and speed multipliers are always positive; scoring is deterministic;
+- every spawned creature maps to a real deadline; every ungraded deadline appears in exactly one campaign wave; waves never exceed 40 creatures; same seed, same wave;
+- readiness stays in [0, 100]; more correct answers never lower it; recommended trial counts are non-negative integers;
+- QTE timers are never negative and outcomes are deterministic; a correct answer always crits and a timeout always enrages;
+- the `.ics` parser and the postMessage guard **never throw on arbitrary input**; a valid payload always yields at most 6 courses;
+- the notes-to-questions generator never throws; every question has 4 distinct choices containing the answer exactly once.
+
+`src/core/balance.test.ts` runs Kiro's pure simulation headlessly over the whole demo semester. It proves the design claim: **an idle player loses, and a player who studies holds**.
+
+## 4. Hooks
+| Hook | When | What |
 |---|---|---|
-| 2026-11-26 | Generate the spec from the steering docs | `.kiro/specs/deadline-defense/` with requirements (EARS), design and tasks |
-| 2026-11-26 | Targeted spec amendments | Relative demo dates, fonts without a loader, Chromium-only e2e, new R13 quick-time exam events, new R14 Moodle block + LMS showcase |
+| `.kiro/hooks/core-tests-on-save.kiro.hook` | a file in `src/core/**` is edited | run the core unit and property tests, report failures |
+| `.kiro/hooks/question-bank-check.kiro.hook` | `src/data/checkpoints.json` is edited | validate the schema and fact-check the changed questions |
+| `.kiro/hooks/steering-guard.kiro.hook` | `src/game/**`, `src/game3d/**`, `src/ui/**` are edited | check the change against `art-direction.md` (palette, fonts, reduced motion, contrast) |
+| agent `agentSpawn` | the `deadline-dev` agent starts | print `git status --short` |
+| agent `postToolUse` on `fs_write` | the agent writes a file | `tsc --noEmit` |
 
-## Implementation runs
-| Date | Task | What Kiro did | Review |
+## 5. Custom agent: `deadline-dev`
+`.kiro/agents/deadline-dev.json` packs the project rules (pure core, small tasks, tests before done) into the agent prompt. It loads the steering files and `tasks.md` as resources, restricts tools, and carries the two hooks above. It ran the final spec reconciliation (`kiro-cli chat --agent deadline-dev`).
+
+## 6. Driving Kiro headless: what worked
+- **One small task per run.** Each prompt names the task, the files it may touch and the verification command. Larger prompts drifted; small ones landed.
+- **Parallel runs with file fences.** Two Kiro runs ran at once only when their prompts fenced off disjoint files (e.g. the question bank while the simulation was being rewritten).
+- **Verification is part of the prompt.** Every run ends by running `vitest`, `tsc` or Playwright and fixing failures before reporting.
+- **Throttling.** The service throttled requests for a few minutes on day one. The runner retries automatically, and two runs that were cut short are noted below.
+
+## 7. Every Kiro run
+| # | Task | What Kiro produced | Review outcome |
 |---|---|---|---|
-| 2026-11-26 | Task 1.1 | Project setup (Vite base path, aliases, Vitest/Playwright config, starter removed) | Build passes |
-| 2026-11-26 | Tasks 1.2-1.3 | Core types, scoring formulas, 44 unit/property tests | Run throttled before finishing; Claude fixed fast-check import + 2 type errors. Tests and build pass |
-| 2026-11-26 | Tasks 1.4-1.6 | Wave generation, targeting, neglect buff with unit + property tests (100 tests) | Passes. Review found a design gap: only items due in 7 days spawn, so the demo wave is 3 exams; redesign queued |
-| 2026-11-26 | Task 2.2 | 60 original checkpoint questions + schema test | Claude fact-checked: fixed Tuckman (said five stages, listed four), SMART (missing Relevant), duplicate-correct option (2 μm vs 2000 nm), AIDA; rebalanced correct positions (29/60 were B) |
-| 2026-11-26 | Task 1.7 | Semester campaign: week-by-week waves, spawn groups with escorts, lanes, seeded RNG (116 tests) | Redesign requested by Claude after review; tests + build pass |
-| 2026-11-26 | Task 2.1 | Demo semester data (relative days) + resolveSemester with tests (140 tests) | Passes |
-| 2026-11-26 | Tasks 1.8, 3.1-3.2 | Wave pacing fixes; Phaser 4 config, BootScene, minimal TitleScene | 151 tests pass; Claude fixed flaky fc.date invalid-date tests |
-| 2026-11-26 | Spec amendment | Added R15–R17 (War Room, trials, scout/debrief) to requirements/design/tasks | Reviewed |
-| 2026-11-26 | Tasks 3.3-3.5 | BattleScene layout, lane helpers, tower and enemy views, wave spawning | Builds; screenshot checked |
-| 2026-11-26 | Tasks 3.6-3.8 | Pure stepSimulation with events, battle loop, wave end, victory/defeat (174 tests) | Tests + typecheck pass |
-| 2026-11-26 | Task 6.1 | Readiness core rules + 61 unit/property tests | Passes |
-| 2026-11-26 | Task 3.10 | Review fixes: game clock instead of Date.now, no game imports in core, pending spawns in state | Passes |
-| 2026-11-26 | Task 2.3 | Topic labels for all 60 questions | Passes |
-| 2026-11-26 | Task 5.1 | QTE core rules, trigger thresholds, outcomes + property tests | Claude added noNaN to a float generator (flaky NaN counterexample) |
-| 2026-11-26 | Task 10.1 | Dependency-free RFC 5545 subset parser, Moodle-specific cleanup, icsToSemester + tests (files landed in commit c80c9ab) | Passes |
-| 2026-11-26 | Tasks 14.1–14.3 | Moodle block plugin (server-side calendar events → postMessage), docs/moodle-integration.md, src/import/postmessage.ts with guards + tests | Claude hardened JSON-in-script escaping and added event.source check |
-| 2026-11-27 | Phase 16 | IDE hooks + CLI custom agent deadline-dev with postToolUse/agentSpawn hooks | JSON validated |
-| 2026-11-27 | Phase 11 (PDF questions) | notesToQuestions cloze generator + property tests, pdf.js extraction, 12 study-skills questions | Claude added citation/anaphora filters and whitespace normalisation after testing with a real PDF |
-| 2026-11-27 | Smoke tests | 6 Playwright smoke tests (title, War Room, trial, battle, tour, reduced motion) | 3 failed against a stale preview build; Claude added returning-player save default and disabled server reuse |
+| 01 | Spec | requirements (EARS), design, tasks from steering | — |
+| 02 | Spec amendment | relative dates, R13 QTE, R14 Moodle block + showcase | — |
+| 03 | 1.1 Setup | Vite base path, aliases, Vitest/Playwright configs | build passes |
+| 04 | 1.2–1.3 Core types + scoring | types, scoring, 44 unit/property tests | run throttled before the end; Claude fixed an import and two type errors |
+| 05 | 1.4 Waves | wave generation + property tests | design gap found → task 1.7 |
+| 06 | 1.5–1.6 Targeting, neglect | pure functions + tests | passes |
+| 07 | 2.2 Question bank | 60 original questions + schema test | Claude fact-checked: fixed 4 questions, rebalanced answer positions |
+| 08 | 1.7 Campaign waves | week-by-week waves, spawn groups, seeded RNG | passes (116 tests) |
+| 09 | 2.1 Demo semester | relative-date data + `resolveSemester` | passes |
+| 10 | 1.8 Wave pacing | empty weeks skipped, spread spawns, tutorial wave, boss cap | passes |
+| 11 | 3.1–3.2 Boot + title | Phaser 4 config, scenes | Claude fixed a flaky invalid-date property |
+| 12 | Spec amendment | R15–R17 study loop | — |
+| 13 | 3.3–3.5 Battlefield | layout, sentinels, spawning | passes |
+| 14 | 3.6–3.8 Simulation | pure `stepSimulation` with events, victory/defeat | passes (174 tests) |
+| 15 | 3.10 Review fixes | game clock, no core→game import, pending spawns | passes |
+| 16 | 6.1 Readiness | readiness, weak topics, threat, trial picking + 61 tests | passes |
+| 17 | 2.3 Topics | topic labels for 60 questions | passes |
+| 18 | 5.1 QTE rules | QTE state machine + property tests | Claude added `noNaN` to a float generator |
+| 19 | 10.1 `.ics` parser | dependency-free RFC 5545 subset parser, Moodle cleanup | passes (32 tests) |
+| 20 | 14.1–14.2 Moodle block | `block_gradedefense` (server-side calendar → postMessage), docs | Claude hardened JSON-in-script escaping, added `event.source` check |
+| 21 | 14.3 Embed handler | validated postMessage contract + tests | Claude closed an empty-allowlist hole, allowed string ids |
+| 22 | 16 Hooks + agent | hooks and `deadline-dev` | Claude converted to the current hook/agent schema (validated with `kiro-cli agent validate`) |
+| 23 | 11 Notes → questions | cloze generator + properties, pdf.js extraction, study-skills bank | Claude added citation/anaphora filters after a real PDF test |
+| 24 | 15 Smoke tests | 7 Playwright tests | Claude fixed a stale-server config and a default save; all pass |
+| 25 | Spec sync | tasks reconciled with the code (`--agent deadline-dev`) | — |
+
+## 8. Division of labour (honest)
+- **Kiro:** spec, steering-driven implementation of all of `src/core` (rules, simulation, waves, QTE, readiness), question bank and topics, `.ics` parser, notes-to-questions generator, postMessage contract, the Moodle plugin, hooks, custom agent, Playwright tests.
+- **Claude Code:**
+  - orchestration: prompts, reviews, fixes noted above;
+  - steering `art-direction.md`;
+  - the rendering layer: Phaser title/War Room, the Three.js 3D battlefield and procedural creatures, DOM UI, guided tours;
+  - study model glue, versioned save, synthesised audio;
+  - balance tuning with the headless simulation;
+  - the LMS showcase page, CI/deploy.
+- **The author:** product direction, art-direction feedback (e.g. "less shiny, more unique", "show progressive disclosure", "go 3D"), the Moodle background from CoursePilot.

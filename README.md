@@ -2,7 +2,7 @@
 
 **Your semester is under siege.** A haunted study tool in costume: your real deadlines crawl out of the fog as a horde, and the only weapon that works is studying.
 
-*Kiroween 2026 · Costume Contest.* Built with **Kiro** (spec-driven development, steering, hooks, a custom agent) and Claude Code. See [KIRO_USAGE.md](KIRO_USAGE.md).
+*Kiroween 2026 · Costume Contest.* Built with **Kiro**: spec-driven development, steering, hooks, a custom agent, and 26 headless Kiro runs whose prompts live in [`.kiro/runs/`](.kiro/runs). See **[KIRO_USAGE.md](KIRO_USAGE.md)**.
 
 **Play:** https://aywinu.github.io/GradeDefense/ · **LMS showcase:** https://aywinu.github.io/GradeDefense/showcase/lms.html
 
@@ -64,7 +64,7 @@ showcase/lms.html      generic LMS page embedding the block (used in the demo vi
 The rules are pure functions with property-based tests. One of them proves the design's core claim with a headless simulation of the whole demo semester: **an idle player loses, a player who studies holds** (`src/core/balance.test.ts`).
 
 ## Disclosure
-The demo semester's synthetic dates come from the author's earlier project CoursePilot. It's disclosed in `reference/coursepilot/README.md`, and no code was copied. Everything else was built during the Kiroween submission period. See [BUILD_LOG.md](BUILD_LOG.md) for who did what (Kiro or Claude Code).
+The demo semester (`src/data/demo.json`) reuses synthetic course names and relative dates from the author's earlier, unrelated project CoursePilot (a Moodle agent). No code was copied, and the data contains no real students. Everything else was built during the Kiroween submission period. [KIRO_USAGE.md](KIRO_USAGE.md) records who did what: Kiro, Claude Code, or the author.
 
 ## Licence
 MIT. Fonts are OFL, and all art and sound is generated in code. See [CREDITS.md](CREDITS.md).
