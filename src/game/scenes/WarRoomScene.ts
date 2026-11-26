@@ -29,6 +29,8 @@ export class WarRoomScene extends Phaser.Scene {
   private layer?: HTMLDivElement;
   private busy = false;
   private graveyard?: Graveyard;
+  private selected: string | null = null;
+  private views: CourseView[] = [];
 
   constructor() {
     super({ key: 'WarRoomScene' });
@@ -59,7 +61,18 @@ export class WarRoomScene extends Phaser.Scene {
     const dateStr = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
     const source = save.semester.source === 'demo' ? 'Demo semester' : save.semester.source === 'moodle' ? 'From your Moodle' : 'Imported calendar';
 
-    const cards = views.map((v) => this.card(v)).join('');
+    // The single most useful action tonight: the course with the nearest big
+    // enemy weighted by how unprepared the student is.
+    const ranked = [...views].sort((x, y) => this.urgency(y) - this.urgency(x));
+    const focus = ranked[0];
+    this.selected = this.selected && views.some((v) => v.course.id === this.selected) ? this.selected : focus?.course.id ?? null;
+    const counsel = focus?.next
+      ? focus.recommendedTrials > 0
+        ? `Tonight's counsel: train <b>${focus.course.title}</b>. ${focus.next.name} comes ${inDays(focus.next.days)} and your readiness is ${focus.readiness}%.`
+        : `Tonight's counsel: your defences hold. Face the siege, or sharpen <b>${focus.course.title}</b> before ${focus.next.name}.`
+      : 'No deadlines ahead. The study is quiet tonight.';
+
+    const rows = views.map((v) => this.row(v)).join('');
     const layer = mountLayer(
       'warroom',
       `
@@ -67,86 +80,121 @@ export class WarRoomScene extends Phaser.Scene {
         <div>
           <div class="wr-eyebrow">${dateStr} &middot; ${source}</div>
           <div class="wr-title">The War Room</div>
-          <div class="wr-sub">Average readiness <b>${avgReady}%</b> across ${views.length} courses. ${
-            totalWaves > 0 ? `The siege lasts <b>${totalWaves} waves</b> until your last deadline.` : 'No deadlines ahead.'
-          }</div>
+          <p class="wr-counsel">${counsel}</p>
+          <div class="wr-cta">
+            ${focus ? `<button class="dd-btn" data-train="${focus.course.id}">Train ${focus.course.title}<span class="dd-kbd">T</span></button>` : ''}
+            <button class="dd-btn secondary" data-action="battle">Face the siege<span class="dd-kbd">Enter</span></button>
+          </div>
         </div>
         ${
           nextBattle
-            ? `<div class="epitaph" data-interactive>
+            ? `<div class="epitaph" aria-label="Next great enemy">
             <div class="here">Here waits</div>
             <div class="what">${nextBattle.name}</div>
             <div class="when">${nextBattle.view.course.title} &middot; ${formatDue(nextBattle.dueDate)} &middot; <b>${inDays(nextBattle.days)}</b></div>
-            <button class="dd-btn" data-action="battle">Defend<span class="dd-kbd">Enter</span></button>
           </div>`
-            : `<button class="dd-btn" data-action="battle">Defend<span class="dd-kbd">Enter</span></button>`
+            : ''
         }
       </header>
-      <section class="wr-grid" aria-label="Courses">${cards}</section>
+      <section class="wr-body">
+        <ol class="wr-list" aria-label="Courses (select one for details)">${rows}</ol>
+        <div class="wr-detail" aria-live="polite"></div>
+      </section>
       ${this.timeline(views, now)}
+      <div class="wr-foot">Average readiness ${avgReady}% &middot; ${totalWaves > 0 ? `${totalWaves} weeks of siege until your last deadline` : 'no siege ahead'} &middot; <span class="dd-kbd">↑</span><span class="dd-kbd">↓</span> browse courses</div>
     `,
     );
     this.layer = layer;
+    this.views = views;
+    this.showDetail(this.selected);
 
-    layer.querySelectorAll<HTMLButtonElement>('[data-train]').forEach((b) =>
-      b.addEventListener('click', () => this.train(b.dataset.train!)),
-    );
+    layer.querySelectorAll<HTMLButtonElement>('.wr-row').forEach((b) => {
+      b.addEventListener('click', () => this.showDetail(b.dataset.course!));
+      b.addEventListener('focus', () => this.showDetail(b.dataset.course!));
+    });
+    layer.querySelectorAll<HTMLButtonElement>('.wr-cta [data-train]').forEach((b) => b.addEventListener('click', () => this.train(b.dataset.train!)));
     layer.querySelector<HTMLButtonElement>('[data-action="battle"]')?.addEventListener('click', () => this.battle());
     this.input.keyboard?.removeAllListeners();
     this.input.keyboard?.on('keydown-ENTER', (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === 'BUTTON') return; // let the focused button handle it
       this.battle();
     });
+    this.input.keyboard?.on('keydown-T', () => this.selected && this.train(this.selected));
+    this.input.keyboard?.on('keydown-UP', () => this.moveSelection(-1));
+    this.input.keyboard?.on('keydown-DOWN', () => this.moveSelection(1));
     this.input.keyboard?.on('keydown-ESC', () => this.back());
 
     if (animate && !prefersReducedMotion()) {
-      const lit = layer.querySelectorAll('.candles i.lit');
-      gsap.from(layer.querySelector('.wr-header'), { opacity: 0, y: -16, duration: 0.7, ease: 'power3.out' });
-      gsap.from(layer.querySelectorAll('.course-card'), { opacity: 0, y: 12, duration: 0.7, stagger: 0.07, ease: 'power3.out', delay: 0.15 });
-      gsap.from(layer.querySelectorAll('.tl-stone'), { opacity: 0, y: 20, duration: 0.5, stagger: 0.02, ease: 'back.out(2)', delay: 0.5 });
-      if (lit.length) gsap.from(lit, { opacity: 0, duration: 0.4, stagger: 0.015, delay: 0.5 });
+      gsap.from(layer.querySelector('.wr-header'), { opacity: 0, y: -12, duration: 0.7, ease: 'power3.out' });
+      gsap.from(layer.querySelectorAll('.wr-row'), { opacity: 0, x: -10, duration: 0.5, stagger: 0.05, ease: 'power3.out', delay: 0.15 });
+      gsap.from(layer.querySelector('.wr-detail'), { opacity: 0, duration: 0.6, delay: 0.3 });
+      gsap.from(layer.querySelectorAll('.tl-stone'), { opacity: 0, y: 14, duration: 0.5, stagger: 0.02, ease: 'power2.out', delay: 0.5 });
     }
   }
 
-  private card(v: CourseView): string {
+  private urgency(v: CourseView): number {
+    if (!v.next) return 0;
+    return (1 - v.readiness / 100) * (v.next.points / 100 + 0.3) * (1 / Math.max(1, v.next.days));
+  }
+
+  private moveSelection(d: number) {
+    const ids = this.views.map((v) => v.course.id);
+    const i = Math.max(0, ids.indexOf(this.selected ?? ids[0]));
+    const next = ids[(i + d + ids.length) % ids.length];
+    this.layer?.querySelector<HTMLButtonElement>(`.wr-row[data-course="${next}"]`)?.focus();
+  }
+
+  private readonly threatWord: Record<string, string> = { Low: 'Quiet', Medium: 'Stirring', High: 'Looming', Critical: 'Dire' };
+
+  private candles(readiness: number): string {
+    const lit = Math.round(readiness / 10);
+    return Array.from({ length: 10 }, (_, i) => `<i class="${i < lit ? 'lit' : ''}"></i>`).join('');
+  }
+
+  /** One compact line per course. */
+  private row(v: CourseView): string {
     const c = hex(getCourseColor(v.course.id));
+    const next = v.next ? `${v.next.name.replace(/ - .*/, '')}, ${inDays(v.next.days)}` : 'Nothing due';
+    return `<li><button class="wr-row" data-course="${v.course.id}" style="--c:${c}" aria-label="${v.course.title}: readiness ${v.readiness}%, threat ${v.threat}, next ${next}">
+      <span class="seal" aria-hidden="true">${v.course.id.replace(/\d+$/, '')}</span>
+      <span class="r-name">${v.course.title}</span>
+      <span class="candles" aria-hidden="true">${this.candles(v.readiness)}</span>
+      <span class="threat ${v.threat.toLowerCase()}">${this.threatWord[v.threat]}</span>
+      <span class="r-next ${v.next && v.next.days <= 7 ? 'soon' : ''}">${next}</span>
+    </button></li>`;
+  }
+
+  /** Full details for one course (only on selection, to avoid overload). */
+  private showDetail(courseId: string | null) {
+    if (!courseId || !this.layer) return;
+    this.selected = courseId;
+    const v = this.views.find((x) => x.course.id === courseId);
+    if (!v) return;
+    this.layer.querySelectorAll('.wr-row').forEach((r) => r.classList.toggle('on', (r as HTMLElement).dataset.course === courseId));
     const grade = v.grade === null ? '—' : `${Math.round(v.grade)}%`;
     const enemies = v.big.length
       ? v.big
-          .map(
-            (b) => `<li class="${b.days <= 7 ? 'soon' : ''}">${ICONS[b.type] ?? ICONS.assignment}<span class="nm">${b.name}</span><span class="dt">${formatDue(b.dueDate)}, ${inDays(b.days)}</span></li>`,
-          )
+          .map((b) => `<li class="${b.days <= 7 ? 'soon' : ''}">${ICONS[b.type] ?? ICONS.assignment}<span class="nm">${b.name}</span><span class="dt">${formatDue(b.dueDate)}, ${inDays(b.days)} &middot; ${b.points} pts</span></li>`)
           .join('')
       : '<li class="none">No great enemies on the horizon.</li>';
-    const advice = v.next
+    const plan = v.next
       ? v.recommendedTrials > 0
-        ? `${v.recommendedTrials} trial${v.recommendedTrials > 1 ? 's' : ''} recommended before ${v.next.name.replace(/ - .*/, '')}`
-        : `Ready for ${v.next.name.replace(/ - .*/, '')}`
-      : 'Keep your edge sharp';
-    const weak = v.weakTopics.length ? `<div class="weak">Revisit: <span>${v.weakTopics.join(', ')}</span></div>` : '';
-    const lit = Math.round(v.readiness / 10);
-    const candles = Array.from({ length: 10 }, (_, i) => `<i class="${i < lit ? 'lit' : ''}"></i>`).join('');
-    const threatWord: Record<string, string> = { Low: 'Quiet', Medium: 'Stirring', High: 'Looming', Critical: 'Dire' };
-    return `
-      <article class="course-card" style="--c:${c}" aria-label="${v.course.title}">
-        <div class="cc-top">
-          <div class="seal" aria-hidden="true">${v.course.id.replace(/\d+$/, '')}</div>
-          <div>
-            <div class="cc-name">${v.course.title}</div>
-            <div class="cc-meta">Grade <b>${grade}</b> &middot; Forge <b>${'◆'.repeat(v.forge)}${'◇'.repeat(5 - v.forge)}</b></div>
-          </div>
-          <span class="threat ${v.threat.toLowerCase()}" title="Threat level: ${v.threat}">${threatWord[v.threat]}</span>
-        </div>
-        <div class="readiness" aria-label="Readiness ${v.readiness} percent">
-          <span class="lbl">Readiness</span><span class="candles" aria-hidden="true">${candles}</span><span class="pct">${v.readiness}%</span>
-        </div>
-        <ul class="enemies">${enemies}</ul>
-        ${weak}
-        <div class="cc-actions">
-          <button class="train-btn" data-train="${v.course.id}" aria-label="Train ${v.course.title}: ${advice}">Train</button>
-          <span class="advice-ink">${advice}</span>
-        </div>
-      </article>`;
+        ? `${v.recommendedTrials} practice trial${v.recommendedTrials > 1 ? 's' : ''} before ${v.next.name.replace(/ - .*/, '')}. Each correct answer forges this lane's sentinels.`
+        : `Ready for ${v.next.name.replace(/ - .*/, '')}. One trial a day keeps it that way.`
+      : 'Nothing due. Keep your edge sharp.';
+    const d = this.layer.querySelector<HTMLDivElement>('.wr-detail')!;
+    d.style.setProperty('--c', hex(getCourseColor(v.course.id)));
+    d.innerHTML = `
+      <div class="d-head"><span class="seal" aria-hidden="true">${v.course.id.replace(/\d+$/, '')}</span><div><div class="d-name">${v.course.title}</div>
+        <div class="cc-meta">Grade so far <b>${grade}</b> &middot; Readiness <b>${v.readiness}%</b> &middot; Forge <b>${'◆'.repeat(v.forge)}${'◇'.repeat(5 - v.forge)}</b></div></div></div>
+      <div class="d-label">Great enemies</div>
+      <ul class="enemies">${enemies}</ul>
+      <div class="d-label">Battle plan</div>
+      <p class="d-plan">${plan}</p>
+      ${v.weakTopics.length ? `<p class="weak">Revisit: <span>${v.weakTopics.join(', ')}</span></p>` : ''}
+      <button class="train-btn" data-train="${v.course.id}">Train ${v.course.title}</button>`;
+    d.querySelector<HTMLButtonElement>('[data-train]')!.addEventListener('click', () => this.train(v.course.id));
+    if (!prefersReducedMotion()) gsap.fromTo(d.children, { opacity: 0, y: 4 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.03 });
   }
 
   private timeline(views: CourseView[], now: Date): string {
