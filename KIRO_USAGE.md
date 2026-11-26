@@ -91,8 +91,8 @@ Selected invariants (see `src/core/*.prop.test.ts`, `src/import/*.test.ts`, `src
 | 23 | 11 Notes → questions | cloze generator + properties, pdf.js extraction, study-skills bank | Claude added citation/anaphora filters after a real PDF test |
 | 24 | 15 Smoke tests | 7 Playwright tests | Claude fixed a stale-server config and a default save; all pass |
 | 25 | Spec sync | tasks reconciled with the code (`--agent deadline-dev`) | — |
-| 26 Duel combat (R18) | spec amendment + src/core/duel.ts (seals, applyAnswer, creepSpeed) + unit/property tests | Claude built the duel UI and scene on top |
-| 27 Duel balance | headless semester simulation with a simulated student | passes untuned (creepScale 1.0) |
+| 26 | Duel combat (R18) | spec amendment + src/core/duel.ts (seals, applyAnswer, creepSpeed) + unit/property tests | Claude built the duel UI and scene on top |
+| 27 | Duel balance | headless semester simulation with a simulated student | passes untuned (creepScale 1.0) |
 
 ## 8. Division of labour (honest)
 - **Kiro:** spec, steering-driven implementation of all of `src/core` (rules, simulation, waves, QTE, readiness), question bank and topics, `.ics` parser, notes-to-questions generator, postMessage contract, the Moodle plugin, hooks, custom agent, Playwright tests.
