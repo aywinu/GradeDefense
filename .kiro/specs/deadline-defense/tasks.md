@@ -21,14 +21,14 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 - [x] 1.3.1: Create `src/core/scoring.ts` with `calculateUrgency`, `calculateRisk`, `calculateWeight`, `priorityScore` (Ref: design.md Scoring Formulas, R3.2)
 - [x] 1.3.2: Implement `enemyHpMultiplier`, `enemySpeedMultiplier`, `fortressDamage` (Ref: R3.2, R3.3)
 - [x] 1.3.3: Write unit tests in `src/core/scoring.test.ts`: urgency bounds, priority monotonicity, HP/speed scaling (Ref: design.md Unit Tests)
-  - [ ] Test urgency at 0, 7, 14, 21+ days
-  - [ ] Test priority increases as deadline approaches (fixed grade/points)
-  - [ ] Test HP multiplier ≥ 1.0
-  - [ ] Test speed multiplier ≥ 1.0
+  - [x] Test urgency at 0, 7, 14, 21+ days
+  - [x] Test priority increases as deadline approaches (fixed grade/points)
+  - [x] Test HP multiplier ≥ 1.0
+  - [x] Test speed multiplier ≥ 1.0
 - [x] 1.3.4: Write property-based tests in `src/core/scoring.prop.test.ts` using fast-check (Ref: design.md Property-Based Tests)
-  - [ ] Urgency bounds: `0.1 ≤ urgency ≤ 1.0` for days ≥ 0
-  - [ ] HP/speed multipliers always positive
-  - [ ] Determinism: same inputs → same output
+  - [x] Urgency bounds: `0.1 ≤ urgency ≤ 1.0` for days ≥ 0
+  - [x] HP/speed multipliers always positive
+  - [x] Determinism: same inputs → same output
 - [ ] 1.3.5: Run `npm run test:core` and verify 90% coverage (Ref: NFR3)
 
 ### 1.4: Wave Generation
