@@ -16,7 +16,9 @@ import { Graveyard } from '../fx/Graveyard';
 import { runTour, hasSeen } from '../../ui/Tour';
 import { parseICS, icsToSemester } from '../../import/ics';
 import { save as saveData } from '../../save/save';
-import { invalidateSemester } from '../../study/model';
+import { invalidateSemester, hasCourseQuestions, notesQuestions, saveNotes } from '../../study/model';
+import { notesToQuestions } from '../../import/notes';
+import { mulberry32 } from '../../core/rng';
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
@@ -149,6 +151,26 @@ export class WarRoomScene extends Phaser.Scene {
     }
   }
 
+  /** Turn the student's notes into cloze questions for one course (no upload, no AI). */
+  private async importNotes(courseId: string, f?: File) {
+    if (!f) return;
+    this.toast('Reading your notes…');
+    try {
+      let text: string;
+      if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
+        const { extractPdfText } = await import('../../import/pdf');
+        text = await extractPdfText(f);
+      } else text = await f.text();
+      const qs = notesToQuestions(text, courseId, mulberry32(text.length), 24);
+      if (!qs.length) throw new Error('No definitions found to build questions from. Try lecture notes or a summary with full sentences.');
+      saveNotes(courseId, f.name, qs.map((q, i) => ({ ...q, id: `${courseId}-notes-${i}` })));
+      this.render(false);
+      this.toast(`Forged ${qs.length} questions from ${f.name}. Train to use them.`);
+    } catch (e) {
+      this.toast(e instanceof Error ? e.message : 'Those notes could not be read.');
+    }
+  }
+
   /** Import a calendar export (.ics), parsed entirely in the browser. */
   private async importIcs(f?: File) {
     if (!f) return;
@@ -258,8 +280,18 @@ export class WarRoomScene extends Phaser.Scene {
       <div class="d-label">Battle plan</div>
       <p class="d-plan">${plan}</p>
       ${v.weakTopics.length ? `<p class="weak">Revisit: <span>${v.weakTopics.join(', ')}</span></p>` : ''}
-      <button class="train-btn" data-train="${v.course.id}">Train ${v.course.title}</button>`;
+      <div class="d-actions">
+        <button class="train-btn" data-train="${v.course.id}">Train ${v.course.title}</button>
+        <button class="link-btn" data-notes title="Turn your own lecture notes or slides (PDF or text) into practice questions, locally in your browser">${
+          notesQuestions(v.course.id).length ? `Notes: ${notesQuestions(v.course.id).length} questions · replace` : 'Add your notes (PDF)'
+        }</button>
+        <input type="file" accept=".pdf,.txt,.md,application/pdf,text/plain" data-notes-file hidden />
+      </div>
+      ${hasCourseQuestions(v.course.id) ? '' : '<p class="weak">No question bank for this course yet: trials use study-skill questions until you add notes.</p>'}`;
     d.querySelector<HTMLButtonElement>('[data-train]')!.addEventListener('click', () => this.train(v.course.id));
+    const nf = d.querySelector<HTMLInputElement>('[data-notes-file]')!;
+    d.querySelector('[data-notes]')!.addEventListener('click', () => nf.click());
+    nf.addEventListener('change', () => void this.importNotes(v.course.id, nf.files?.[0]));
     if (!prefersReducedMotion()) gsap.fromTo(d.children, { opacity: 0, y: 4 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.03 });
   }
 

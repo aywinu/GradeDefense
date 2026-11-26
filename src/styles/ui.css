@@ -784,3 +784,6 @@ canvas.dd-3d { display: block; }
 .hud-btn.beckon { border-color: var(--candle); animation: dd-beckon 1s ease-in-out infinite; }
 @keyframes dd-beckon { 50% { box-shadow: 0 0 0 4px rgba(242, 180, 90, 0.35), 0 0 30px rgba(242, 180, 90, 0.5); transform: translateY(-2px); } }
 @media (prefers-reduced-motion: reduce) { .hud-btn.beckon { animation: none; box-shadow: 0 0 0 3px rgba(242, 180, 90, 0.6); } }
+.d-actions { display: flex; align-items: center; gap: 22px; margin-top: 14px; }
+.d-actions .train-btn { margin-top: 0; }
+.d-actions .link-btn { margin-left: 0; font-family: var(--font-body); font-style: italic; font-size: 15px; text-transform: none; letter-spacing: 0; }

@@ -5,6 +5,7 @@
  */
 import demo from '../data/demo.json';
 import checkpoints from '../data/checkpoints.json';
+import studySkills from '../data/study-skills.json';
 import { resolveSemester } from '../core/semester';
 import { priorityScore, daysUntilDue } from '../core/scoring';
 import {
@@ -37,13 +38,34 @@ const QUESTIONS: Question[] = Object.entries(checkpoints as Record<string, Omit<
   ([courseId, list]) => list.map((q) => ({ ...q, courseId })),
 );
 
+const STUDY_SKILLS: Question[] = (studySkills as Omit<Question, 'courseId'>[]).map((q) => ({ ...q, courseId: 'STUDY' }));
+
+/** Questions forged from the student's own notes for this course (stored locally). */
+export function notesQuestions(courseId: string): Question[] {
+  return (load().notes[courseId]?.questions ?? []) as Question[];
+}
+
+/**
+ * The course's question pool: the student's own notes first, then the bundled
+ * bank. A course with neither (e.g. an imported one) gets evidence-based
+ * study-skills questions until notes are added, never another course's content.
+ */
 export function questionsFor(courseId: string): Question[] {
-  const own = QUESTIONS.filter((q) => q.courseId === courseId);
-  return own.length ? own : QUESTIONS; // imported courses without questions fall back to the shared pool
+  const own = [...notesQuestions(courseId), ...QUESTIONS.filter((q) => q.courseId === courseId)];
+  return own.length ? own : STUDY_SKILLS;
+}
+
+export function hasCourseQuestions(courseId: string): boolean {
+  return notesQuestions(courseId).length > 0 || QUESTIONS.some((q) => q.courseId === courseId);
 }
 
 export function questionById(id: string): Question | undefined {
-  return QUESTIONS.find((q) => q.id === id);
+  return QUESTIONS.find((q) => q.id === id) ?? STUDY_SKILLS.find((q) => q.id === id) ?? Object.values(load().notes).flatMap((n) => n.questions as Question[]).find((q) => q.id === id);
+}
+
+/** Store questions generated from notes for a course (replaces earlier ones). */
+export function saveNotes(courseId: string, name: string, questions: Question[]): void {
+  save((d) => (d.notes[courseId] = { name, questions }));
 }
 
 let semesterCache: { at: number; sem: Semester } | null = null;

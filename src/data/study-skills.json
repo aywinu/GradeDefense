@@ -1,0 +1,158 @@
+[
+  {
+    "id": "STUDY-q01",
+    "question": "What is the optimal spacing interval for reviewing new material in spaced repetition?",
+    "choices": [
+      "1 day, 3 days, 1 week, 1 month",
+      "Every day for a week",
+      "Once a week for a month",
+      "Only the night before exam"
+    ],
+    "correctIndex": 0,
+    "explain": "Spaced repetition uses increasing intervals (e.g., 1 day, 3 days, 1 week, 1 month) to strengthen long-term memory through distributed practice.",
+    "topic": "Spaced Repetition"
+  },
+  {
+    "id": "STUDY-q02",
+    "question": "Which study technique involves actively recalling information without looking at notes?",
+    "choices": [
+      "Highlighting",
+      "Retrieval practice",
+      "Passive reading",
+      "Summarizing"
+    ],
+    "correctIndex": 1,
+    "explain": "Retrieval practice (also called the testing effect) strengthens memory by actively recalling information rather than passively reviewing it.",
+    "topic": "Retrieval Practice"
+  },
+  {
+    "id": "STUDY-q03",
+    "question": "Interleaving study sessions means switching between _____ topics rather than blocking one at a time.",
+    "choices": [
+      "Similar",
+      "Different",
+      "Easy",
+      "Memorized"
+    ],
+    "correctIndex": 1,
+    "explain": "Interleaving involves mixing different topics or problem types in one study session, which improves discrimination and transfer of learning.",
+    "topic": "Interleaving"
+  },
+  {
+    "id": "STUDY-q04",
+    "question": "Elaboration in learning means connecting new information to what you already _____.",
+    "choices": [
+      "Highlighted",
+      "Forgot",
+      "Skipped",
+      "Know"
+    ],
+    "correctIndex": 3,
+    "explain": "Elaboration involves linking new material to existing knowledge, creating meaningful connections that aid retention and understanding.",
+    "topic": "Elaboration"
+  },
+  {
+    "id": "STUDY-q05",
+    "question": "Dual coding combines verbal information with _____ to enhance memory encoding.",
+    "choices": [
+      "Audio recordings",
+      "Visual representations",
+      "Group discussions",
+      "Longer notes"
+    ],
+    "correctIndex": 1,
+    "explain": "Dual coding theory states that combining words with visuals (diagrams, charts, images) creates two memory traces, improving recall.",
+    "topic": "Dual Coding"
+  },
+  {
+    "id": "STUDY-q06",
+    "question": "The testing effect shows that taking practice tests improves retention more than _____.",
+    "choices": [
+      "Rereading notes",
+      "Teaching others",
+      "Making flashcards",
+      "Attending lectures"
+    ],
+    "correctIndex": 0,
+    "explain": "Research shows that practicing retrieval (testing yourself) is more effective than passive review methods like rereading.",
+    "topic": "Testing Effect"
+  },
+  {
+    "id": "STUDY-q07",
+    "question": "Sleep plays a critical role in memory consolidation, particularly during _____ sleep.",
+    "choices": [
+      "Light",
+      "REM and deep",
+      "Brief naps only",
+      "Weekend"
+    ],
+    "correctIndex": 1,
+    "explain": "Both REM sleep and deep (slow-wave) sleep are essential for consolidating memories from short-term to long-term storage.",
+    "topic": "Sleep and Memory"
+  },
+  {
+    "id": "STUDY-q08",
+    "question": "The Pomodoro Technique uses focused work intervals of _____ minutes followed by short breaks.",
+    "choices": [
+      "15",
+      "25",
+      "45",
+      "60"
+    ],
+    "correctIndex": 1,
+    "explain": "The Pomodoro Technique recommends 25-minute focused work sessions (pomodoros) followed by 5-minute breaks to maintain concentration.",
+    "topic": "Pomodoro Technique"
+  },
+  {
+    "id": "STUDY-q09",
+    "question": "The planning fallacy describes our tendency to _____ how long tasks will take.",
+    "choices": [
+      "Overestimate",
+      "Accurately predict",
+      "Underestimate",
+      "Not consider"
+    ],
+    "correctIndex": 2,
+    "explain": "The planning fallacy is the common bias of underestimating how much time tasks will require, leading to unrealistic schedules.",
+    "topic": "Planning Fallacy"
+  },
+  {
+    "id": "STUDY-q10",
+    "question": "Active learning strategies require _____ engagement rather than passive listening or reading.",
+    "choices": [
+      "Group",
+      "Mental",
+      "Physical",
+      "Emotional"
+    ],
+    "correctIndex": 1,
+    "explain": "Active learning involves mental engagement through questioning, problem-solving, and application rather than passive information consumption.",
+    "topic": "Active Learning"
+  },
+  {
+    "id": "STUDY-q11",
+    "question": "Metacognition refers to thinking about and monitoring your own _____ processes.",
+    "choices": [
+      "Physical",
+      "Learning",
+      "Social",
+      "Emotional"
+    ],
+    "correctIndex": 1,
+    "explain": "Metacognition involves awareness and regulation of your own cognitive processes, such as knowing what you know and planning how to learn.",
+    "topic": "Metacognition"
+  },
+  {
+    "id": "STUDY-q12",
+    "question": "Desirable difficulties are learning challenges that feel harder but lead to _____ long-term retention.",
+    "choices": [
+      "Worse",
+      "Similar",
+      "Unpredictable",
+      "Better"
+    ],
+    "correctIndex": 3,
+    "explain": "Desirable difficulties (like spacing, interleaving, testing) make learning feel more challenging but significantly improve long-term retention and transfer.",
+    "topic": "Desirable Difficulties"
+  }
+]

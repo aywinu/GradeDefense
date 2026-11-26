@@ -487,15 +487,20 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 ## Phase 11: PDF Question Generator (Optional)
 
 ### 11.1: PDF Text Extraction
-- [ ] 10.1.1: Create `src/import/pdf.ts` with `extractText(file): Promise<string>` (Ref: design.md PDF Question Generator, R5.5)
-- [ ] 9.1.2: Configure pdf.js worker path (`public/pdf.worker.min.js`) (Ref: design.md PDF Question Generator)
+- [x] 10.1.1: Create `src/import/pdf.ts` with `extractText(file): Promise<string>` (Ref: design.md PDF Question Generator, R5.5)
+- [x] 9.1.2: Configure pdf.js worker path (`public/pdf.worker.min.js`) (Ref: design.md PDF Question Generator)
 - [ ] 9.1.3: Write unit tests with sample PDF (Ref: R5.5)
 
 ### 11.2: Cloze Question Generation
-- [ ] 9.2.1: Implement `generateClozeQuestions(text, count): CheckpointQuestion[]` (Ref: design.md PDF Question Generator, R5.5)
-- [ ] 9.2.2: Extract sentences with capitalized nouns (simple heuristic) (Ref: R5.5)
-- [ ] 9.2.3: Blank one term per sentence, generate 3 distractors (Ref: R5.5)
-- [ ] 9.2.4: Write unit tests: verify generated questions are valid (Ref: R5.5)
+- [x] 9.2.1: Implement `generateClozeQuestions(text, count): CheckpointQuestion[]` (Ref: design.md PDF Question Generator, R5.5)
+- [x] 9.2.2: Extract sentences with capitalized nouns (simple heuristic) (Ref: R5.5)
+- [x] 9.2.3: Blank one term per sentence, generate 3 distractors (Ref: R5.5)
+- [x] 9.2.4: Write unit tests: verify generated questions are valid (Ref: R5.5)
+
+### 11.2b: Study Skills Fallback Questions
+- [x] 9.2b.1: Create `src/data/study-skills.json` with 12 evidence-based study technique questions (Ref: R5.5)
+- [x] 9.2b.2: Write `src/data/study-skills.test.ts` validating the schema (Ref: R5.5)
+- [x] 9.2b.3: Verify questions cover spaced repetition, retrieval practice, interleaving, elaboration, dual coding, testing effect, etc. (Ref: R5.5)
 
 ### 11.3: PDF Import UI
 - [ ] 9.3.1: Add "Upload PDF" button to CheckpointPanel (Ref: R5.5)
@@ -604,11 +609,11 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 - [ ] 12.1.5: Test locally with `npx vite preview` at sub-path (Ref: R11.2)
 
 ### 15.2: Playwright Smoke Tests
-- [ ] 12.2.1: Create `tests/e2e/smoke.spec.ts` (Ref: design.md Playwright Smoke Tests)
-- [ ] 12.2.2: Test: game boots without console errors (Ref: design.md Playwright Smoke Tests)
-- [ ] 12.2.3: Test: first wave starts (Ref: design.md Playwright Smoke Tests)
-- [ ] 12.2.4: Test: checkpoint panel opens (Ref: design.md Playwright Smoke Tests)
-- [ ] 12.2.5: Test: mute toggle works (Ref: design.md Playwright Smoke Tests)
+- [x] 12.2.1: Create `tests/e2e/smoke.spec.ts` (Ref: design.md Playwright Smoke Tests)
+- [x] 12.2.2: Test: game boots without console errors (Ref: design.md Playwright Smoke Tests)
+- [x] 12.2.3: Test: first wave starts (Ref: design.md Playwright Smoke Tests)
+- [x] 12.2.4: Test: checkpoint panel opens (Ref: design.md Playwright Smoke Tests)
+- [x] 12.2.5: Test: mute toggle works (Ref: design.md Playwright Smoke Tests)
 - [ ] 12.2.6: Run `npx playwright test` and verify all pass (Ref: NFR3)
 
 ### 15.3: Performance Verification

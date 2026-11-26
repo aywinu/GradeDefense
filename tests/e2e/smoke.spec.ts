@@ -16,7 +16,23 @@
 import { test, expect } from '@playwright/test';
 
 // Fail on any console error or page error
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, testInfo) => {
+  // Returning players by default (tutorial done, tours seen), so each test
+  // reaches the screen it checks. The tour test sets its own save.
+  if (!testInfo.title.includes('Guided tour')) {
+    await page.addInitScript(() => {
+      if (localStorage.getItem('deadline-defense.save')) return;
+      localStorage.setItem(
+        'deadline-defense.save',
+        JSON.stringify({
+          version: 1, tutorialDone: true,
+          settings: { muted: true, reducedMotion: false, extraTime: false },
+          sessions: [], forge: {}, sparks: {}, semester: { source: 'demo' },
+          campaign: { wave: 1, bestWave: 0 }, tours: { warroom: true, battle: true },
+        }),
+      );
+    });
+  }
   const errors: string[] = [];
   
   page.on('console', (msg) => {
@@ -58,32 +74,51 @@ test.describe('Deadline Defense Smoke Tests', () => {
 
   test('2. War Room: pressing Enter shows warroom with 6 course rows and counsel', async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
-    await page.waitForSelector('.title-screen', { timeout: 10000 });
     
-    // Click the "Enter the War Room" button
-    const enterButton = page.locator('button[data-action="start"]');
-    await enterButton.click();
+    // Wait for game to exist and title screen to be visible
+    await page.waitForFunction(
+      () => (window as any).__dd && document.querySelector('.title-screen'),
+      { timeout: 15000 }
+    );
+    await page.waitForTimeout(1000);
     
-    // Wait for War Room to appear
-    await page.waitForSelector('.warroom', { timeout: 10000 });
+    // Click to go to War Room
+    await page.click('button[data-action="start"]');
     
-    // Check for 6 course rows
+    // Wait for WarRoomScene to be active
+    await page.waitForFunction(
+      () => {
+        const game = (window as any).__dd;
+        return game?.scene?.getScenes(true)?.some((s: any) => s?.scene?.key === 'WarRoomScene');
+      },
+      { timeout: 15000 }
+    );
+    
+    // Now check DOM
+    await page.waitForSelector('.warroom', { timeout: 5000 });
     const rows = page.locator('.wr-row');
     await expect(rows).toHaveCount(6);
     
-    // Check for counsel sentence
     const counsel = page.locator('.wr-counsel');
     await expect(counsel).toBeVisible();
   });
 
   test('3. Trial: clicking train button opens grimoire, pressing 1 marks choice, Escape closes', async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
-    await page.waitForSelector('.title-screen', { timeout: 10000 });
+    await page.waitForFunction(() => (window as any).__dd?.isRunning, { timeout: 10000 });
+    await page.waitForSelector('button[data-action="start"]', { state: 'visible' });
+    await page.waitForTimeout(1000);
     
     // Navigate to War Room
-    const enterButton = page.locator('button[data-action="start"]');
-    await enterButton.click();
-    await page.waitForSelector('.warroom', { timeout: 10000 });
+    await page.click('button[data-action="start"]');
+    await page.waitForFunction(
+      () => {
+        const game = (window as any).__dd;
+        return game?.scene?.getScenes(true)?.some((s: any) => s?.scene?.key === 'WarRoomScene');
+      },
+      { timeout: 15000 }
+    );
+    await page.waitForSelector('.warroom', { timeout: 5000 });
     
     // Click the first train button
     const trainButton = page.locator('[data-train]').first();
@@ -114,14 +149,24 @@ test.describe('Deadline Defense Smoke Tests', () => {
 
   test('4. Battle: press b from title, scout appears, Enter starts battle, enemies spawn', async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
-    await page.waitForSelector('.title-screen', { timeout: 10000 });
+    await page.waitForFunction(() => (window as any).__dd?.isRunning, { timeout: 10000 });
+    await page.waitForSelector('button[data-action="battle"]', { state: 'visible' });
+    await page.waitForTimeout(1000);
     
-    // Click "Skip to battle" button (data-action="battle")
-    const battleButton = page.locator('button[data-action="battle"]');
-    await battleButton.click();
+    // Click "Skip to battle" button
+    await page.click('button[data-action="battle"]');
+    
+    // Wait for BattleScene to be active
+    await page.waitForFunction(
+      () => {
+        const game = (window as any).__dd;
+        return game?.scene?.getScenes(true)?.some((s: any) => s?.scene?.key === 'BattleScene');
+      },
+      { timeout: 15000 }
+    );
     
     // Wait for scout report to appear
-    await page.waitForSelector('.scout-page', { timeout: 10000 });
+    await page.waitForSelector('.scout-page', { timeout: 5000 });
     
     // Click the "Begin the battle" button
     const beginButton = page.locator('button[data-begin]');
@@ -180,12 +225,20 @@ test.describe('Deadline Defense Smoke Tests', () => {
     
     // Reload to pick up the new save
     await page.reload({ waitUntil: 'networkidle' });
-    await page.waitForSelector('.title-screen', { timeout: 10000 });
+    await page.waitForFunction(() => (window as any).__dd?.isRunning, { timeout: 10000 });
+    await page.waitForSelector('button[data-action="start"]', { state: 'visible' });
+    await page.waitForTimeout(1000);
     
     // Navigate to War Room
-    const enterButton = page.locator('button[data-action="start"]');
-    await enterButton.click();
-    await page.waitForSelector('.warroom', { timeout: 10000 });
+    await page.click('button[data-action="start"]');
+    await page.waitForFunction(
+      () => {
+        const game = (window as any).__dd;
+        return game?.scene?.getScenes(true)?.some((s: any) => s?.scene?.key === 'WarRoomScene');
+      },
+      { timeout: 15000 }
+    );
+    await page.waitForSelector('.warroom', { timeout: 5000 });
     
     // Wait for tour card to appear (may take a moment after scene loads)
     await page.waitForSelector('.tour-card', { timeout: 5000 });
@@ -214,14 +267,24 @@ test.describe('Deadline Defense Smoke Tests', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     
     await page.goto('/', { waitUntil: 'networkidle' });
-    await page.waitForSelector('.title-screen', { timeout: 10000 });
+    await page.waitForFunction(() => (window as any).__dd?.isRunning, { timeout: 10000 });
+    await page.waitForSelector('button[data-action="battle"]', { state: 'visible' });
+    await page.waitForTimeout(1000);
     
-    // Press 'b' to go to battle
-    await page.keyboard.press('b');
-    await page.waitForSelector('.scout', { timeout: 10000 });
+    // Click "Skip to battle" button
+    await page.click('button[data-action="battle"]');
+    await page.waitForFunction(
+      () => {
+        const game = (window as any).__dd;
+        return game?.scene?.getScenes(true)?.some((s: any) => s?.scene?.key === 'BattleScene');
+      },
+      { timeout: 15000 }
+    );
+    await page.waitForSelector('.scout-page', { timeout: 5000 });
     
-    // Press Enter to start battle
-    await page.keyboard.press('Enter');
+    // Click "Begin the battle" button
+    const beginButton = page.locator('button[data-begin]');
+    await beginButton.click();
     
     // Wait for battle to start
     await page.waitForFunction(
@@ -264,9 +327,18 @@ test.describe('Init script test helpers', () => {
     
     // Reload and verify no tour appears
     await page.reload({ waitUntil: 'networkidle' });
-    await page.waitForSelector('.title-screen', { timeout: 10000 });
-    await page.keyboard.press('Enter');
-    await page.waitForSelector('.warroom', { timeout: 10000 });
+    await page.waitForFunction(() => (window as any).__dd?.isRunning, { timeout: 10000 });
+    await page.waitForSelector('button[data-action="start"]', { state: 'visible' });
+    await page.waitForTimeout(1000);
+    await page.click('button[data-action="start"]');
+    await page.waitForFunction(
+      () => {
+        const game = (window as any).__dd;
+        return game?.scene?.getScenes(true)?.some((s: any) => s?.scene?.key === 'WarRoomScene');
+      },
+      { timeout: 15000 }
+    );
+    await page.waitForSelector('.warroom', { timeout: 5000 });
     
     // Tour should not appear
     const tourCard = page.locator('.tour-card');

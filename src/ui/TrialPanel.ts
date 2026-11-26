@@ -46,7 +46,7 @@ export function openTrial(courseId: string, onClose: () => void): void {
     page.innerHTML = `
       <button class="close-x" aria-label="Close trial">&times;</button>
       <div class="g-eyebrow">Trial of ${esc(title)} &middot; ${idx + 1} of ${questions.length}</div>
-      <h2 id="trial-title">${esc(q.topic ?? 'Study checkpoint')}</h2>
+      <h2 id="trial-title">${esc(q.topic && !q.choices.some((c) => c.toLowerCase() === q.topic!.toLowerCase()) ? q.topic : q.id.includes('-notes-') ? 'From your notes' : 'Study checkpoint')}</h2>
       <p class="q">${esc(q.question)}</p>
       <div class="choices" role="group" aria-label="Answers">
         ${q.choices.map((c, i) => `<button class="choice" data-i="${i}"><span class="k">${i + 1}</span><span>${esc(c)}</span></button>`).join('')}

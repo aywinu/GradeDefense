@@ -26,6 +26,18 @@ export interface SaveData {
   campaign: { wave: number; bestWave: number };
   /** Guided tours already seen (closing one counts as seen). */
   tours: Record<string, boolean>;
+  /** Questions generated locally from the student's own notes, per course. */
+  notes: Record<string, { name: string; questions: SavedQuestion[] }>;
+}
+
+export interface SavedQuestion {
+  id: string;
+  courseId: string;
+  question: string;
+  choices: string[];
+  correctIndex: number;
+  explain?: string;
+  topic?: string;
 }
 
 const KEY = 'deadline-defense.save';
@@ -41,6 +53,7 @@ export function defaultSave(): SaveData {
     semester: { source: 'demo' },
     campaign: { wave: 1, bestWave: 0 },
     tours: {},
+    notes: {},
   };
 }
 
@@ -85,7 +98,21 @@ export function migrate(raw: unknown): SaveData {
       r.tours && typeof r.tours === 'object'
         ? Object.fromEntries(Object.entries(r.tours).filter(([, v]) => typeof v === 'boolean'))
         : {},
+    notes: isNotes(r.notes) ? r.notes : {},
   };
+}
+
+function isNotes(v: unknown): v is SaveData['notes'] {
+  if (!v || typeof v !== 'object') return false;
+  return Object.values(v as object).every(
+    (n) =>
+      !!n &&
+      typeof (n as { name?: unknown }).name === 'string' &&
+      Array.isArray((n as { questions?: unknown }).questions) &&
+      (n as { questions: unknown[] }).questions.every(
+        (q) => !!q && typeof (q as SavedQuestion).question === 'string' && Array.isArray((q as SavedQuestion).choices) && typeof (q as SavedQuestion).correctIndex === 'number',
+      ),
+  );
 }
 
 function isNumRecord(v: unknown): v is Record<string, number> {

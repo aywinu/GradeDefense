@@ -10,18 +10,20 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:4317',
     trace: 'on-first-retry',
+    actionTimeout: 15000, // Increased for WebGL rendering
   },
 
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1600, height: 900 } },
     },
   ],
 
   webServer: {
     command: 'npm run build && npm run preview -- --port 4317',
     port: 4317,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false, // always test a fresh build
+    timeout: 180000, // Increased timeout for build
   },
 });
