@@ -32,20 +32,20 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 - [ ] 1.3.5: Run `npm run test:core` and verify 90% coverage (Ref: NFR3)
 
 ### 1.4: Wave Generation
-- [ ] 1.4.1: Create `src/core/wave.ts` with `generateWave(semester, waveNumber, currentDate): EnemyStats[]` (Ref: design.md BattleScene Wave System)
-- [ ] 1.4.2: Implement logic: filter items due within 7 days, sort by priority score, spawn top N (Ref: R3.2)
-- [ ] 1.4.3: Implement `createEnemy(item, currentDate): EnemyStats` with base stats per type (Ref: R3.1)
-- [ ] 1.4.4: Write unit tests in `src/core/wave.test.ts`: verify enemy count, HP scaling, type mapping (Ref: R3.1, R3.2)
+- [x] 1.4.1: Create `src/core/wave.ts` with `generateWave(semester, waveNumber, currentDate): EnemyStats[]` (Ref: design.md BattleScene Wave System)
+- [x] 1.4.2: Implement logic: filter items due within 7 days, sort by priority score, spawn top N (Ref: R3.2)
+- [x] 1.4.3: Implement `createEnemy(item, currentDate): EnemyStats` with base stats per type (Ref: R3.1)
+- [x] 1.4.4: Write unit tests in `src/core/wave.test.ts`: verify enemy count, HP scaling, type mapping (Ref: R3.1, R3.2)
 
 ### 1.5: Targeting Logic
-- [ ] 1.5.1: Create `src/core/targeting.ts` with `selectTarget(tower, enemies): EnemyStats | null` (Ref: design.md Targeting, R4.3)
-- [ ] 1.5.2: Implement priority: same course > closest to fortress > highest HP (Ref: R4.3)
-- [ ] 1.5.3: Write unit tests in `src/core/targeting.test.ts`: verify target selection with various scenarios (Ref: R4.3)
+- [x] 1.5.1: Create `src/core/targeting.ts` with `selectTarget(tower, enemies): EnemyStats | null` (Ref: design.md Targeting, R4.3)
+- [x] 1.5.2: Implement priority: same course > closest to fortress > highest HP (Ref: R4.3)
+- [x] 1.5.3: Write unit tests in `src/core/targeting.test.ts`: verify target selection with various scenarios (Ref: R4.3)
 
 ### 1.6: Neglect Logic
-- [ ] 1.6.1: Create `src/core/neglect.ts` with `applyNeglectBuff(enemy, now): EnemyStats` (Ref: design.md Neglect Check, R3.4)
-- [ ] 1.6.2: Implement 60s threshold, +50% HP, +25% speed, once-per-enemy flag (Ref: R3.4)
-- [ ] 1.6.3: Write unit tests in `src/core/neglect.test.ts`: verify buff timing and application (Ref: R3.4)
+- [x] 1.6.1: Create `src/core/neglect.ts` with `applyNeglectBuff(enemy, now): EnemyStats` (Ref: design.md Neglect Check, R3.4)
+- [x] 1.6.2: Implement 60s threshold, +50% HP, +25% speed, once-per-enemy flag (Ref: R3.4)
+- [x] 1.6.3: Write unit tests in `src/core/neglect.test.ts`: verify buff timing and application (Ref: R3.4)
 
 ---
 
