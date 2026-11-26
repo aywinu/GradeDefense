@@ -12,6 +12,7 @@ import { openTrial } from '../../ui/TrialPanel';
 import { getCourseColor } from '../palette';
 import { campaignLength } from '../../core/wave';
 import { load } from '../../save/save';
+import { Graveyard } from '../fx/Graveyard';
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
@@ -27,6 +28,7 @@ export class WarRoomScene extends Phaser.Scene {
   private atmosphere?: Atmosphere;
   private layer?: HTMLDivElement;
   private busy = false;
+  private graveyard?: Graveyard;
 
   constructor() {
     super({ key: 'WarRoomScene' });
@@ -36,8 +38,7 @@ export class WarRoomScene extends Phaser.Scene {
     const { width: W, height: H } = this.cameras.main;
     this.busy = false;
     this.atmosphere = new Atmosphere(this, { width: W, height: H, fog: 0.35 });
-    const lamp = this.add.image(W / 2, -60, 'glow-soft').setScale(6, 3).setTint(0xf2b45a).setAlpha(0.12);
-    lamp.setBlendMode(Phaser.BlendModes.ADD).setDepth(-60);
+    this.graveyard = new Graveyard(this, W, H);
     this.render();
     this.cameras.main.fadeIn(prefersReducedMotion() ? 0 : 600, 7, 6, 11);
     this.events.once('shutdown', () => clearLayers('.warroom'));
@@ -72,12 +73,10 @@ export class WarRoomScene extends Phaser.Scene {
         </div>
         ${
           nextBattle
-            ? `<div class="wr-next" data-interactive>
-            <div>
-              <div class="label">Next great enemy</div>
-              <div class="what">${nextBattle.name}</div>
-              <div class="when">${nextBattle.view.course.id} &middot; ${formatDue(nextBattle.dueDate)} &middot; ${inDays(nextBattle.days)} &middot; ${nextBattle.points} pts</div>
-            </div>
+            ? `<div class="epitaph" data-interactive>
+            <div class="here">Here waits</div>
+            <div class="what">${nextBattle.name}</div>
+            <div class="when">${nextBattle.view.course.title} &middot; ${formatDue(nextBattle.dueDate)} &middot; <b>${inDays(nextBattle.days)}</b></div>
             <button class="dd-btn" data-action="battle">Defend<span class="dd-kbd">Enter</span></button>
           </div>`
             : `<button class="dd-btn" data-action="battle">Defend<span class="dd-kbd">Enter</span></button>`
@@ -101,12 +100,11 @@ export class WarRoomScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ESC', () => this.back());
 
     if (animate && !prefersReducedMotion()) {
+      const lit = layer.querySelectorAll('.candles i.lit');
       gsap.from(layer.querySelector('.wr-header'), { opacity: 0, y: -16, duration: 0.7, ease: 'power3.out' });
-      gsap.from(layer.querySelectorAll('.course-card'), { opacity: 0, y: 24, duration: 0.7, stagger: 0.07, ease: 'power3.out', delay: 0.15 });
+      gsap.from(layer.querySelectorAll('.course-card'), { opacity: 0, y: 12, duration: 0.7, stagger: 0.07, ease: 'power3.out', delay: 0.15 });
       gsap.from(layer.querySelectorAll('.tl-stone'), { opacity: 0, y: 20, duration: 0.5, stagger: 0.02, ease: 'back.out(2)', delay: 0.5 });
-      layer.querySelectorAll<HTMLElement>('.bar > i').forEach((el) =>
-        gsap.from(el, { width: 0, duration: 1.1, ease: 'power2.out', delay: 0.5 }),
-      );
+      if (lit.length) gsap.from(lit, { opacity: 0, duration: 0.4, stagger: 0.015, delay: 0.5 });
     }
   }
 
@@ -116,7 +114,7 @@ export class WarRoomScene extends Phaser.Scene {
     const enemies = v.big.length
       ? v.big
           .map(
-            (b) => `<li class="${b.days <= 7 ? 'soon' : ''}" style="color:${b.days <= 7 ? '#ffb4a0' : 'inherit'}">${ICONS[b.type] ?? ICONS.assignment}<span class="nm" style="color:var(--parchment)">${b.name}</span><span class="dt">${formatDue(b.dueDate)} &middot; ${inDays(b.days)}</span></li>`,
+            (b) => `<li class="${b.days <= 7 ? 'soon' : ''}">${ICONS[b.type] ?? ICONS.assignment}<span class="nm">${b.name}</span><span class="dt">${formatDue(b.dueDate)}, ${inDays(b.days)}</span></li>`,
           )
           .join('')
       : '<li class="none">No great enemies on the horizon.</li>';
@@ -126,25 +124,27 @@ export class WarRoomScene extends Phaser.Scene {
         : `Ready for ${v.next.name.replace(/ - .*/, '')}`
       : 'Keep your edge sharp';
     const weak = v.weakTopics.length ? `<div class="weak">Revisit: <span>${v.weakTopics.join(', ')}</span></div>` : '';
+    const lit = Math.round(v.readiness / 10);
+    const candles = Array.from({ length: 10 }, (_, i) => `<i class="${i < lit ? 'lit' : ''}"></i>`).join('');
+    const threatWord: Record<string, string> = { Low: 'Quiet', Medium: 'Stirring', High: 'Looming', Critical: 'Dire' };
     return `
-      <article class="course-card ${v.threat.toLowerCase()}" style="--c:${c}">
+      <article class="course-card" style="--c:${c}" aria-label="${v.course.title}">
         <div class="cc-top">
           <div class="seal" aria-hidden="true">${v.course.id.replace(/\d+$/, '')}</div>
           <div>
             <div class="cc-name">${v.course.title}</div>
             <div class="cc-meta">Grade <b>${grade}</b> &middot; Forge <b>${'◆'.repeat(v.forge)}${'◇'.repeat(5 - v.forge)}</b></div>
           </div>
-          <span class="threat ${v.threat.toLowerCase()}" title="Threat level">${v.threat}</span>
+          <span class="threat ${v.threat.toLowerCase()}" title="Threat level: ${v.threat}">${threatWord[v.threat]}</span>
         </div>
-        <div class="readiness">
-          <div class="row"><span>Readiness</span><b>${v.readiness}%</b></div>
-          <div class="bar"><i style="--v:${Math.max(2, v.readiness)}%"></i></div>
+        <div class="readiness" aria-label="Readiness ${v.readiness} percent">
+          <span class="lbl">Readiness</span><span class="candles" aria-hidden="true">${candles}</span><span class="pct">${v.readiness}%</span>
         </div>
         <ul class="enemies">${enemies}</ul>
         ${weak}
         <div class="cc-actions">
-          <button class="dd-btn" data-train="${v.course.id}" aria-label="Train ${v.course.title}: ${advice}">Train</button>
-          <span class="cc-meta" style="flex:2;align-self:center">${advice}</span>
+          <button class="train-btn" data-train="${v.course.id}" aria-label="Train ${v.course.title}: ${advice}">Train</button>
+          <span class="advice-ink">${advice}</span>
         </div>
       </article>`;
   }
@@ -195,5 +195,6 @@ export class WarRoomScene extends Phaser.Scene {
 
   update(_t: number, dt: number) {
     this.atmosphere?.update(dt);
+    this.graveyard?.update(dt);
   }
 }
