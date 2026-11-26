@@ -32,3 +32,5 @@ Honest log of what Kiro did in this project. Kiro CLI ran headless (`kiro-cli ch
 | 2026-11-26 | Task 10.1 | Dependency-free RFC 5545 subset parser, Moodle-specific cleanup, icsToSemester + tests (files landed in commit c80c9ab) | Passes |
 | 2026-11-26 | Tasks 14.1–14.3 | Moodle block plugin (server-side calendar events → postMessage), docs/moodle-integration.md, src/import/postmessage.ts with guards + tests | Claude hardened JSON-in-script escaping and added event.source check |
 | 2026-11-27 | Phase 16 | IDE hooks + CLI custom agent deadline-dev with postToolUse/agentSpawn hooks | JSON validated |
+| 2026-11-27 | Phase 11 (PDF questions) | notesToQuestions cloze generator + property tests, pdf.js extraction, 12 study-skills questions | Claude added citation/anaphora filters and whitespace normalisation after testing with a real PDF |
+| 2026-11-27 | Smoke tests | 6 Playwright smoke tests (title, War Room, trial, battle, tour, reduced motion) | 3 failed against a stale preview build; Claude added returning-player save default and disabled server reuse |

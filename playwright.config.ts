@@ -5,12 +5,14 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 2, // WebGL scenes are heavy; keep parallelism low
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:4317',
     trace: 'on-first-retry',
     actionTimeout: 15000, // Increased for WebGL rendering
+    screenshot: 'only-on-failure',
+    launchOptions: { args: process.platform === 'darwin' ? ['--use-angle=metal'] : ['--use-gl=angle', '--use-angle=swiftshader'] },
   },
 
   projects: [
