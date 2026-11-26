@@ -245,6 +245,7 @@ export class BattleScene extends Phaser.Scene {
         still.hp = res.state.seals;
         this.view.moveEnemy(still.id, still.x, still.y, still.hp / still.maxHp);
         if (res.state.seals <= 0) {
+          if (!still.isMinion) this.floatLabel(still.id, 'DEFEATED', 0xf2b45a, 34);
           this.killEnemy(still);
           this.hud?.caption(`${still.label} is defeated: you are readier for it`, 'good');
           if (this.tutorial) this.advanceTutorial(3);
