@@ -1,10 +1,10 @@
 /**
- * BootScene: Font loading with timeout fallback
+ * BootScene: waits for the self-hosted fonts, then starts the title.
  * Ref: .kiro/specs/deadline-defense/tasks.md Phase 3.1
- * Ref: node_modules/phaser/skills/scenes/SKILL.md
  */
 
 import Phaser from 'phaser';
+import { loadFonts } from '../fonts';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -12,19 +12,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   async create() {
-    // Wait for fonts with 2.5s timeout fallback
-    // Fonts are loaded via <link> in index.html
-    const fontTimeout = new Promise<void>((resolve) => {
-      setTimeout(() => resolve(), 2500);
-    });
-
-    const fontReady = document.fonts.ready.then(() => {
-      console.log('Fonts loaded successfully');
-    });
-
-    await Promise.race([fontReady, fontTimeout]);
-
-    // Transition to TitleScene
+    await loadFonts(3000);
     this.scene.start('TitleScene');
   }
 }

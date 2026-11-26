@@ -3,6 +3,7 @@
  * Ref: .kiro/specs/deadline-defense/tasks.md Phase 3.1
  */
 
+import './styles/fonts.css';
 import './style.css';
 import './styles/tokens.css';
 import Phaser from 'phaser';
