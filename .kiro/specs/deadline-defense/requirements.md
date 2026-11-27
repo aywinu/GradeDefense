@@ -709,7 +709,7 @@ A dark-fantasy tower-defense game where the student's real semester is the fortr
 - Defeating a creature requires answering N correct questions where N = initial seals (when no streak bonus)
 - Visual representation clearly shows remaining seals
 
-### R18.3: Wrong Answer Consequences
+### R18.3: Wrong Answer Consequences [SUPERSEDED by R19]
 **WHEN** the player answers incorrectly,  
 **THE SYSTEM SHALL**:
 - Display the correct answer and explanation
@@ -721,7 +721,7 @@ A dark-fantasy tower-defense game where the student's real semester is the fortr
 - Progress increases are capped at 100% (reaching the altar)
 - Explanation is shown for 2-3 seconds minimum
 
-### R18.4: Creature Movement Speed
+### R18.4: Creature Movement Speed [SUPERSEDED by R19]
 **WHEN** creatures advance toward the altar,  
 **THE SYSTEM SHALL** move them at speeds calibrated so:
 - Regular creatures (quiz, assignment, project/presentation) take ~180-300 seconds to cross if unanswered
@@ -864,3 +864,113 @@ A dark-fantasy tower-defense game where the student's real semester is the fortr
 - Fonts: OFL
 - No copyrighted music
 - CREDITS.md lists all third-party assets
+
+---
+
+## R19: The Procession (Calendar-Based Battlefield)
+
+### R19.1: Calendar Lane Model
+**WHEN** the player enters the battlefield,  
+**THE SYSTEM SHALL** present a single calendar lane where:
+- Each real deadline is one creature
+- The creature's distance from the altar = days left until due
+- Creatures process toward the altar at a rate of `secondsPerDay` real seconds per semester day
+- At most `maxVisible` creatures are visible on the field (the nearest deadlines)
+- Deadlines beyond `horizonDays` are not yet visible
+
+**ACCEPTANCE:**
+- Position is deterministic: `laneProgress = clamp(1 - (dueDay - currentDay) / horizonDays, 0, 1)`
+- Creatures spawn when their deadline enters the horizon (daysLeft ≤ horizonDays)
+- Core logic is pure functions (no Date.now(), no rendering imports)
+
+### R19.2: Arrival Resolution
+**WHEN** the current semester day reaches a deadline's due date,  
+**THE SYSTEM SHALL** resolve that deadline:
+- Compute the item score from remaining seals: `itemScore(seals, maxSeals)`
+  - 100% if all seals broken (seals = 0)
+  - `unpreparedFloor` (25%) if no seals broken (seals = maxSeals)
+  - Linear interpolation in between
+- Apply a verdict: 'ready' (0 seals), 'partial' (≤ half seals), 'unprepared' (> half seals)
+- Update the course grade projection based on the resolved item
+
+**ACCEPTANCE:**
+- Item score is in [0, 100], rounded to 1 decimal
+- Each deadline resolves exactly once
+- Arrivals are sorted by due date then itemId (deterministic)
+
+### R19.3: Grade Projection
+**WHEN** computing a course grade,  
+**THE SYSTEM SHALL**:
+- Sum already-graded items (from imported semester data with grade ≠ null)
+- Sum resolved procession items (points × score / 100)
+- Sum unresolved procession items assuming full readiness (points × 1.0)
+- Divide by total points across all items (graded + upcoming)
+- Return a projected grade in [0, 100], rounded to 1 decimal
+
+**ACCEPTANCE:**
+- Projection is optimistic (unresolved items count as 100%)
+- A course with no items → 100%
+- A course with only graded items → computed exactly from grades
+- Pure function with no side effects
+
+### R19.4: Failing Courses
+**WHEN** a course grade drops below `passGrade` (50),  
+**THE SYSTEM SHALL**:
+- Mark the course as failed
+- Include it in the `failedCourses()` list
+- Assign a letter grade 'F'
+
+**ACCEPTANCE:**
+- Failing is determined solely by numeric grade (< 50)
+- No partial credit for "effort" or "attempt"
+- Pure function with deterministic output
+
+### R19.5: Time Mechanics
+**WHEN** the player is fighting (no question card open),  
+**THE SYSTEM SHALL** advance the semester clock at `secondsPerDay` real seconds per day.
+
+**WHEN** a question card is open (duel active),  
+**THE SYSTEM SHALL** slow the clock to `duelTimeScale` (25% speed).
+
+**WHEN** the player answers incorrectly,  
+**THE SYSTEM SHALL** jump the clock forward by `wrongAnswerDays` (0.5 days).
+
+**ACCEPTANCE:**
+- Clock advances smoothly (no sudden jumps except on wrong answers)
+- Clock never goes backward
+- Time scale affects all creatures equally
+- Pure simulation step function (no Date.now())
+
+### R19.6: Final Transcript
+**WHEN** all deadlines are resolved,  
+**THE SYSTEM SHALL** compute a final transcript:
+- Course grades (0-100 with 1 decimal)
+- Letter grades (A/B/C/D/F)
+- Failed courses (grade < 50)
+
+**ACCEPTANCE:**
+- Letter grades: ≥90 A, ≥80 B, ≥70 C, ≥50 D, else F
+- Transcript is deterministic (same resolved items → same grades)
+- Pure function with no side effects
+
+### R19.7: Core API (src/core/procession.ts)
+**THE SYSTEM SHALL** export:
+- `PROCESSION` constants (horizonDays, maxVisible, secondsPerDay, duelTimeScale, wrongAnswerDays, unpreparedFloor, passGrade)
+- `buildProcession(semester, now)` — initialize state from semester data
+- `itemScore(seals, maxSeals)` — compute item score from seals
+- `verdictFor(seals, maxSeals)` — classify as ready/partial/unprepared
+- `courseGrade(state, courseId)` — projected grade for a course
+- `visible(state)` — at most maxVisible unresolved items nearest to arrival
+- `laneProgress(item, day)` — position in lane (0 at horizon, 1 at altar)
+- `breakSeals(state, itemId, n)` — remove n seals from an item
+- `advance(state, days)` — advance clock, resolve arrivals
+- `failedCourses(state)` — courses with grade < passGrade
+- `isFinished(state)` — all items resolved
+- `letterGrade(grade)` — A/B/C/D/F from numeric grade
+
+**ACCEPTANCE:**
+- Zero imports of Phaser, Three.js, DOM, or Date.now()
+- All functions are pure (no side effects)
+- State is immutable (functions return new state, never mutate input)
+- Unit tests cover edge cases (no items, all items overdue, single item)
+- Property-based tests verify: grades in [0,100], breaking more seals never lowers grade, advance(a) then advance(b) = advance(a+b), visible() ≤ maxVisible, laneProgress in [0,1], every item resolves exactly once, determinism

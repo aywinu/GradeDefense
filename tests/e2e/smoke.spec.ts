@@ -147,7 +147,7 @@ test.describe('Deadline Defense Smoke Tests', () => {
     await page.waitForSelector('.grimoire', { state: 'detached', timeout: 3000 });
   });
 
-  test('4. Battle: press b from title, scout appears, Enter starts battle, enemies spawn', async ({ page }) => {
+  test('4. Battle: press b from title, scout appears, Enter starts the procession, deadlines on the field, clock runs', async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
     await page.waitForFunction(() => (window as any).__dd?.isRunning, { timeout: 10000 });
     await page.waitForSelector('button[data-action="battle"]', { state: 'visible' });
@@ -186,22 +186,15 @@ test.describe('Deadline Defense Smoke Tests', () => {
     const canvas = page.locator('canvas.dd-3d');
     await expect(canvas).toBeVisible();
     
-    // Wait for enemies to appear on the field (check gameState after 8 seconds)
-    await page.waitForTimeout(8000);
-    
-    const hasEnemies = await page.evaluate(() => {
-      const game = (window as any).__dd;
-      const scene = game?.scene?.getScene?.('BattleScene');
-      const gameState = scene?.gameState;
-      
-      // Check if there are enemies or pending spawns
-      const enemyCount = gameState?.enemies?.length || 0;
-      const pendingCount = gameState?.pending?.length || 0;
-      
-      return enemyCount > 0 || pendingCount < (scene?.initialPending || 0);
+    // The procession (R19): the nearest deadlines are on the field and the semester clock runs.
+    const before = await page.evaluate(() => (window as any).__dd.scene.getScene('BattleScene').state.day);
+    await page.waitForTimeout(3000);
+    const after = await page.evaluate(() => {
+      const scene = (window as any).__dd.scene.getScene('BattleScene');
+      return { day: scene.state.day, field: scene.fieldCount() };
     });
-    
-    expect(hasEnemies).toBeTruthy();
+    expect(after.field).toBeGreaterThan(0);
+    expect(after.day).toBeGreaterThan(before);
   });
 
   test('5. Guided tour: with empty tours object, War Room shows tour-card, Escape closes and saves', async ({ page }) => {

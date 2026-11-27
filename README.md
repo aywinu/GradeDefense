@@ -1,8 +1,8 @@
 # Deadline Defense
 
-**Your semester is under siege.** A haunted study tool in costume: your real deadlines crawl out of the fog as a horde, and the only weapon that works is studying.
+**Your LMS tells you what is due. This shows you what matters.** A haunted study tool in costume: your real deadlines crawl out of the fog in the order they are due, each one as dangerous as its weight in your grade, and the only weapon that works is studying.
 
-*Kiroween 2026 · Costume Contest.* Built with **Kiro**: spec-driven development, steering, hooks, a custom agent, and 26 headless Kiro runs whose prompts live in [`.kiro/runs/`](.kiro/runs). See **[KIRO_USAGE.md](KIRO_USAGE.md)**.
+*Kiroween 2026 · Costume Contest.* Built with **Kiro**: spec-driven development, steering, hooks, a custom agent, and 29 headless Kiro runs whose prompts live in [`.kiro/runs/`](.kiro/runs). See **[KIRO_USAGE.md](KIRO_USAGE.md)**.
 
 **Play:** https://aywinu.github.io/GradeDefense/ · **LMS showcase:** https://aywinu.github.io/GradeDefense/showcase/lms.html
 
@@ -17,12 +17,12 @@ Students procrastinate on deadlines they can't see until it's too late, and stud
   - selecting a course shows its full battle plan: great enemies with real dates and points, how many trials to do before each, and the topics you keep missing;
   - every deadline sits on a tombstone timeline.
 - **Practice trials**: five questions per course in a grimoire. Correct answers raise readiness and **pre-weaken** that course's deadlines before the battle; wrong answers show the explanation and cost nothing. Questions you got wrong or never saw come back first.
-- **The siege** (3D, Three.js): each wave is one real week, and your deadlines crawl slowly toward your semester.
-  - Assignments are zombies, quizzes are cursed pages, exams are crowned wraiths, and projects are stone golems. Each carries its coursework name and the days left on a scroll.
-  - **You pick which deadline to fight** (click it, or Tab and Space) and duel it with **questions from its own course**. Each correct answer breaks one of its seals; a wrong answer lets it creep closer but shows the explanation. An exam has 8–10 seals, so beating it means you actually studied for it.
-  - Practice trials in the War Room weaken a course's deadlines before the battle even starts.
-  - If an exam reaches the duel zone, time slows for a timed last-stand question.
-  - *Scout reports* before each wave show what is coming and how ready you are. *Debriefs* after it turn the battle into real advice ("Midterm in 4 days, readiness 20%: 3 trials recommended").
+- **The procession** (3D, Three.js): **the battlefield is your calendar.** Each real deadline is one creature, its distance from the altar is its days left, and the altar is today.
+  - The nearest four deadlines are on the field. Exams are skeleton mages, projects are armoured warriors, assignments are hooded rogues, quizzes are minions; each is tinted by its course and carries its name, days left and **share of the course grade** on a scroll.
+  - **You choose what to fight** (click it, or Tab and Space) and duel it with **questions from its own course**. Each correct answer breaks a seal, three in a row break two. A wrong answer costs half a day: the whole calendar lurches forward. The clock keeps running, slowly, while you think.
+  - **When a deadline arrives, every seal still on it costs grade in that course, in proportion to its weight.** A 10-point lab barely scratches; a 100-point exam can fail the course. Your projected grade per course is always at the top of the screen.
+  - When an exam is a day away, time stops for a timed **last stand** question.
+  - *Scout reports* show the next 14 days with weights, seals and readiness (Train from there). The term ends with your **projected transcript** and real advice ("Quiz in 5 days, readiness 0%: 4 practice trials recommended").
 - **Your real semester**:
   - import a calendar export (`.ics`, e.g. Moodle → Calendar → Export), parsed entirely in the browser;
   - or install the **Moodle block** (`moodle/block_gradedefense`), which sends your upcoming deadlines to the game with `postMessage`, with origin checks both ways and no tokens.
@@ -51,9 +51,9 @@ npm run build        # static site in dist/ (BASE_PATH=/GradeDefense/ for GitHub
 ## How it's built
 ```
 .kiro/                 steering, spec (requirements → design → tasks), hooks, custom agent
-src/core/              pure game rules, no rendering: scoring, waves, targeting, neglect,
-                       simulation step, QTE, readiness, balance (+ unit and property tests)
-src/game3d/            Three.js battlefield and procedural, code-rigged creatures
+src/core/              pure game rules, no rendering: the procession (calendar clock, arrivals,
+                       weighted grades), duels, QTE, readiness, scoring (+ unit and property tests)
+src/game3d/            Three.js battlefield, rigged animated skeletons (KayKit, CC0)
 src/game/              Phaser 4 scenes (title, War Room, battle orchestration)
 src/ui/                DOM overlays: HUD, trials, scout/debrief, QTE card, guided tours
 src/study/model.ts     one source of truth for readiness, threat and advice across screens
@@ -61,10 +61,10 @@ src/import/            .ics parser and the embedded postMessage contract
 moodle/                Moodle 4.5 block plugin
 showcase/lms.html      generic LMS page embedding the block (used in the demo video)
 ```
-The rules are pure functions with property-based tests. One of them proves the design's core claim with a headless simulation of the whole demo semester: **a student who never answers loses; one who answers a question every 10 s at 75% accuracy holds** (`src/core/balance.test.ts`).
+The rules are pure functions with property-based tests. A headless simulation plays the whole demo semester to prove the design's claims (`src/core/procession.balance.test.ts`): **a student who never answers fails; one who answers at 75% accuracy passes everything; and prioritising by weight beats fighting whatever is nearest**.
 
 ## Disclosure
 The demo semester (`src/data/demo.json`) reuses synthetic course names and relative dates from the author's earlier, unrelated project CoursePilot (a Moodle agent). No code was copied, and the data contains no real students. Everything else was built during the Kiroween submission period. [KIRO_USAGE.md](KIRO_USAGE.md) records who did what: Kiro, Claude Code, or the author.
 
 ## Licence
-MIT. Fonts are OFL, and all art and sound is generated in code. See [CREDITS.md](CREDITS.md).
+MIT. Fonts are OFL, the skeleton characters are CC0 (KayKit by Kay Lousberg), and everything else, art and sound, is generated in code. See [CREDITS.md](CREDITS.md).

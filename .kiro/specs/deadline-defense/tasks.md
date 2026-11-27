@@ -1,7 +1,7 @@
 # Tasks — Deadline Defense
 
-**Status (2026-11-27):** 368 done (implemented as designed), 59 superseded (implemented differently, all complete), 24 deferred (manual tests or future work)  
-Core rules ✓ | Demo data ✓ | 3D Battlefield ✓ | Study model ✓ | QTE core ✓ | Readiness ✓ | War Room ✓ | Trial ✓ | Save ✓ | Import (ICS/postMessage/notes) ✓ | Moodle block ✓ | LMS showcase ✓ | E2E tests ✓ | Deploy ✓ | Docs ✓ | **Duel Combat ✓**
+**Status (2026-11-27):** 361 done (implemented as designed), 68 superseded (implemented differently, all complete), 23 deferred (manual tests or future work)  
+Core rules ✓ | Demo data ✓ | 3D Battlefield ✓ | Study model ✓ | QTE core ✓ | Readiness ✓ | War Room ✓ | Trial ✓ | Save ✓ | Import (ICS/postMessage/notes) ✓ | Moodle block ✓ | LMS showcase ✓ | E2E tests ✓ | Deploy ✓ | Docs ✓ | **Duel Combat ✓** | **The Procession ✓**
 
 Implementation ordered for vertical slice: core rules + tests → demo data → battlefield → checkpoints → tutorial → polish → import → save → a11y → build/test → **duel combat (R18)**.
 
@@ -116,7 +116,7 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 - [x] 3.3.2: Load demo data from `src/data/demo.json` (Ref: R2.1)
 - [x] ~~3.3.3: Set up 6 horizontal lanes (y-positions for each course) (Ref: design.md BattleScene Layout)~~ → superseded: 3D battlefield in src/game3d/Battlefield3D.ts with Three.js, not 2D lanes
 - [x] ~~3.3.4: Draw fortress graphic at x=50 (simple rectangle with health bar) (Ref: R1.2)~~ → superseded: 3D fortress model in Battlefield3D.ts
-- [x] 3.3.5: Initialize game state: `wave=1`, `gold=0`, `fortressHp=100`, `towers=[]`, `enemies=[]` (Ref: design.md Data Models)
+- [x] ~~3.3.5: Initialize game state: `wave=1`, `gold=0`, `fortressHp=100`, `towers=[]`, `enemies=[]` (Ref: design.md Data Models)~~ → superseded by R19: BattleScene now drives src/core/procession.ts (calendar clock, grades), not wave/tower sim
 
 ### 3.4: Tower Placement
 - [x] ~~3.4.1: Spawn 6 towers (one per course) at fixed positions (x=200, y per lane) (Ref: R4.1)~~ → superseded: sentinels with rune sockets in 3D, forged by study (src/game/scenes/BattleScene.ts spawnSentinels, src/study/model.ts forgeLevel)
@@ -124,28 +124,28 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 - [x] ~~3.4.3: Add range circle visual (semi-transparent circle, range=150px) (Ref: R4.1)~~ → superseded: 3D range indicators in Battlefield3D.ts
 
 ### 3.5: Enemy Spawning (Wave 1)
-- [x] 3.5.1: Call `generateWave(semester, 1, new Date())` from `src/core/wave.ts` (Ref: R3.2)
+- [x] ~~3.5.1: Call `generateWave(semester, 1, new Date())` from `src/core/wave.ts` (Ref: R3.2)~~ → superseded by R19: procession uses visible() from src/core/procession.ts
 - [x] ~~3.5.2: Spawn enemy sprites at x=1200, y per lane (colored rectangles per type) (Ref: R3.1)~~ → superseded: 3D procedural creatures in src/game3d/creatures.ts (zombies, skeletons, pages, wraiths, golems)
-- [x] 3.5.3: Store enemy data in `gameState.enemies` array (Ref: design.md Data Models)
+- [x] ~~3.5.3: Store enemy data in `gameState.enemies` array (Ref: design.md Data Models)~~ → superseded by R19: ProcessionState.items tracks all deadlines
 
 ### 3.6: Enemy Movement
-- [x] ~~3.6.1: In `update()`, move enemies left by `enemy.speed * delta` (Ref: R3.2)~~ → superseded: core simulation in src/core/sim.ts stepSimulation handles movement
-- [x] 3.6.2: Update `pathProgress = 1 - (x / 1200)` (Ref: design.md Data Models)
-- [x] 3.6.3: If `x < 50`, apply fortress damage and remove enemy (Ref: R3.3)
-- [x] 3.6.4: Display fortress HP in HUD (Ref: R1.2)
+- [x] ~~3.6.1: In `update()`, move enemies left by `enemy.speed * delta` (Ref: R3.2)~~ → superseded by R19: advance(state, days) in src/core/procession.ts moves the calendar clock
+- [x] ~~3.6.2: Update `pathProgress = 1 - (x / 1200)` (Ref: design.md Data Models)~~ → superseded by R19: laneProgress(item, day) computes position from dueDay
+- [x] ~~3.6.3: If `x < 50`, apply fortress damage and remove enemy (Ref: R3.3)~~ → superseded by R19: advance() emits Arrival events with weighted grade loss
+- [x] ~~3.6.4: Display fortress HP in HUD (Ref: R1.2)~~ → superseded by R19: HUD shows projected grade per course (the real stake)
 
 ### 3.7: Tower Firing
-- [x] 3.7.1: In `update()`, for each tower, call `selectTarget(tower, enemies)` (Ref: R4.3)
-- [x] 3.7.2: If target found and fire rate allows, draw projectile (line or small circle) from tower to target (Ref: R4.1)
-- [x] 3.7.3: Apply damage to enemy HP (Ref: R4.1)
-- [x] 3.7.4: Update `lastFiredAt` timestamp (Ref: design.md Data Models)
-- [x] 3.7.5: If enemy HP ≤ 0, remove sprite and grant +10 gold (Ref: R8.2)
+- [x] ~~3.7.1: In `update()`, for each tower, call `selectTarget(tower, enemies)` (Ref: R4.3)~~ → superseded by R19: player chooses target, duels it with applyAnswer()
+- [x] ~~3.7.2: If target found and fire rate allows, draw projectile (line or small circle) from tower to target (Ref: R4.1)~~ → superseded by R19: no towers/projectiles, duel combat only
+- [x] ~~3.7.3: Apply damage to enemy HP (Ref: R4.1)~~ → superseded by R19: correct answers break seals via breakSeals(state, itemId, n)
+- [x] ~~3.7.4: Update `lastFiredAt` timestamp (Ref: design.md Data Models)~~ → superseded by R19: no tower firing
+- [x] ~~3.7.5: If enemy HP ≤ 0, remove sprite and grant +10 gold (Ref: R8.2)~~ → superseded by R19: when seals reach 0, item resolves with score 100
 
 ### 3.8: Wave End
-- [x] 3.8.1: Detect when all enemies defeated (Ref: R8.2)
-- [x] 3.8.2: Grant +50 gold bonus, +10% fortress HP regen (Ref: R8.2)
-- [x] 3.8.3: Display "Wave Complete" text (GSAP fade in/out) (Ref: R8.2)
-- [x] 3.8.4: Start next wave after 3s delay (Ref: design.md BattleScene)
+- [x] ~~3.8.1: Detect when all enemies defeated (Ref: R8.2)~~ → superseded by R19: isFinished(state) checks if all items resolved
+- [x] ~~3.8.2: Grant +50 gold bonus, +10% fortress HP regen (Ref: R8.2)~~ → superseded by R19: no gold/HP, only grades
+- [x] ~~3.8.3: Display "Wave Complete" text (GSAP fade in/out) (Ref: R8.2)~~ → superseded by R19: week banners with weekBanner() in BattleUI.ts
+- [x] ~~3.8.4: Start next wave after 3s delay (Ref: design.md BattleScene)~~ → superseded by R19: continuous calendar clock, no discrete waves
 
 ### 3.9: First Playthrough Verification
 - [x] 3.9.1: Run `npm run dev` and manually test: boot → title → battle → wave 1 completes (Ref: R1.1, R1.2)
@@ -742,3 +742,91 @@ Tasks are ordered for vertical slice development:
 17. **Duel combat** (R18: player-vs-creature with seals, no sentinels)
 
 Each phase delivers a playable or testable increment. Kiro agents can work on independent phases in parallel (e.g., checkpoint UI while another agent works on PDF import, or QTE while Moodle block is being developed).
+
+
+---
+
+## Phase 19: The Procession (Calendar-Based Battlefield, R19)
+
+### 19.1: Core Procession Module
+- [x] 19.1.1: Create `src/core/procession.ts` with types: `ProcessionItem`, `ProcessionState`, `Arrival`, `Verdict` (Ref: R19.7)
+- [x] 19.1.2: Export `PROCESSION` constants (horizonDays=14, maxVisible=4, secondsPerDay=6, duelTimeScale=0.25, wrongAnswerDays=0.5, unpreparedFloor=25, passGrade=50) (Ref: R19.7)
+- [x] 19.1.3: Implement `buildProcession(semester, now)`: split items into graded (grade ≠ null) and upcoming (grade = null, dueDate >= now), compute dueDay, initialize seals with `sealsFor`, compute totals (Ref: R19.1, R19.7)
+- [x] 19.1.4: Implement `itemScore(seals, maxSeals)`: linear 25-100 based on remaining seals, 1 decimal (Ref: R19.2, R19.7)
+- [x] 19.1.5: Implement `verdictFor(seals, maxSeals)`: 0 → ready, ≤ half → partial, else unprepared (Ref: R19.2, R19.7)
+- [x] 19.1.6: Implement `courseGrade(state, courseId)`: (graded.earned + resolved.earned + unresolved.points) / totals * 100, 1 decimal, default 100 if no points (Ref: R19.3, R19.7)
+- [x] 19.1.7: Implement `visible(state)`: unresolved items with dueDay - day ≤ horizonDays, nearest first, at most maxVisible (Ref: R19.1, R19.7)
+- [x] 19.1.8: Implement `laneProgress(item, day)`: clamp(1 - (dueDay - day) / horizonDays, 0, 1) (Ref: R19.1, R19.7)
+- [x] 19.1.9: Implement `breakSeals(state, itemId, n)`: remove n seals (never below 0), resolve with score 100 if seals reach 0, immutable (Ref: R19.7)
+- [x] 19.1.10: Implement `advance(state, days)`: day += max(0, days), resolve arrivals (dueDay ≤ new day) in due order, compute grade before/after each, immutable (Ref: R19.2, R19.5, R19.7)
+- [x] 19.1.11: Implement `failedCourses(state)`: courses with courseGrade < passGrade (Ref: R19.4, R19.7)
+- [x] 19.1.12: Implement `isFinished(state)`: every item resolved (Ref: R19.7)
+- [x] 19.1.13: Implement `letterGrade(grade)`: ≥90 A, ≥80 B, ≥70 C, ≥50 D, else F (Ref: R19.6, R19.7)
+- [x] 19.1.14: Verify zero Date.now() calls or imports of Phaser/Three.js/DOM (Ref: R19.7)
+
+### 19.2: Unit Tests
+- [x] 19.2.1: Create `src/core/procession.test.ts` (Ref: R19.7)
+- [x] 19.2.2: Test `buildProcession`: verify items split correctly (graded vs upcoming), dueDay computed, seals initialized from `sealsFor`, totals computed (Ref: R19.1)
+- [x] 19.2.3: Test `itemScore`: 0 seals → 100, maxSeals → 25, half seals → 62.5 (Ref: R19.2)
+- [x] 19.2.4: Test `verdictFor`: 0 → ready, half → partial, full → unprepared (Ref: R19.2)
+- [x] 19.2.5: Test `courseGrade`: verify graded items included, resolved items included, unresolved items count as 100%, division by totals (Ref: R19.3)
+- [x] 19.2.6: Test `courseGrade`: course with no items → 100 (Ref: R19.3)
+- [x] 19.2.7: Test `visible`: at most maxVisible, nearest first, unresolved only, within horizon (Ref: R19.1)
+- [x] 19.2.8: Test `laneProgress`: 0 at horizon, 1 at arrival, clamped (Ref: R19.1)
+- [x] 19.2.9: Test `breakSeals`: removes n seals, never negative, resolves when 0, immutable (Ref: R19.7)
+- [x] 19.2.10: Test `advance`: day advances, arrivals resolved in order, grade before/after recorded, immutable (Ref: R19.2, R19.5)
+- [x] 19.2.11: Test `failedCourses`: includes courses with grade < 50 (Ref: R19.4)
+- [x] 19.2.12: Test `isFinished`: true when all resolved, false otherwise (Ref: R19.7)
+- [x] 19.2.13: Test `letterGrade`: A/B/C/D/F thresholds (Ref: R19.6)
+- [x] 19.2.14: Integration test on demo semester: first visible deadlines are CV101 midterm, PHO101 quiz, MATH101 midterm (Ref: task spec)
+- [x] 19.2.15: Integration test: unprepared 100-point exam in 250-point course costs 30 grade points (Ref: task spec)
+- [x] 19.2.16: Integration test: unprepared 10-point lab in 250-point course costs 3 grade points (Ref: task spec)
+- [x] 19.2.17: Integration test: breaking all seals early means no loss on arrival (Ref: task spec)
+- [x] 19.2.18: Integration test: failing both CV101 big items unprepared fails the course (Ref: task spec)
+
+### 19.3: Property-Based Tests
+- [x] 19.3.1: Create `src/core/procession.prop.test.ts` using fast-check (Ref: R19.7)
+- [x] 19.3.2: Property: `courseGrade` always in [0, 100] (Ref: R19.7)
+- [x] 19.3.3: Property: breaking more seals before an arrival never lowers the grade (monotonic) (Ref: R19.7)
+- [x] 19.3.4: Property: `advance(a) then advance(b)` equals `advance(a + b)` (same grades and resolved set) (Ref: R19.7)
+- [x] 19.3.5: Property: `visible()` never returns more than maxVisible or a resolved item (Ref: R19.7)
+- [x] 19.3.6: Property: `laneProgress` always in [0, 1] (Ref: R19.7)
+- [x] 19.3.7: Property: every item resolves exactly once (no duplicates in arrivals across multiple advances) (Ref: R19.7)
+- [x] 19.3.8: Property: determinism (same inputs → same outputs for all functions) (Ref: R19.7)
+
+### 19.4: Verification
+- [x] 19.4.1: Run `npx vitest run src/core/procession` and verify all tests pass (Ref: R19.7)
+- [x] 19.4.2: Run `npx vitest run src/core` and verify no regressions (Ref: task spec)
+- [x] 19.4.3: Run `npx tsc --noEmit` and verify zero TypeScript errors (Ref: task spec)
+
+### 19.5: Balance Simulation
+- [x] 19.5.1: Create `src/core/procession.balance.test.ts` with headless simulation (Ref: task spec)
+- [x] 19.5.2: Implement time model: 1 day per secondsPerDay real seconds (non-duel), duelTimeScale during questions (Ref: task spec)
+- [x] 19.5.3: Implement student simulator: answers visible items, correct with probability accuracy, seeded RNG (Ref: task spec)
+- [x] 19.5.4: Implement targeting policies: nearest (smallest dueDay), weighted (points × seals/maxSeals × urgency) (Ref: task spec)
+- [x] 19.5.5: Assertion 1: idle student (0s per answer) fails at least one course (Ref: task spec)
+- [x] 19.5.6: Assertion 2: 6s/75% weighted passes all courses with avg >= 75 (Ref: task spec)
+- [x] 19.5.7: Assertion 3: weighted avg min >= nearest avg min over seeds 1..10 (Ref: task spec)
+- [x] 19.5.8: Assertion 4: higher accuracy never lowers avg grade (monotonic) (Ref: task spec)
+- [x] 19.5.9: Tune PROCESSION constants if assertion 2 fails: secondsPerDay 6→8, duelTimeScale 0.25→0.2 (Ref: task spec)
+
+### 19.6: BattleScene Integration (R19)
+- [x] 19.6.1: Update BattleScene.ts to drive src/core/procession.ts instead of wave/sim (Ref: R19.1)
+- [x] 19.6.2: Implement calendar clock: tick(days) calls advance() and handles Arrival events (Ref: R19.2, R19.5)
+- [x] 19.6.3: Implement HUD grade strip showing projected grade per course with courseGrade() (Ref: R19.3, BattleUI.ts Hud)
+- [x] 19.6.4: Implement syncField(): spawn creatures from visible(), position by laneProgress() (Ref: R19.1, Battlefield3D)
+- [x] 19.6.5: Implement openDuel(): player picks target, duel loop with applyAnswer() and breakSeals() (Ref: R18, BattleUI.ts duelCard)
+- [x] 19.6.6: Implement arrival effects: floatLabel with grade loss, view.arrive() animation (Ref: R19.5)
+- [x] 19.6.7: Implement defeat(): floatLabel "DEFEATED", view.killEnemy(), mark resolved (Ref: R19.1)
+- [x] 19.6.8: Implement runQTE(): last stand when exam/project one day out with seals left (Ref: R13, BattleUI.ts qteCard)
+- [x] 19.6.9: Implement onFinished(): debrief with transcript, advice, courseGrade/letterGrade (Ref: R19.6, BattleUI.ts debrief)
+- [x] 19.6.10: Implement onFailed(): debrief when any course grade < 50, failedCourses() (Ref: R19.4)
+- [x] 19.6.11: Implement scoutReport(): pre-battle overlay with weights, seals, readiness, Train button (Ref: R17, BattleUI.ts scoutReport)
+- [x] 19.6.12: Implement week banners: weekBanner() when day crosses week boundary (Ref: BattleUI.ts weekBanner)
+- [x] 19.6.13: Implement tutorial: coach marks, waits for first duel (tutorialStep tracking) (Ref: R7, BattleUI.ts coach)
+- [x] 19.6.14: Integrate rigged skeletons: preloadSkeletons(), Battlefield3D.addEnemy() with type (Ref: src/game3d/skeletons.ts)
+- [x] 19.6.15: Implement hover/click sounds: view.onEnemyHover, view.onEnemyClick, sfx('hover'/'select') (Ref: src/audio/sfx.ts)
+- [x] 19.6.16: Implement hasten toggle: timeScale multiplier, hud.caption feedback (Ref: BattleScene.ts toggleHasten)
+- [x] 19.6.17: Implement pause menu: pauseMenu(), reduced motion toggle, persist on pause (Ref: BattleUI.ts pauseMenu)
+- [x] 19.6.18: Persist procession state: loadState/persist with semesterKey, resume or rebuild (Ref: R10, save.ts)
+- [x] 19.6.19: Run manual test: boot → war room → scout → battle → duel → arrival → transcript (Ref: R19.1-R19.6)

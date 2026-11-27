@@ -3,7 +3,8 @@
 Every visual, sound and question in Deadline Defense is original work made for this project, or comes from an openly licensed library listed below.
 
 ## Art and sound
-- **3D battlefield, creatures, graveyard**: built procedurally in code with Three.js primitives and canvas textures (src/game3d). No external models or textures.
+- **Skeleton characters and weapons**: *KayKit Character Pack: Skeletons 1.0* by **Kay Lousberg** (www.kaylousberg.com), **CC0**. Slimmed for the web with glTF-Transform (unused animations removed); see public/models/LICENSE.txt.
+- **3D battlefield, fallback creatures, graveyard**: built procedurally in code with Three.js primitives and canvas textures (src/game3d).
 - **2D scenes (title, War Room)**: procedural canvas textures and Phaser 4 simplex-noise fog (src/game/fx).
 - **Sound**: synthesised at runtime with the Web Audio API (src/audio/sfx.ts). No recorded or copyrighted music.
 - **Illustrations in the guided tour**: inline SVG drawn for this project.
@@ -18,6 +19,7 @@ Every visual, sound and question in Deadline Defense is original work made for t
 |---|---|
 | Phaser 4 | MIT |
 | Three.js | MIT |
+| glTF-Transform (build-time only) | MIT |
 | GSAP | Standard "no charge" GSAP licence |
 | Vite, Vitest | MIT |
 | fast-check | MIT |

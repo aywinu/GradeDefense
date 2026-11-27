@@ -4,12 +4,12 @@ Kiro was the engine of this project, not an add-on. Every game rule, the questio
 
 | | |
 |---|---|
-| Kiro runs | 27, every prompt saved in [`.kiro/runs/`](.kiro/runs) |
-| Spec | `.kiro/specs/deadline-defense/` – 17 requirement groups in EARS form (49 WHEN/IF/WHILE clauses), design, ~440 tasks |
+| Kiro runs | 30, every prompt saved in [`.kiro/runs/`](.kiro/runs) |
+| Spec | `.kiro/specs/deadline-defense/` – 19 requirement groups in EARS form, design, ~450 tracked tasks (361 done, 68 superseded with what replaced them, 23 deferred) |
 | Steering | 4 files, always included |
 | Hooks | 3 IDE hooks + 2 agent hooks |
 | Custom agent | `deadline-dev` (`.kiro/agents/deadline-dev.json`) |
-| Tests | 410 unit and property tests (89 fast-check properties) + 7 Playwright e2e tests |
+| Tests | 545 unit and property tests (139 fast-check properties) + 7 Playwright e2e tests |
 | Kiro credits used | ~160 of the Kiroween bonus at the time of writing |
 
 ---
@@ -27,8 +27,10 @@ Kiro was the engine of this project, not an add-on. Every game rule, the questio
 2. **Amend as reviews find gaps**, always through Kiro:
    - [run 02](.kiro/runs/02-kiro-02-amend.md): relative demo dates (never stale), no font-loader dependency, Chromium-only e2e, **R13 quick-time exam events**, and **R14 Moodle block + LMS showcase**.
    - [run 12](.kiro/runs/12-kiro-03-amend.md): **R15–R17**, the study loop that makes this a study tool rather than a time sink.
+   - [run 26](.kiro/runs/26-t-duel.md): **R18 duel combat**, after the author found towers too passive.
+   - [run 28](.kiro/runs/28-t-procession.md): **R19 The Procession**, after the author found many simultaneous creatures slow and chaotic: the battlefield became the calendar, and an arriving deadline costs grade by its weight.
 3. **Implement task by task.** Every run ticks the checkboxes it completed.
-4. **Reconcile** ([run 25](.kiro/runs/25-t-sync.md)). At the end, the `deadline-dev` agent re-read the code and marked every task as done, *superseded* (with what was built instead) or *deferred*, so the spec tells the truth.
+4. **Reconcile** ([run 25](.kiro/runs/25-t-sync.md), [run 30](.kiro/runs/30-t-sync2.md)). After each redesign, the `deadline-dev` agent re-read the code and marked every task as done, *superseded* (with what was built instead) or *deferred*, so the spec tells the truth.
 
 Examples where the spec process caught design problems before they shipped:
 - **Task 1.4 → 1.7.** Kiro's first wave generator only spawned items due within 7 days. A simulation of the demo semester showed wave 1 would be three exams and nothing else. Task 1.7 re-specified waves as **week-by-week campaign waves with spawn groups**. Task 1.8 then skipped empty weeks, spread spawns over 25–40 s, and added a gentle tutorial wave and a cap on boss HP.
@@ -43,7 +45,12 @@ Selected invariants (see `src/core/*.prop.test.ts`, `src/import/*.test.ts`, `src
 - the `.ics` parser and the postMessage guard **never throw on arbitrary input**; a valid payload always yields at most 6 courses;
 - the notes-to-questions generator never throws; every question has 4 distinct choices containing the answer exactly once.
 
-`src/core/balance.test.ts` runs Kiro's pure simulation headlessly over the whole demo semester with a simulated student. It proves the design claim: **a student who never answers loses, and one who answers a question every 10 s at 75% accuracy holds**. Answering more often or more accurately never makes it worse.
+`src/core/procession.balance.test.ts` (run 29) plays the whole demo semester headlessly with a simulated student, using only Kiro's pure rules. It proves the design claims:
+- **a student who never answers fails** (every course ends at 25–33%);
+- one who answers at 75% accuracy passes every course (average 96.7%);
+- **prioritising by weight beats fighting whatever is nearest** (lowest course grade 87.4% vs 83.3% over ten seeds);
+- higher accuracy never gives a lower grade.
+To make these hold, Kiro tuned two constants itself: 8 s per semester day (was 6) and a 20% clock while a question is open (was 25%).
 
 ## 4. Hooks
 | Hook | When | What |
@@ -93,14 +100,17 @@ Selected invariants (see `src/core/*.prop.test.ts`, `src/import/*.test.ts`, `src
 | 25 | Spec sync | tasks reconciled with the code (`--agent deadline-dev`) | — |
 | 26 | Duel combat (R18) | spec amendment + src/core/duel.ts (seals, applyAnswer, creepSpeed) + unit/property tests | Claude built the duel UI and scene on top |
 | 27 | Duel balance | headless semester simulation with a simulated student | passes untuned (creepScale 1.0) |
+| 28 | The Procession (R19) | spec amendment + `src/core/procession.ts` (calendar clock, arrivals, weighted grades, transcript) + 78 unit/property tests | Claude built the scene, HUD and 3D on top |
+| 29 | Procession balance | semester simulation with two targeting policies; tuned the clock constants | passes; proves weight-first beats nearest-first |
+| 30 | Spec sync 2 | tasks and design reconciled after R19 (`--agent deadline-dev`) | — |
 
 ## 8. Division of labour (honest)
-- **Kiro:** spec, steering-driven implementation of all of `src/core` (rules, simulation, waves, QTE, readiness), question bank and topics, `.ics` parser, notes-to-questions generator, postMessage contract, the Moodle plugin, hooks, custom agent, Playwright tests.
+- **Kiro:** spec, steering-driven implementation of all of `src/core` (the procession, duels, simulation, waves, QTE, readiness, balance), question bank and topics, `.ics` parser, notes-to-questions generator, postMessage contract, the Moodle plugin, hooks, custom agent, Playwright tests.
 - **Claude Code:**
   - orchestration: prompts, reviews, fixes noted above;
   - steering `art-direction.md`;
-  - the rendering layer: Phaser title/War Room, the Three.js 3D battlefield and procedural creatures, DOM UI, guided tours;
+  - the rendering layer: Phaser title/War Room, the Three.js 3D battlefield (rigged KayKit skeletons, CC0, with procedural fallbacks), DOM UI, guided tours;
   - study model glue, versioned save, synthesised audio;
   - balance tuning with the headless simulation;
   - the LMS showcase page, CI/deploy.
-- **The author:** product direction, art-direction feedback (e.g. "less shiny, more unique", "show progressive disclosure", "go 3D"), the Moodle background from CoursePilot.
+- **The author:** product direction and both combat redesigns ("pick one deadline and weaken it with its own course's questions"; "lose when a date arrives and you haven't weakened it enough"), art-direction feedback (e.g. "less shiny, more unique", "show progressive disclosure", "go 3D", "real 3D models"), the Moodle background from CoursePilot.

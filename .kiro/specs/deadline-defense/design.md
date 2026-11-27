@@ -379,6 +379,130 @@ Using `fast-check`, verify:
 
 ---
 
+## Battle Model (R19): The Procession
+
+**Design Change (2026-11-27):** The battlefield is now a **calendar-based procession** (`src/core/procession.ts`) that supersedes the earlier wave/tower architecture. The earlier modules (`src/core/wave.ts`, `src/core/sim.ts`, `src/core/targeting.ts`, `src/core/neglect.ts`) remain for reference and tests but are no longer used by `BattleScene.ts`.
+
+### Core Concept
+
+The battlefield **is the calendar**:
+- Each real deadline is **one creature**
+- **Distance from the altar = days until due**
+- The altar at the left is **today**
+- Up to 4 deadlines visible at once (within the **14-day horizon**)
+- The clock runs at **8 real seconds per semester day** (5× during duels)
+- When a deadline **arrives** at the altar, every seal still on it **costs grade** in that course, proportional to the item's weight
+
+### Time Model (PROCESSION Constants)
+
+```typescript
+export const PROCESSION = {
+  horizonDays: 14,          // deadlines enter the field 14 days before due
+  maxVisible: 4,            // at most 4 on screen
+  secondsPerDay: 8,         // 8 real seconds = 1 semester day (fighting)
+  duelTimeScale: 0.2,       // the clock runs at 20% while a question is open
+  wrongAnswerDays: 0.5,     // wrong answer wastes half a day
+  unpreparedFloor: 25,      // an item met with all seals scores 25%
+  passGrade: 50,            // course grade < 50 = failed
+};
+```
+
+### Arrival Scoring
+
+When a deadline arrives:
+1. Compute **item score** from remaining seals: `score = 25 + 75 * (maxSeals - seals) / maxSeals` (linear 25-100, 1 decimal)
+2. Compute **verdict**: `seals = 0` → ready, `seals ≤ maxSeals/2` → partial, else → unprepared
+3. Record **grade before** and **grade after** for the course:
+   - `courseGrade = (graded.earned + resolved.earned + unresolved.points * 1.0) / totals.points * 100`
+   - Graded items (grade ≠ null) contribute their actual grade
+   - Resolved procession items contribute `points * score / 100`
+   - Unresolved procession items count as 100% (optimistic projection)
+4. The **loss** shown to the player is `gradeBefore - gradeAfter`
+
+A 100-point exam with all seals in a 250-point course costs ~30 grade points (100 * 0.75 / 250 * 100). A 10-point lab costs ~3 points.
+
+### Pure Functions
+
+```typescript
+export interface ProcessionState {
+  day: number; // current semester day (float, starts at 0)
+  items: ProcessionItem[]; // all deadlines (graded or upcoming)
+  graded: Record<CourseId, { points: number; earned: number }>; // past grades
+  totals: Record<CourseId, number>; // total points per course
+}
+
+export interface ProcessionItem {
+  itemId: string;
+  courseId: string;
+  label: string;
+  type: ItemType;
+  points: number;
+  dueDay: number; // days after start (float)
+  seals: number;
+  maxSeals: number;
+  resolved: boolean;
+  score: number | null; // 0-100 once resolved
+  verdict: Verdict | null; // 'ready' | 'partial' | 'unprepared'
+}
+
+export interface Arrival {
+  itemId: string;
+  courseId: string;
+  label: string;
+  verdict: Verdict;
+  score: number;
+  gradeBefore: number;
+  gradeAfter: number;
+}
+
+/** Build initial state from a Semester. */
+export function buildProcession(semester: Semester, now: Date): ProcessionState;
+
+/** Break n seals on an item (never below 0); resolve with score 100 if seals reach 0. */
+export function breakSeals(state: ProcessionState, itemId: string, n: number): ProcessionState;
+
+/** Advance the clock by days; resolve arrivals (dueDay ≤ new day) in due order. */
+export function advance(state: ProcessionState, days: number): { state: ProcessionState; arrivals: Arrival[] };
+
+/** Deadlines within horizonDays, nearest first, at most maxVisible. */
+export function visible(state: ProcessionState): ProcessionItem[];
+
+/** Position in the lane: 0 at horizon (14 days out), 1 at arrival (today). */
+export function laneProgress(item: ProcessionItem, day: number): number; // clamped [0, 1]
+
+/** Projected course grade from graded + resolved + unresolved (all assume 100%). */
+export function courseGrade(state: ProcessionState, courseId: string): number; // 0-100, 1 decimal
+
+/** Courses with grade < 50. */
+export function failedCourses(state: ProcessionState): string[];
+
+/** True when all items resolved. */
+export function isFinished(state: ProcessionState): boolean;
+
+/** Letter grade from numeric grade. */
+export function letterGrade(grade: number): 'A' | 'B' | 'C' | 'D' | 'F';
+```
+
+### Integration with BattleScene
+
+`BattleScene.ts` now:
+- Calls `buildProcession(semester, now)` on start
+- Runs `tick(days)` every frame, which calls `advance(state, days)` and handles `Arrival` events
+- Spawns creatures from `visible(state)` and positions them with `laneProgress(item, state.day)`
+- Opens duels with `openDuel(itemId)`: loops questions from that course, calls `applyAnswer()` and `breakSeals()`
+- Shows a **grade strip** (HUD) with `courseGrade(state, courseId)` per course (the real stake, not HP)
+- Ends with a **projected transcript** using `letterGrade()` and **real advice** (which deadlines cost the most)
+
+### Superseded Modules
+
+The following modules remain for tests but are **no longer used by BattleScene**:
+- `src/core/wave.ts`: discrete waves (now continuous calendar)
+- `src/core/sim.ts`: tower simulation (no towers, only duels)
+- `src/core/targeting.ts`: sentinel firing logic (no sentinels)
+- `src/core/neglect.ts`: 60s neglect buff (not used in procession model)
+
+---
+
 ## Scene Flow (`src/game/scenes/`)
 
 ```

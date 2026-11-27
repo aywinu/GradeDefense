@@ -22,6 +22,10 @@ export interface Creature {
   flash(): void;
   setEnraged(on: boolean): void;
   materials: THREE.Material[];
+  /** Optional one-shot animation; returns its duration in seconds (0 if unsupported). */
+  play?(what: 'die' | 'attack' | 'taunt' | 'cheer'): number;
+  /** Optional hover highlight. */
+  hover?(on: boolean): void;
 }
 
 const shared = {

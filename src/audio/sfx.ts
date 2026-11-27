@@ -6,7 +6,8 @@ import { load, save } from '../save/save';
 
 type Cue =
   | 'correct' | 'wrong' | 'seal' | 'forge' | 'bell' | 'hit' | 'kill' | 'fortress'
-  | 'special' | 'heartbeat' | 'crit' | 'enrage' | 'click' | 'victory' | 'defeat';
+  | 'special' | 'heartbeat' | 'crit' | 'enrage' | 'click' | 'victory' | 'defeat'
+  | 'hover' | 'select' | 'rise' | 'arrive' | 'bones';
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -124,6 +125,36 @@ export function sfx(cue: Cue): void {
       break;
     case 'click':
       tone(1400, 0.04, 'square', 0.05);
+      break;
+    case 'hover': {
+      // a dry rattle of bones
+      for (let i = 0; i < 3; i++) noise(0.035, 0.09, i * 0.045 + Math.random() * 0.02, 2600 + Math.random() * 1400, 6);
+      break;
+    }
+    case 'select':
+      // the creature notices you: a low growl under a whoosh
+      noise(0.5, 0.28, 0, 380, 1.2);
+      tone(73, 0.55, 'sawtooth', 0.12, 0, 55);
+      tone(110, 0.4, 'triangle', 0.1, 0.05, 82);
+      for (let i = 0; i < 4; i++) noise(0.03, 0.08, 0.1 + i * 0.05, 3000, 6);
+      break;
+    case 'rise':
+      // earth cracks as something climbs out
+      noise(0.9, 0.3, 0, 160, 0.9);
+      tone(48, 1.0, 'sine', 0.3, 0, 38);
+      for (let i = 0; i < 5; i++) noise(0.04, 0.07, 0.3 + i * 0.09, 2400, 5);
+      break;
+    case 'arrive':
+      // the deadline strikes the altar
+      tone(55, 1.2, 'sawtooth', 0.32, 0, 32);
+      noise(1.1, 0.45, 0, 220, 0.8);
+      tone(392, 1.4, 'sine', 0.08, 0.05, 370);
+      tone(415, 1.4, 'sine', 0.08, 0.05, 392);
+      break;
+    case 'bones':
+      // collapse: a cascade of falling bones
+      for (let i = 0; i < 9; i++) noise(0.05, 0.12 - i * 0.008, i * 0.06 + Math.random() * 0.03, 1800 + Math.random() * 1800, 5);
+      tone(90, 0.5, 'sine', 0.15, 0.35, 60);
       break;
     case 'victory':
       [392, 494, 587, 784].forEach((f, i) => tone(f, 1.4, 'triangle', 0.18, i * 0.14));

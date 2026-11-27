@@ -12,35 +12,48 @@ import type { Question } from '../study/model';
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const R = () => prefersReducedMotion();
 
+export interface HudGrade {
+  courseId: string;
+  short: string;
+  title: string;
+  color: string;
+  grade: number;
+  letter: string;
+}
+
 export interface HudState {
   waveLabel: string;
   waveSub: string;
-  hp: number;
-  maxHp: number;
-  gold: number;
-  charge: number;
-  progress: number; // 0..1 of the wave defeated
+  grades: HudGrade[];
+  progress: number; // 0..1 of the semester elapsed
+  hasten: boolean;
 }
 
+/**
+ * Battle HUD for the procession (R19): the week and day, a projected grade
+ * per course (the thing that is actually at stake), the semester clock, and
+ * the duel / hasten controls.
+ */
 export class Hud {
   readonly el: HTMLDivElement;
   private last = '';
-  constructor(handlers: { onCheck: () => void; onSpecial: () => void; onPause: () => void }) {
+  private gradeKey = '';
+  constructor(handlers: { onCheck: () => void; onHasten: () => void; onPause: () => void }) {
     this.el = mountLayer(
       'battle-hud',
       `
       <div class="hud-left">
         <div class="hud-wave"><span class="w"></span><span class="s"></span></div>
-        <div class="hud-hp" aria-label="Fortress integrity">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h6v12H3zM11 4h6v12h-6z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
-          <div class="bar hp"><i></i></div><b class="hpv"></b>
-        </div>
+        <div class="hud-grades" aria-label="Projected grade per course"></div>
       </div>
-      <div class="hud-center" aria-hidden="true"><div class="wave-progress"><i></i></div></div>
+      <div class="hud-center" aria-hidden="true"><div class="wave-progress"><i></i></div><div class="wp-l"><span>today</span><span>end of term</span></div></div>
       <div class="hud-right">
         <div class="hud-target" aria-live="polite"></div>
         <button class="hud-btn check" data-a="check" title="Duel the targeted deadline with questions from its course (Space). Tab changes the target; click a creature to pick it.">
           <span class="lbl">Duel</span><span class="dd-kbd">Space</span>
+        </button>
+        <button class="hud-btn hasten" data-a="hasten" title="Hasten time (F) when you are ready for what is coming">
+          <span class="lbl">Hasten</span><span class="dd-kbd">F</span>
         </button>
         <button class="hud-icon" data-a="mute" aria-label="Toggle sound (M)"></button>
         <button class="hud-icon" data-a="pause" aria-label="Pause (P)">II</button>
@@ -49,6 +62,7 @@ export class Hud {
     `,
     );
     this.el.querySelector('[data-a="check"]')!.addEventListener('click', handlers.onCheck);
+    this.el.querySelector('[data-a="hasten"]')!.addEventListener('click', handlers.onHasten);
     this.el.querySelector('[data-a="pause"]')!.addEventListener('click', handlers.onPause);
     this.el.querySelector('[data-a="mute"]')!.addEventListener('click', () => this.toggleMute());
     this.renderMute();
@@ -69,17 +83,43 @@ export class Hud {
   }
 
   update(s: HudState): void {
-    const key = `${s.waveLabel}|${s.waveSub}|${Math.ceil(s.hp)}|${s.gold}|${Math.floor(s.charge)}|${Math.round(s.progress * 100)}`;
-    if (key === this.last) return;
-    this.last = key;
-    this.el.querySelector('.hud-wave .w')!.textContent = s.waveLabel;
-    this.el.querySelector('.hud-wave .s')!.textContent = s.waveSub;
-    const f = Math.max(0, s.hp / s.maxHp);
-    const hp = this.el.querySelector<HTMLElement>('.bar.hp > i')!;
-    hp.style.width = `${f * 100}%`;
-    hp.parentElement!.classList.toggle('low', f < 0.35);
-    this.el.querySelector('.hpv')!.textContent = `${Math.max(0, Math.ceil(s.hp))}`;
-    this.el.querySelector<HTMLElement>('.wave-progress > i')!.style.width = `${s.progress * 100}%`;
+    const key = `${s.waveLabel}|${s.waveSub}|${Math.round(s.progress * 200)}|${s.hasten}`;
+    if (key !== this.last) {
+      this.last = key;
+      this.el.querySelector('.hud-wave .w')!.textContent = s.waveLabel;
+      this.el.querySelector('.hud-wave .s')!.textContent = s.waveSub;
+      this.el.querySelector<HTMLElement>('.wave-progress > i')!.style.width = `${s.progress * 100}%`;
+      this.el.querySelector('[data-a="hasten"]')!.classList.toggle('on', s.hasten);
+    }
+    const gk = s.grades.map((g) => `${g.courseId}:${g.grade}`).join('|');
+    if (gk === this.gradeKey) return;
+    const box = this.el.querySelector<HTMLElement>('.hud-grades')!;
+    if (!this.gradeKey) {
+      box.innerHTML = s.grades
+        .map(
+          (g) =>
+            `<div class="gchip" data-c="${esc(g.courseId)}" style="--c:${g.color}" title="${esc(g.title)}: projected grade"><span class="gid">${esc(g.short)}</span><b></b><i></i></div>`,
+        )
+        .join('');
+    }
+    this.gradeKey = gk;
+    for (const g of s.grades) {
+      const chip = box.querySelector<HTMLElement>(`.gchip[data-c="${g.courseId}"]`);
+      if (!chip) continue;
+      chip.querySelector('b')!.textContent = String(Math.round(g.grade));
+      chip.querySelector('i')!.textContent = g.letter;
+      chip.classList.toggle('warn', g.grade < 70);
+      chip.classList.toggle('fail', g.grade < 50);
+    }
+  }
+
+  /** A course grade just dropped: the chip flinches. */
+  gradeHit(courseId: string): void {
+    const chip = this.el.querySelector<HTMLElement>(`.gchip[data-c="${courseId}"]`);
+    if (!chip) return;
+    chip.classList.remove('hit');
+    void chip.offsetWidth;
+    chip.classList.add('hit');
   }
 
   /** Visual caption for sound cues and events (a11y R9.4). */
@@ -101,11 +141,7 @@ export class Hud {
     setTimeout(() => {
       if (R()) c.remove();
       else gsap.to(c, { opacity: 0, y: -6, duration: 0.4, onComplete: () => c.remove() });
-    }, 2600);
-  }
-
-  goldPulse(): void {
-    /* gold removed in the duel redesign */
+    }, 3200);
   }
 
   setTarget(text: string): void {
@@ -115,6 +151,19 @@ export class Hud {
   destroy(): void {
     this.el.remove();
   }
+}
+
+/** A small non-blocking banner: "Week 3" as the calendar turns. */
+export function weekBanner(title: string, sub: string): void {
+  const el = mountLayer('week-banner', `<div class="wb"><b>${esc(title)}</b><span>${esc(sub)}</span></div>`);
+  if (R()) {
+    setTimeout(() => el.remove(), 1800);
+    return;
+  }
+  gsap
+    .timeline({ onComplete: () => el.remove() })
+    .fromTo(el.querySelector('.wb'), { opacity: 0, letterSpacing: '0.5em' }, { opacity: 1, letterSpacing: '0.18em', duration: 0.8, ease: 'power2.out' })
+    .to(el.querySelector('.wb'), { opacity: 0, duration: 0.6 }, '+=1.2');
 }
 
 /** Full-width wave title card ("WEEK 3 · The Midterm rises"). */
@@ -140,28 +189,38 @@ export function titleCard(eyebrow: string, title: string, sub: string, danger = 
   });
 }
 
-export interface ScoutGroup {
+export interface ScoutRow {
+  itemId: string;
   courseId: string;
-  title: string;
+  name: string;
+  courseTitle: string;
   color: string;
-  names: string[];
+  days: number;
+  weight: number; // % of the course grade
+  seals: number;
+  maxSeals: number;
   readiness: number;
-  count: number;
 }
 
-/** Pre-wave scout report: what is coming, how ready you are, train or fight. */
+/**
+ * Scout report (R17 + R19): the next two weeks of the procession, each
+ * deadline with its weight in the course grade, how many seals it carries
+ * and your readiness. Train pre-weakens a course's deadlines.
+ */
 export function scoutReport(
-  week: string,
-  groups: ScoutGroup[],
+  heading: string,
+  rows: ScoutRow[],
   onTrain: (courseId: string) => void,
   onBegin: () => void,
+  begin = 'Begin the battle',
 ): HTMLDivElement {
-  const weakest = [...groups].sort((a, b) => a.readiness - b.readiness)[0];
-  const rows = groups
+  const heaviest = [...rows].sort((a, b) => b.weight - a.weight)[0];
+  const list = rows
     .map(
       (g) => `<li style="--c:${g.color}">
         <span class="seal sm">${esc(g.courseId.replace(/\d+$/, ''))}</span>
-        <span class="sr-names"><b>${esc(g.names.join(', '))}</b><small>${esc(g.title)} &middot; ${g.count} creatures</small></span>
+        <span class="sr-names"><b>${esc(g.name.replace(/Examination/, 'Exam'))}</b><small>${esc(g.courseTitle)} &middot; ${g.days < 1 ? 'due today' : g.days < 2 ? 'due tomorrow' : `in ${Math.floor(g.days)} days`} &middot; ${g.seals}/${g.maxSeals} seals</small></span>
+        <span class="sr-weight ${g.weight >= 25 ? 'heavy' : ''}" title="Share of the course grade">${Math.round(g.weight)}%<small>of grade</small></span>
         <span class="sr-ready ${g.readiness < 40 ? 'low' : ''}">${g.readiness}% ready</span>
         <button class="dd-btn secondary sm" data-train="${esc(g.courseId)}">Train</button>
       </li>`,
@@ -170,32 +229,32 @@ export function scoutReport(
   const el = mountLayer(
     'overlay scout',
     `<div class="grimoire scout-page" role="dialog" aria-modal="true" aria-labelledby="scout-t">
-      <div class="g-eyebrow">Scout report &middot; ${esc(week)}</div>
-      <h2 id="scout-t">The horde gathers</h2>
-      <ul class="scout-list">${rows}</ul>
+      <div class="g-eyebrow">Scout report &middot; ${esc(heading)}</div>
+      <h2 id="scout-t">The procession approaches</h2>
+      <ul class="scout-list">${list || '<li class="empty">Nothing due in the next two weeks.</li>'}</ul>
       ${
-        weakest && weakest.readiness < 60
-          ? `<p class="explain">Your ${esc(weakest.title)} readiness is ${weakest.readiness}%. A short trial before the battle pre-weakens those deadlines.</p>`
-          : `<p class="explain">You are well prepared. Hold the line.</p>`
+        heaviest && heaviest.weight >= 20
+          ? `<p class="explain"><b>${esc(heaviest.name.replace(/Examination/, 'Exam'))}</b> is ${Math.round(heaviest.weight)}% of ${esc(heaviest.courseTitle)}. Every seal still on it when it arrives costs grade. Small deadlines barely scratch; this one can fail the course.</p>`
+          : `<p class="explain">Light weeks ahead. Break what you can, and hasten time when you are ready.</p>`
       }
-      <div class="actions"><button class="dd-btn" data-begin>Begin the battle<span class="dd-kbd">Enter</span></button></div>
+      <div class="actions"><button class="dd-btn" data-begin>${esc(begin)}<span class="dd-kbd">Enter</span></button></div>
     </div>`,
   );
   el.querySelectorAll<HTMLButtonElement>('[data-train]').forEach((b) => b.addEventListener('click', () => onTrain(b.dataset.train!)));
-  const begin = el.querySelector<HTMLButtonElement>('[data-begin]')!;
+  const btn = el.querySelector<HTMLButtonElement>('[data-begin]')!;
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'Enter' && document.activeElement?.tagName !== 'BUTTON') {
       e.preventDefault();
-      begin.click();
+      btn.click();
     }
   };
   window.addEventListener('keydown', onKey);
-  begin.addEventListener('click', () => {
+  btn.addEventListener('click', () => {
     window.removeEventListener('keydown', onKey);
     onBegin();
   });
   el.querySelectorAll<HTMLButtonElement>('[data-train]').forEach((b) => b.addEventListener('click', () => window.removeEventListener('keydown', onKey)));
-  setTimeout(() => begin.focus(), 30);
+  setTimeout(() => btn.focus(), 30);
   if (!R()) gsap.from(el.querySelector('.grimoire'), { y: 30, opacity: 0, duration: 0.45, ease: 'power3.out' });
   return el;
 }
@@ -377,6 +436,7 @@ export interface DuelInfo {
   maxSeals: number;
   daysLeft: number;
   streak: number;
+  weight?: number; // % of the course grade
 }
 
 /**
@@ -392,13 +452,13 @@ export function duelCard(q: Question, d: DuelInfo): Promise<boolean | null> {
       `<div class="qc duel-card" role="dialog" aria-modal="true" aria-labelledby="duel-q" style="--c:${d.color}">
         <div class="duel-head">
           <div><div class="qc-eyebrow">Duel · ${esc(d.courseTitle)}</div><div class="duel-name">${esc(d.name)}</div>
-          <div class="duel-when">${d.daysLeft <= 0 ? 'due now' : d.daysLeft === 1 ? 'due tomorrow' : `due in ${d.daysLeft} days`}${d.streak >= 2 ? ` · streak ${d.streak}` : ''}</div></div>
+          <div class="duel-when">${d.daysLeft < 1 ? 'due today' : d.daysLeft < 2 ? 'due tomorrow' : `due in ${Math.floor(d.daysLeft)} days`}${d.weight != null ? ` · ${Math.round(d.weight)}% of the grade` : ''}${d.streak >= 2 ? ` · <b class="streak">streak ${d.streak}</b>` : ''}</div></div>
           <div class="seals" aria-label="${d.seals} of ${d.maxSeals} seals left">${seals}</div>
         </div>
         <p class="qc-q" id="duel-q">${esc(q.question)}</p>
         <div class="qc-choices">${q.choices.map((c, i) => `<button class="choice" data-i="${i}"><span class="k">${i + 1}</span><span>${esc(c)}</span></button>`).join('')}</div>
         <p class="qc-explain" aria-live="polite"></p>
-        <div class="qc-foot">1–4 to answer · each correct answer breaks a seal · Esc to step back</div>
+        <div class="qc-foot">1–4 to answer · a correct answer breaks a seal · a wrong one costs half a day · Esc to step back</div>
       </div>`,
     );
     const card = el.querySelector<HTMLDivElement>('.qc')!;

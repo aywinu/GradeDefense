@@ -1,0 +1,5 @@
+Skeleton characters and weapons: KayKit Character Pack: Skeletons (1.0)
+Created/distributed by Kay Lousberg (www.kaylousberg.com)
+License: Creative Commons Zero (CC0) http://creativecommons.org/publicdomain/zero/1.0/
+Source: https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0
+Slimmed for the web with glTF-Transform (unused animations removed).

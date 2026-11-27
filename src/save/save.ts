@@ -28,6 +28,8 @@ export interface SaveData {
   tours: Record<string, boolean>;
   /** Questions generated locally from the student's own notes, per course. */
   notes: Record<string, { name: string; questions: SavedQuestion[] }>;
+  /** The semester procession in progress (R19), keyed to the semester it was built from. */
+  procession: { key: string; state: unknown } | null;
 }
 
 export interface SavedQuestion {
@@ -54,6 +56,7 @@ export function defaultSave(): SaveData {
     campaign: { wave: 1, bestWave: 0 },
     tours: {},
     notes: {},
+    procession: null,
   };
 }
 
@@ -99,6 +102,10 @@ export function migrate(raw: unknown): SaveData {
         ? Object.fromEntries(Object.entries(r.tours).filter(([, v]) => typeof v === 'boolean'))
         : {},
     notes: isNotes(r.notes) ? r.notes : {},
+    procession:
+      r.procession && typeof r.procession === 'object' && typeof r.procession.key === 'string' && r.procession.state && typeof r.procession.state === 'object'
+        ? { key: r.procession.key, state: r.procession.state }
+        : null,
   };
 }
 

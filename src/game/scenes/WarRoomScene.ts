@@ -11,6 +11,7 @@ import { allCourseViews, getSemester, formatDue, inDays, type CourseView } from 
 import { openTrial } from '../../ui/TrialPanel';
 import { getCourseColor } from '../palette';
 import { campaignLength } from '../../core/wave';
+import { preloadSkeletons } from '../../game3d/skeletons';
 import { load } from '../../save/save';
 import { Graveyard } from '../fx/Graveyard';
 import { runTour, hasSeen } from '../../ui/Tour';
@@ -48,6 +49,7 @@ export class WarRoomScene extends Phaser.Scene {
     this.atmosphere = new Atmosphere(this, { width: W, height: H, fog: 0.35 });
     this.graveyard = new Graveyard(this, W, H);
     this.render();
+    void preloadSkeletons(); // warm the battle's models while the student reads
     if (!hasSeen('warroom')) this.time.delayedCall(prefersReducedMotion() ? 50 : 1400, () => this.tour());
     this.cameras.main.fadeIn(prefersReducedMotion() ? 0 : 600, 7, 6, 11);
     this.events.once('shutdown', () => clearLayers('.warroom'));
@@ -94,7 +96,7 @@ export class WarRoomScene extends Phaser.Scene {
           <p class="wr-counsel">${counsel}</p>
           <div class="wr-cta">
             ${focus ? `<button class="dd-btn" data-train="${focus.course.id}">Train ${focus.course.title}<span class="dd-kbd">T</span></button>` : ''}
-            <button class="dd-btn secondary" data-action="battle">Face the siege<span class="dd-kbd">Enter</span></button>
+            <button class="dd-btn secondary" data-action="battle">Face the semester<span class="dd-kbd">Enter</span></button>
           </div>
         </div>
         ${
@@ -112,7 +114,7 @@ export class WarRoomScene extends Phaser.Scene {
         <div class="wr-detail" aria-live="polite"></div>
       </section>
       ${this.timeline(views, now)}
-      <div class="wr-foot">Average readiness ${avgReady}% &middot; ${totalWaves > 0 ? `${totalWaves} weeks of siege until your last deadline` : 'no siege ahead'} &middot; <span class="dd-kbd">↑</span><span class="dd-kbd">↓</span> browse courses</div>
+      <div class="wr-foot">Average readiness ${avgReady}% &middot; ${totalWaves > 0 ? `${totalWaves} weeks until your last deadline` : 'nothing due ahead'} &middot; <span class="dd-kbd">↑</span><span class="dd-kbd">↓</span> browse courses</div>
     `,
     );
     this.layer = layer;
@@ -212,7 +214,7 @@ export class WarRoomScene extends Phaser.Scene {
         { target: '[data-import]', art: 'timeline', title: 'Your real semester', body: 'Export your calendar from Moodle (Calendar → Export → .ics) and import it here. It is parsed in your browser; nothing is uploaded. Or install our Moodle block and it arrives on its own.' },
         { target: '.epitaph', art: 'epitaph', title: 'Here waits…', body: 'The next big deadline across all courses, carved in stone so you never lose sight of it.' },
         { target: '.timeline', art: 'timeline', title: 'The graveyard of deadlines', body: 'Your whole semester as tombstones. Bigger stones weigh more. Hover one to read it.' },
-        { target: '[data-action="battle"]', art: 'lantern', title: 'Face the siege', body: 'Fight this week\'s deadlines: pick a creature and duel it with questions from its own course. Every correct answer breaks a seal. Key <span class="dd-kbd">Enter</span>.' },
+        { target: '[data-action="battle"]', art: 'lantern', title: 'Face the semester', body: 'Your calendar becomes the battlefield. Pick a deadline and duel it with questions from its own course; whatever arrives unprepared costs grade, by its weight. Key <span class="dd-kbd">Enter</span>.' },
       ],
       () => {
         this.busy = false;
@@ -262,7 +264,7 @@ export class WarRoomScene extends Phaser.Scene {
     const grade = v.grade === null ? '—' : `${Math.round(v.grade)}%`;
     const enemies = v.big.length
       ? v.big
-          .map((b) => `<li class="${b.days <= 7 ? 'soon' : ''}">${ICONS[b.type] ?? ICONS.assignment}<span class="nm">${b.name}</span><span class="dt">${formatDue(b.dueDate)}, ${inDays(b.days)} &middot; ${b.points} pts</span></li>`)
+          .map((b) => `<li class="${b.days <= 7 ? 'soon' : ''}">${ICONS[b.type] ?? ICONS.assignment}<span class="nm">${b.name}</span><span class="dt">${formatDue(b.dueDate)}, ${inDays(b.days)} &middot; <b class="wt">${Math.round((b.points / Math.max(1, v.course.items.reduce((t, i) => t + i.points, 0))) * 100)}% of the grade</b></span></li>`)
           .join('')
       : '<li class="none">No great enemies on the horizon.</li>';
     const plan = v.next

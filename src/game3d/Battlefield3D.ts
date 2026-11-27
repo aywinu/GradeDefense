@@ -14,14 +14,15 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { skeletonCreature } from './skeletons';
 import { makeCreature, setPageTexture, type Creature } from './creatures';
 import * as tex from './textures';
 import type { ItemType } from '../core/types';
 
 export const SIM = { xMin: 150, xMax: 1650, yMin: 110, yMax: 870, lanes: 6 };
 const UNIT = 100; // sim pixels per world unit
-const CAM_POS = new THREE.Vector3(0.4, 14.2, 14.8);
-const CAM_LOOK = new THREE.Vector3(0.4, 0, 0.1);
+const CAM_POS = new THREE.Vector3(0.4, 11.6, 16.2);
+const CAM_LOOK = new THREE.Vector3(0.4, 0, -0.7);
 
 /** Lanes are spread wider in depth than the sim's 2D layout, for readability. */
 const ZK = 1.6;
@@ -36,6 +37,8 @@ interface EnemyRec {
   target: THREE.Vector3;
   speed: number;
   dying?: number;
+  /** Seconds the death/attack animation plays before the body fades. */
+  hold?: number;
   isBoss: boolean;
 }
 
@@ -128,6 +131,10 @@ export class Battlefield3D {
   private book!: THREE.Group;
   onSocketClick?: (key: string) => void;
   onEnemyClick?: (id: string) => void;
+  onEnemyHover?: (id: string) => void;
+  private focus = 0;
+  private focusAt = new THREE.Vector3();
+  private hoverId: string | null = null;
   private targetRing?: THREE.Mesh;
   private targetId: string | null = null;
 
@@ -196,6 +203,10 @@ export class Battlefield3D {
     const warm = new THREE.DirectionalLight(0xffb070, 0.7);
     warm.position.set(-12, 5, 4);
     this.scene.add(warm);
+    // A faint cold fill from the viewer so faces and bones read against the dark floor.
+    const fill = new THREE.DirectionalLight(0x8f9cff, 0.55);
+    fill.position.set(0, 6, 18);
+    this.scene.add(fill);
   }
 
   private buildEnvironment() {
@@ -455,7 +466,7 @@ export class Battlefield3D {
   // ───────────── enemies ─────────────
 
   addEnemy(id: string, type: ItemType, isMinion: boolean, x: number, y: number, color: number, label: string | null, daysLeft: number) {
-    const c = makeCreature(type, isMinion, color);
+    const c = (!isMinion && skeletonCreature(type, color)) || makeCreature(type, isMinion, color);
     const p = toWorld(x, y);
     c.root.position.copy(p);
     c.root.rotation.y = 0;
@@ -476,6 +487,7 @@ export class Battlefield3D {
       }
     }
     this.enemies.set(id, rec);
+    if (!isMinion && !this.reduced) this.burst(p.clone().add(new THREE.Vector3(0, 0.15, 0)), 0x6b5a48, 40, 1.2);
   }
 
   moveEnemy(id: string, x: number, y: number, hpFrac: number) {
@@ -534,9 +546,44 @@ export class Battlefield3D {
     const e = this.enemies.get(id);
     if (!e) return;
     e.dying = 0;
+    e.hold = Math.min(1.6, e.c.play?.('die') ?? 0);
     e.label?.remove();
     this.burst(e.c.root.position.clone().add(new THREE.Vector3(0, e.c.height * 0.5, 0)), color, e.isBoss ? 120 : 26, 1.6, true);
     if (e.isBoss) this.shake = 0.35;
+  }
+
+  /** The creature mocks you (a wrong answer). */
+  taunt(id: string) {
+    this.enemies.get(id)?.c.play?.('taunt');
+  }
+
+  /** Update a creature's scroll: days left, weight, and the seals bar. */
+  setEnemyInfo(id: string, when: string, soon: boolean, sealFrac: number) {
+    const e = this.enemies.get(id);
+    if (!e?.label) return;
+    const d = e.label.querySelector<HTMLElement>('.d');
+    if (d && d.textContent !== when) d.textContent = when;
+    d?.classList.toggle('soon', soon);
+    if (e.hpEl) e.hpEl.style.width = `${Math.max(0, sealFrac) * 100}%`;
+  }
+
+  /** A deadline reaches the altar: it slams into the grimoire. severity 0..1 scales the blow. */
+  arrive(id: string, severity: number) {
+    const e = this.enemies.get(id);
+    if (!e) return;
+    e.dying = 0;
+    e.hold = Math.min(1.1, e.c.play?.('attack') ?? 0);
+    e.label?.remove();
+    const at = e.c.root.position.clone().add(new THREE.Vector3(0, e.c.height * 0.5, 0));
+    this.burst(at, 0xb3202c, 20 + Math.round(severity * 100), 1.4 + severity * 2);
+    this.burst(new THREE.Vector3(-8.3, 1.2, 0), 0xb3202c, 10 + Math.round(severity * 60), 1.5 + severity * 2);
+    this.shake = this.reduced ? 0 : 0.12 + severity * 0.5;
+    this.cracks = Math.min(1, this.cracks + severity * 0.5);
+  }
+
+  /** The altar's cracks heal slowly as the semester recovers. */
+  setCracks(f: number) {
+    this.cracks = Math.max(0, Math.min(1, f));
   }
 
   removeEnemy(id: string) {
@@ -550,7 +597,7 @@ export class Battlefield3D {
   /** Screen position (stage px) for the far end of a lane, for its name plate. */
   laneScreen(lane: number): { x: number; y: number } {
     const laneH = (SIM.yMax - SIM.yMin) / SIM.lanes;
-    const p = toWorld(SIM.xMax + 170, SIM.yMin + (lane + 0.5) * laneH);
+    const p = toWorld(SIM.xMax + 20, SIM.yMin + (lane + 0.5) * laneH);
     this.camera.updateMatrixWorld();
     return this.project(p);
   }
@@ -690,9 +737,17 @@ export class Battlefield3D {
       const root = e.c.root;
       if (e.dying !== undefined) {
         e.dying += dt;
-        const k = e.dying / 0.6;
-        root.position.y += dt * 1.2;
-        root.scale.multiplyScalar(1 - dt * 0.8);
+        const hold = e.hold ?? 0;
+        if (hold > 0) {
+          e.c.update(t, dt, 0);
+          if (e.dying < hold) continue;
+        }
+        const k = (e.dying - hold) / (hold > 0 ? 0.9 : 0.6);
+        if (hold > 0) root.position.y -= dt * 0.5;
+        else {
+          root.position.y += dt * 1.2;
+          root.scale.multiplyScalar(1 - dt * 0.8);
+        }
         for (const m of e.c.materials) (m as THREE.MeshStandardMaterial).opacity = Math.max(0, 1 - k);
         if (k >= 1) this.removeEnemy(id);
         continue;
@@ -707,8 +762,10 @@ export class Battlefield3D {
         if (mm.opacity < 1) mm.opacity = Math.min(1, mm.opacity + dt * 2);
       }
       if (e.label) {
-        const s = this.project(root.position.clone().add(new THREE.Vector3(0, e.c.height + 0.25, 0)));
-        e.label.style.transform = `translate(${Math.min(1560, Math.max(40, s.x))}px, ${Math.max(150, s.y)}px) translate(-50%, -100%)`;
+        // The scroll trails behind the creature (it walks toward the altar on the left),
+        // so it never hides a body in the lane above.
+        const s = this.project(root.position.clone().add(new THREE.Vector3(0.55, e.c.height * 0.72, 0)));
+        e.label.style.transform = `translate(${Math.min(1380, Math.max(40, s.x))}px, ${Math.max(120, s.y)}px) translate(0, -50%)`;
       }
     }
 
@@ -772,8 +829,23 @@ export class Battlefield3D {
       base.y += (Math.random() - 0.5) * this.shake;
       this.shake = Math.max(0, this.shake - dt * 1.2);
     }
+    // Duel focus: the camera leans in toward the creature you are fighting.
+    const tgtRec = this.targetId ? this.enemies.get(this.targetId) : undefined;
+    const want = this.desatTarget > 0 && tgtRec && tgtRec.dying === undefined && !this.reduced ? 1 : 0;
+    this.focus += (want - this.focus) * Math.min(1, dt * 2.2);
+    const look = CAM_LOOK.clone();
+    if (this.focus > 0.001 && tgtRec) {
+      const p = tgtRec.c.root.position;
+      this.focusAt.lerp(p, this.focus > 0.99 ? Math.min(1, dt * 3) : 1);
+      // Frame the creature in the right half: the duel card sits on the left.
+      const k = this.focus * 0.55;
+      base.lerp(new THREE.Vector3(this.focusAt.x - 3.4, 7.0, this.focusAt.z + 10.5), k);
+      look.lerp(new THREE.Vector3(this.focusAt.x - 4.2, 0.9, this.focusAt.z - 0.4), k);
+    }
+    const names = document.querySelector<HTMLElement>('.lane-names');
+    if (names) names.style.opacity = String(1 - this.focus);
     this.camera.position.copy(base);
-    this.camera.lookAt(CAM_LOOK);
+    this.camera.lookAt(look);
 
     this.desat += (this.desatTarget - this.desat) * Math.min(1, dt * 5);
     this.post.uniforms.uDesat.value = this.desat;
@@ -807,8 +879,25 @@ export class Battlefield3D {
     let over = false;
     const hits = this.ray.intersectObjects([...this.sockets.values()], false);
     if (hits.length) over = true;
-    const live = [...this.enemies.values()].filter((r) => r.dying === undefined).map((r) => r.c.root);
-    if (this.ray.intersectObjects(live, true).length) over = true;
+    const liveE = [...this.enemies.entries()].filter(([, r]) => r.dying === undefined);
+    const hitE = this.ray.intersectObjects(liveE.map(([, r]) => r.c.root), true)[0];
+    let hov: string | null = null;
+    if (hitE) {
+      over = true;
+      let o: THREE.Object3D | null = hitE.object;
+      while (o && !liveE.some(([, r]) => r.c.root === o)) o = o.parent;
+      hov = liveE.find(([, r]) => r.c.root === o)?.[0] ?? null;
+    }
+    if (hov !== this.hoverId) {
+      if (this.hoverId) this.enemies.get(this.hoverId)?.c.hover?.(false);
+      this.hoverId = hov;
+      if (hov) {
+        this.enemies.get(hov)?.c.hover?.(true);
+        this.enemies.get(hov)?.label?.classList.add('hover');
+        this.onEnemyHover?.(hov);
+      }
+      for (const [id, r] of this.enemies) if (id !== hov) r.label?.classList.remove('hover');
+    }
     for (const s of this.sockets.values()) (s.material as THREE.MeshBasicMaterial).opacity = hits[0]?.object === s ? 0.8 : 0.22;
     this.canvas.style.cursor = over ? 'pointer' : '';
     this.lastMouse.copy(n);
