@@ -8,6 +8,7 @@ import { mountLayer } from './stage';
 import { prefersReducedMotion } from '../game/fx/Atmosphere';
 import { isMuted, setMuted, sfx } from '../audio/sfx';
 import type { Question } from '../study/model';
+import { hintButtonHtml, wireHint } from './hint';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const R = () => prefersReducedMotion();
@@ -350,17 +351,19 @@ function questionCard(o: {
           .map((c, i) => `<button class="choice" data-i="${i}"><span class="k">${i + 1}</span><span>${esc(c)}</span></button>`)
           .join('')}</div>
         <p class="qc-explain" aria-live="polite"></p>
-        ${mode === 'check' ? '<div class="qc-foot">1–4 to answer &middot; Esc to return</div>' : '<div class="qc-foot">1–4 to answer &middot; correct = critical strike</div>'}
+        ${mode === 'check' ? `<div class="qc-foot">1–4 to answer &middot; Esc to return${hintButtonHtml()}</div>` : `<div class="qc-foot">1–4 to answer &middot; correct = critical strike${hintButtonHtml()}</div>`}
       </div>`,
     );
     const card = el.querySelector<HTMLDivElement>('.qc')!;
     let done = false;
     let raf = 0;
     const start = performance.now();
+    const cleanupHint = wireHint(card, q.correctIndex);
 
     const finish = (result: boolean | null, delay: number) => {
       if (done) return;
       done = true;
+      cleanupHint();
       cancelAnimationFrame(raf);
       window.removeEventListener('keydown', onKey, true);
       setTimeout(() => {
@@ -458,14 +461,16 @@ export function duelCard(q: Question, d: DuelInfo): Promise<boolean | null> {
         <p class="qc-q" id="duel-q">${esc(q.question)}</p>
         <div class="qc-choices">${q.choices.map((c, i) => `<button class="choice" data-i="${i}"><span class="k">${i + 1}</span><span>${esc(c)}</span></button>`).join('')}</div>
         <p class="qc-explain" aria-live="polite"></p>
-        <div class="qc-foot">1–4 to answer · a correct answer breaks a seal · a wrong one costs half a day · Esc to step back</div>
+        <div class="qc-foot">1–4 to answer · a correct answer breaks a seal · a wrong one costs half a day · Esc to step back${hintButtonHtml()}</div>
       </div>`,
     );
     const card = el.querySelector<HTMLDivElement>('.qc')!;
     let done = false;
+    const cleanupHint = wireHint(card, q.correctIndex);
     const finish = (r: boolean | null, delay: number) => {
       if (done) return;
       done = true;
+      cleanupHint();
       window.removeEventListener('keydown', onKey, true);
       setTimeout(() => {
         if (R()) {

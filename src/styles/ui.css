@@ -438,6 +438,46 @@
 .choice.wrong { background: rgba(179, 32, 44, 0.18); border-color: #8a2a22; }
 .choice.wrong .k { background: #8a2a22; }
 .choice[disabled] { cursor: default; }
+
+/* Hint button (judges / first-time players): a small lantern, visible but quiet */
+.hint-btn {
+  pointer-events: auto;
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-left: 14px;
+  font-family: var(--font-ui); font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--candle);
+  background: rgba(242, 180, 90, 0.08);
+  border: 1px solid rgba(242, 180, 90, 0.45);
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: color 140ms, border-color 140ms, background 140ms;
+}
+.hint-btn::before { content: '✦'; font-size: 12px; }
+.hint-btn:hover { color: var(--parchment); border-color: rgba(242, 180, 90, 0.8); background: rgba(242, 180, 90, 0.16); }
+.hint-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(242, 180, 90, 0.6); }
+.hint-btn[disabled] { opacity: 0.45; cursor: default; }
+.qc-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.grimoire .hint-btn { color: #7a4a12; background: rgba(122, 74, 18, 0.08); border-color: rgba(122, 74, 18, 0.5); }
+.grimoire .hint-btn:hover { color: #4a2c08; background: rgba(122, 74, 18, 0.16); border-color: #7a4a12; }
+
+/* Hinted choice: lantern glow */
+.choice.hinted {
+  position: relative;
+  padding-right: 40px;
+  border-color: rgba(242, 180, 90, 0.85);
+  box-shadow: 0 0 0 2px rgba(242, 180, 90, 0.6), 0 0 20px rgba(242, 180, 90, 0.4);
+}
+.choice.hinted::after {
+  content: '✦';
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  color: var(--candle); font-size: 18px; opacity: 0.9;
+}
+.grimoire .choice.hinted::after { color: #b06a14; }
+@media (prefers-reduced-motion: reduce) {
+  .choice.hinted { box-shadow: 0 0 0 2px rgba(242, 180, 90, 0.6); }
+}
+
 .grimoire .explain { margin-top: 20px; min-height: 28px; font-family: var(--font-body); font-style: italic; font-size: 18px; color: #4a3820; }
 .grimoire .g-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; font-family: var(--font-ui); font-size: 13px; color: #6a5536; }
 .pips { display: flex; gap: 8px; }

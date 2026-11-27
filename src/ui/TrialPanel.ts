@@ -10,6 +10,7 @@ import { pickTrial, recordSession, readinessFor, questionsFor, SPARKS_PER_LEVEL,
 import { getSemester } from '../study/model';
 import { prefersReducedMotion } from '../game/fx/Atmosphere';
 import { sfx } from '../audio/sfx';
+import { hintButtonHtml, wireHint } from './hint';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
@@ -25,6 +26,7 @@ export function openTrial(courseId: string, onClose: () => void): void {
   const answers: { questionId: string; correct: boolean }[] = [];
   let idx = 0;
   let locked = false;
+  let cleanupHint = () => {};
   const reduced = prefersReducedMotion();
   const prevFocus = document.activeElement as HTMLElement | null;
 
@@ -41,6 +43,7 @@ export function openTrial(courseId: string, onClose: () => void): void {
       .join('')}</div>`;
 
   const showQuestion = () => {
+    cleanupHint();
     locked = false;
     const q = questions[idx];
     page.innerHTML = `
@@ -52,10 +55,11 @@ export function openTrial(courseId: string, onClose: () => void): void {
         ${q.choices.map((c, i) => `<button class="choice" data-i="${i}"><span class="k">${i + 1}</span><span>${esc(c)}</span></button>`).join('')}
       </div>
       <p class="explain" aria-live="polite"></p>
-      <div class="g-foot">${pips()}<span>Keys 1–4 to answer &middot; Esc to leave</span></div>`;
+      <div class="g-foot">${pips()}<span>Keys 1–4 to answer &middot; Esc to leave</span>${hintButtonHtml()}</div>`;
     page.querySelector('.close-x')!.addEventListener('click', close);
     page.querySelectorAll<HTMLButtonElement>('.choice').forEach((b) => b.addEventListener('click', () => answer(+b.dataset.i!)));
     page.querySelector<HTMLButtonElement>('.choice')?.focus();
+    cleanupHint = wireHint(page, q.correctIndex);
     if (!reduced) gsap.from(page.querySelectorAll('.q, .choice'), { opacity: 0, y: 8, stagger: 0.04, duration: 0.3 });
   };
 
@@ -146,6 +150,7 @@ export function openTrial(courseId: string, onClose: () => void): void {
   window.addEventListener('keydown', onKey, true);
 
   const cleanup = () => {
+    cleanupHint();
     window.removeEventListener('keydown', onKey, true);
     layer.remove();
   };

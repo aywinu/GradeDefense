@@ -1,7 +1,7 @@
 # Tasks — Deadline Defense
 
-**Status (2026-11-27):** 361 done (implemented as designed), 68 superseded (implemented differently, all complete), 23 deferred (manual tests or future work)  
-Core rules ✓ | Demo data ✓ | 3D Battlefield ✓ | Study model ✓ | QTE core ✓ | Readiness ✓ | War Room ✓ | Trial ✓ | Save ✓ | Import (ICS/postMessage/notes) ✓ | Moodle block ✓ | LMS showcase ✓ | E2E tests ✓ | Deploy ✓ | Docs ✓ | **Duel Combat ✓** | **The Procession ✓**
+**Status (2026-11-27):** 365 done (implemented as designed), 68 superseded (implemented differently, all complete), 23 deferred (manual tests or future work)  
+Core rules ✓ | Demo data ✓ | 3D Battlefield ✓ | Study model ✓ | QTE core ✓ | Readiness ✓ | War Room ✓ | Trial ✓ | Save ✓ | Import (ICS/postMessage/notes) ✓ | Moodle block ✓ | LMS showcase ✓ | E2E tests ✓ | Deploy ✓ | Docs ✓ | **Duel Combat ✓** | **The Procession ✓** | **Lantern Hint ✓**
 
 Implementation ordered for vertical slice: core rules + tests → demo data → battlefield → checkpoints → tutorial → polish → import → save → a11y → build/test → **duel combat (R18)**.
 
@@ -206,6 +206,12 @@ Implementation ordered for vertical slice: core rules + tests → demo data → 
 ### 4.7: Checkpoint Integration Test
 - [x] 4.7.1: Manually test: press C, answer 4 questions correctly, charge to 100%, fire special attack (Ref: R5)
 - [x] 4.7.2: Verify no punishment for wrong answers (Ref: R5.3)
+
+### 4.8: Lantern Hint (For Judges / First-Time Players)
+- [x] 4.8.1: Create `src/ui/hint.ts` with `hintButtonHtml()` and `wireHint(root, correctIndex)` to reveal the correct choice with a lantern glow, free hint for judges (no penalty)
+- [x] 4.8.2: Integrate hint button in `src/ui/TrialPanel.ts` (showQuestion footer)
+- [x] 4.8.3: Integrate hint button in `src/ui/BattleUI.ts` questionCard (both 'check' and 'qte' modes) and duelCard
+- [x] 4.8.4: Add `.hint-btn` and `.choice.hinted` styles in `src/styles/ui.css` with muted ghost button and warm lantern glow (respects prefers-reduced-motion)
 
 ---
 

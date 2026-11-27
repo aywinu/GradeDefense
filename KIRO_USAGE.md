@@ -4,8 +4,8 @@ Kiro was the engine of this project, not an add-on. Every game rule, the questio
 
 | | |
 |---|---|
-| Kiro runs | 30, every prompt saved in [`.kiro/runs/`](.kiro/runs) |
-| Spec | `.kiro/specs/deadline-defense/` – 19 requirement groups in EARS form, design, ~450 tracked tasks (361 done, 68 superseded with what replaced them, 23 deferred) |
+| Kiro runs | 31, every prompt saved in [`.kiro/runs/`](.kiro/runs) |
+| Spec | `.kiro/specs/deadline-defense/` – 19 requirement groups in EARS form, design, ~450 tracked tasks (365 done, 68 superseded with what replaced them, 23 deferred) |
 | Steering | 4 files, always included |
 | Hooks | 3 IDE hooks + 2 agent hooks |
 | Custom agent | `deadline-dev` (`.kiro/agents/deadline-dev.json`) |
@@ -103,6 +103,7 @@ To make these hold, Kiro tuned two constants itself: 8 s per semester day (was 6
 | 28 | The Procession (R19) | spec amendment + `src/core/procession.ts` (calendar clock, arrivals, weighted grades, transcript) + 78 unit/property tests | Claude built the scene, HUD and 3D on top |
 | 29 | Procession balance | semester simulation with two targeting policies; tuned the clock constants | passes; proves weight-first beats nearest-first |
 | 30 | Spec sync 2 | tasks and design reconciled after R19 (`--agent deadline-dev`) | — |
+| 31 | Lantern hint | `src/ui/hint.ts` + a Hint button (key H) on trial, duel and last-stand cards, so judges can see what a fully prepared student experiences | Claude restyled the button for contrast on parchment and dark cards |
 
 ## 8. Division of labour (honest)
 - **Kiro:** spec, steering-driven implementation of all of `src/core` (the procession, duels, simulation, waves, QTE, readiness, balance), question bank and topics, `.ics` parser, notes-to-questions generator, postMessage contract, the Moodle plugin, hooks, custom agent, Playwright tests.
