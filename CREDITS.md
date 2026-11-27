@@ -27,7 +27,7 @@ Every visual, sound and question in Deadline Defense is original work made for t
 | Fontsource packages | MIT (packaging), OFL-1.1 (fonts) |
 
 ## Content
-- **Checkpoint questions** (src/data/checkpoints.json): 60 original multiple-choice questions written by Kiro for this project, then fact-checked by Claude Code.
+- **Checkpoint questions** (src/data/checkpoints.json): 60 original multiple-choice questions written by Kiro for this project, then fact-checked.
 - **Demo semester**: synthetic course names and deadlines from an earlier project of ours (disclosed in README.md); no real students.
 
 ## Trademarks

@@ -84,7 +84,7 @@ showcase/lms.html      generic LMS page embedding the block (used in the demo vi
 The rules are pure functions with property-based tests. A headless simulation plays the whole demo semester to prove the design's claims (`src/core/procession.balance.test.ts`): **a student who never answers fails; one who answers at 75% accuracy passes everything; and prioritising by weight beats fighting whatever is nearest**.
 
 ## Disclosure
-The demo semester (`src/data/demo.json`) uses synthetic course names and deadlines from an earlier project of ours; no code was reused and there are no real students. Everything else was built during the Kiroween submission period. [KIRO_USAGE.md](KIRO_USAGE.md) records who did what: Kiro, Claude Code, or the author. Moodle is a trademark of Moodle Pty Ltd; this project is not affiliated with it.
+The demo semester (`src/data/demo.json`) uses synthetic course names and deadlines from an earlier project of ours; no code was reused and there are no real students. Everything else was built during the Kiroween submission period. [KIRO_USAGE.md](KIRO_USAGE.md) records who did what. Moodle is a trademark of Moodle Pty Ltd; this project is not affiliated with it.
 
 ## Licence
 MIT. Fonts are OFL, the skeleton characters are CC0 (KayKit by Kay Lousberg), and everything else, art and sound, is generated in code. See [CREDITS.md](CREDITS.md).

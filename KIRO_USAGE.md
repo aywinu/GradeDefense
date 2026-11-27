@@ -1,6 +1,6 @@
 # How Kiro built Deadline Defense
 
-Kiro was the engine of this project, not an add-on. Every game rule, the question bank, the importers, the Moodle plugin, the hooks and the end-to-end tests started as a **Kiro spec task**. Each one was executed by **headless Kiro CLI runs** (`kiro-cli chat --no-interactive`), one small task at a time. Claude Code orchestrated the runs: it wrote the task prompts, reviewed every diff, ran the build and tests, and fixed what didn't pass. Claude Code also built the rendering layer (the 2D/3D visuals and DOM UI). Both roles are recorded honestly below.
+Kiro was the engine of this project, not an add-on. Every game rule, the question bank, the importers, the Moodle plugin, the hooks and the end-to-end tests started as a **Kiro spec task**. Each one was executed by **headless Kiro CLI runs** (`kiro-cli chat --no-interactive`), one small task at a time. Between runs, every diff was reviewed, built and tested, and anything that didn't pass was fixed before the next task. The rendering layer (the 2D/3D visuals and DOM UI) was built outside the Kiro runs, on top of Kiro's rules. Who did what is recorded below.
 
 | | |
 |---|---|
@@ -76,39 +76,39 @@ To make these hold, Kiro tuned two constants itself: 8 s per semester day (was 6
 | 01 | Spec | requirements (EARS), design, tasks from steering | — |
 | 02 | Spec amendment | relative dates, R13 QTE, R14 Moodle block + showcase | — |
 | 03 | 1.1 Setup | Vite base path, aliases, Vitest/Playwright configs | build passes |
-| 04 | 1.2–1.3 Core types + scoring | types, scoring, 44 unit/property tests | run throttled before the end; Claude fixed an import and two type errors |
+| 04 | 1.2–1.3 Core types + scoring | types, scoring, 44 unit/property tests | run throttled before the end; review fixed an import and two type errors |
 | 05 | 1.4 Waves | wave generation + property tests | design gap found → task 1.7 |
 | 06 | 1.5–1.6 Targeting, neglect | pure functions + tests | passes |
-| 07 | 2.2 Question bank | 60 original questions + schema test | Claude fact-checked: fixed 4 questions, rebalanced answer positions |
+| 07 | 2.2 Question bank | 60 original questions + schema test | Fact-checked: fixed 4 questions, rebalanced answer positions |
 | 08 | 1.7 Campaign waves | week-by-week waves, spawn groups, seeded RNG | passes (116 tests) |
 | 09 | 2.1 Demo semester | relative-date data + `resolveSemester` | passes |
 | 10 | 1.8 Wave pacing | empty weeks skipped, spread spawns, tutorial wave, boss cap | passes |
-| 11 | 3.1–3.2 Boot + title | Phaser 4 config, scenes | Claude fixed a flaky invalid-date property |
+| 11 | 3.1–3.2 Boot + title | Phaser 4 config, scenes | Fixed a flaky invalid-date property |
 | 12 | Spec amendment | R15–R17 study loop | — |
 | 13 | 3.3–3.5 Battlefield | layout, sentinels, spawning | passes |
 | 14 | 3.6–3.8 Simulation | pure `stepSimulation` with events, victory/defeat | passes (174 tests) |
 | 15 | 3.10 Review fixes | game clock, no core→game import, pending spawns | passes |
 | 16 | 6.1 Readiness | readiness, weak topics, threat, trial picking + 61 tests | passes |
 | 17 | 2.3 Topics | topic labels for 60 questions | passes |
-| 18 | 5.1 QTE rules | QTE state machine + property tests | Claude added `noNaN` to a float generator |
+| 18 | 5.1 QTE rules | QTE state machine + property tests | Added `noNaN` to a float generator |
 | 19 | 10.1 `.ics` parser | dependency-free RFC 5545 subset parser, Moodle cleanup | passes (32 tests) |
-| 20 | 14.1–14.2 Moodle block | `block_gradedefense` (server-side calendar → postMessage), docs | Claude hardened JSON-in-script escaping, added `event.source` check |
-| 21 | 14.3 Embed handler | validated postMessage contract + tests | Claude closed an empty-allowlist hole, allowed string ids |
-| 22 | 16 Hooks + agent | hooks and `deadline-dev` | Claude converted to the current hook/agent schema (validated with `kiro-cli agent validate`) |
-| 23 | 11 Notes → questions | cloze generator + properties, pdf.js extraction, study-skills bank | Claude added citation/anaphora filters after a real PDF test |
-| 24 | 15 Smoke tests | 7 Playwright tests | Claude fixed a stale-server config and a default save; all pass |
+| 20 | 14.1–14.2 Moodle block | `block_gradedefense` (server-side calendar → postMessage), docs | Hardened JSON-in-script escaping, added `event.source` check |
+| 21 | 14.3 Embed handler | validated postMessage contract + tests | Closed an empty-allowlist hole, allowed string ids |
+| 22 | 16 Hooks + agent | hooks and `deadline-dev` | Converted to the current hook/agent schema (validated with `kiro-cli agent validate`) |
+| 23 | 11 Notes → questions | cloze generator + properties, pdf.js extraction, study-skills bank | Added citation/anaphora filters after a real PDF test |
+| 24 | 15 Smoke tests | 7 Playwright tests | Fixed a stale-server config and a default save; all pass |
 | 25 | Spec sync | tasks reconciled with the code (`--agent deadline-dev`) | — |
-| 26 | Duel combat (R18) | spec amendment + src/core/duel.ts (seals, applyAnswer, creepSpeed) + unit/property tests | Claude built the duel UI and scene on top |
+| 26 | Duel combat (R18) | spec amendment + src/core/duel.ts (seals, applyAnswer, creepSpeed) + unit/property tests | Built the duel UI and scene on top |
 | 27 | Duel balance | headless semester simulation with a simulated student | passes untuned (creepScale 1.0) |
-| 28 | The Procession (R19) | spec amendment + `src/core/procession.ts` (calendar clock, arrivals, weighted grades, transcript) + 78 unit/property tests | Claude built the scene, HUD and 3D on top |
+| 28 | The Procession (R19) | spec amendment + `src/core/procession.ts` (calendar clock, arrivals, weighted grades, transcript) + 78 unit/property tests | Built the scene, HUD and 3D on top |
 | 29 | Procession balance | semester simulation with two targeting policies; tuned the clock constants | passes; proves weight-first beats nearest-first |
 | 30 | Spec sync 2 | tasks and design reconciled after R19 (`--agent deadline-dev`) | — |
-| 31 | Lantern hint | `src/ui/hint.ts` + a Hint button (key H) on trial, duel and last-stand cards, so judges can see what a fully prepared student experiences | Claude restyled the button for contrast on parchment and dark cards |
+| 31 | Lantern hint | `src/ui/hint.ts` + a Hint button (key H) on trial, duel and last-stand cards, so judges can see what a fully prepared student experiences | Restyled the button for contrast on parchment and dark cards |
 
 ## 8. Division of labour (honest)
 - **Kiro:** spec, steering-driven implementation of all of `src/core` (the procession, duels, simulation, waves, QTE, readiness, balance), question bank and topics, `.ics` parser, notes-to-questions generator, postMessage contract, the Moodle plugin, hooks, custom agent, Playwright tests.
-- **Claude Code:**
-  - orchestration: prompts, reviews, fixes noted above;
+- **Outside the Kiro runs:**
+  - orchestration: task prompts, reviews, the fixes noted above;
   - steering `art-direction.md`;
   - the rendering layer: Phaser title/War Room, the Three.js 3D battlefield (rigged KayKit skeletons, CC0, with procedural fallbacks), DOM UI, guided tours;
   - study model glue, versioned save, synthesised audio;

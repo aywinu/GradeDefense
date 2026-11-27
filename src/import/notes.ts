@@ -31,7 +31,7 @@ const CITATION = /https?:|www\.|doi|isbn|retrieved|archived|\bpp?\.\s*\d|et al\.
 
 /**
  * Drop reference sections and citation lines before sentence splitting
- * (added by Claude Code after testing with a real Wikipedia PDF export).
+ * (added after testing with a real Wikipedia PDF export).
  */
 export function stripApparatus(text: string): string {
   const cut = text.search(/\n\s*(References|Bibliography|Further reading|External links|See also|Notes)\s*\n/i);
