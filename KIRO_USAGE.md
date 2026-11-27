@@ -114,4 +114,4 @@ To make these hold, Kiro tuned two constants itself: 8 s per semester day (was 6
   - study model glue, versioned save, synthesised audio;
   - balance tuning with the headless simulation;
   - the LMS showcase page, CI/deploy.
-- **The author:** product direction and both combat redesigns ("pick one deadline and weaken it with its own course's questions"; "lose when a date arrives and you haven't weakened it enough"), art-direction feedback (e.g. "less shiny, more unique", "show progressive disclosure", "go 3D", "real 3D models"), the Moodle background from CoursePilot.
+- **The author:** product direction and both combat redesigns ("pick one deadline and weaken it with its own course's questions"; "lose when a date arrives and you haven't weakened it enough"), art-direction feedback (e.g. "less shiny, more unique", "show progressive disclosure", "go 3D", "real 3D models"), the Moodle background from an earlier project.
