@@ -69,6 +69,12 @@ function noise(dur: number, gain: number, when = 0, filterFreq = 1200, q = 0.7) 
 let lastHit = 0;
 
 export function sfx(cue: Cue): void {
+  // Optional listener (the demo-video recorder lays its own sound on these cues).
+  try {
+    (window as unknown as { __ddSfxRec?: (c: string) => void }).__ddSfxRec?.(cue);
+  } catch {
+    /* recorder not present */
+  }
   switch (cue) {
     case 'correct':
       tone(660, 0.18, 'triangle', 0.25);
